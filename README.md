@@ -1,2 +1,3 @@
-# argus
-An opiniated self-monitoring &amp; self-diagnostics Tool
+# Argus
+
+An opinionated self-monitoring & self-diagnostics tool.
