@@ -81,6 +81,12 @@
                 <version>${project.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>net.microfalx.argus</groupId>
+                <artifactId>argus-spring</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 

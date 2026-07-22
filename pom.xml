@@ -65,6 +65,7 @@
         <module>monitor</module>
         <module>report</module>
         <module>web</module>
+        <module>spring</module>
         <module>bom</module>
     </modules>
 
@@ -78,8 +79,12 @@
     <properties>
         <java.version>21</java.version>
         <bom.version>1.0.21</bom.version>
-        <lang.version>1.0.4</lang.version>
-        <metrics.version>1.0.2</metrics.version>
+        <lang.version>1.0.5-SNAPSHOT</lang.version>
+        <resource.version>1.0.4-SNAPSHOT</resource.version>
+        <metrics.version>1.0.3-SNAPSHOT</metrics.version>
+        <tracing.version>1.0.2-SNAPSHOT</tracing.version>
+        <jvm.version>1.0.3-SNAPSHOT</jvm.version>
+        <threadpool.version>1.0.2-SNAPSHOT</threadpool.version>
 
         <jacoco.file>jacoco.exec</jacoco.file>
         <jacoco.ut.dest>${project.build.directory}/${jacoco.file}</jacoco.ut.dest>
@@ -114,6 +119,38 @@
                 <groupId>net.microfalx</groupId>
                 <artifactId>metrics</artifactId>
                 <version>${metrics.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.microfalx</groupId>
+                <artifactId>tracing</artifactId>
+                <version>${tracing.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.microfalx</groupId>
+                <artifactId>jvm</artifactId>
+                <version>${jvm.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.microfalx</groupId>
+                <artifactId>jdbcpool</artifactId>
+                <version>${jdbcpool.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.microfalx</groupId>
+                <artifactId>threadpool</artifactId>
+                <version>${threadpool.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.microfalx.resource</groupId>
+                <artifactId>resource-bom</artifactId>
+                <version>${resource.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
 
         </dependencies>
