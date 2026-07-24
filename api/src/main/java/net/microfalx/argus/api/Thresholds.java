@@ -172,26 +172,26 @@ public final class Thresholds implements Nameable {
         float errorThreshold = error.getValue();
 
         if (warnThreshold == errorThreshold) {
-            return Score.WITH_ISSUES;
+            return Health.WITH_ISSUES;
         }
 
         if (!reverse) {
-            if (value < minimum) return Score.MAX;
-            if (value < warnThreshold) return interpolate(value, minimum, warnThreshold, Score.MAX, Score.WARNING);
-            if (value <= warnThreshold) return Score.WARNING;
-            if (value < errorThreshold) return interpolate(value, warnThreshold, errorThreshold, Score.WARNING, Score.ERROR);
-            if (value <= errorThreshold) return Score.ERROR;
-            if (value < maximum) return interpolate(value, errorThreshold, maximum, Score.ERROR, Score.MIN);
-            return Score.MIN;
+            if (value < minimum) return Health.MAX;
+            if (value < warnThreshold) return interpolate(value, minimum, warnThreshold, Health.MAX, Health.WARNING);
+            if (value <= warnThreshold) return Health.WARNING;
+            if (value < errorThreshold) return interpolate(value, warnThreshold, errorThreshold, Health.WARNING, Health.ERROR);
+            if (value <= errorThreshold) return Health.ERROR;
+            if (value < maximum) return interpolate(value, errorThreshold, maximum, Health.ERROR, Health.MIN);
+            return Health.MIN;
         }
 
-        if (value < minimum) return Score.MIN;
-        if (value < warnThreshold) return interpolate(value, minimum, warnThreshold, Score.MIN, Score.WARNING);
-        if (value <= warnThreshold) return Score.WARNING;
-        if (value < errorThreshold) return interpolate(value, warnThreshold, errorThreshold, Score.WARNING, Score.ERROR);
-        if (value <= errorThreshold) return Score.ERROR;
-        if (value < maximum) return interpolate(value, errorThreshold, maximum, Score.ERROR, Score.MAX);
-        return Score.MAX;
+        if (value < minimum) return Health.MIN;
+        if (value < warnThreshold) return interpolate(value, minimum, warnThreshold, Health.MIN, Health.WARNING);
+        if (value <= warnThreshold) return Health.WARNING;
+        if (value < errorThreshold) return interpolate(value, warnThreshold, errorThreshold, Health.WARNING, Health.ERROR);
+        if (value <= errorThreshold) return Health.ERROR;
+        if (value < maximum) return interpolate(value, errorThreshold, maximum, Health.ERROR, Health.MAX);
+        return Health.MAX;
     }
 
     private static float
@@ -200,7 +200,7 @@ public final class Thresholds implements Nameable {
             return endScore;
         }
         float t = (value - start) / (end - start);
-        return Score.normalize(startScore + (endScore - startScore) * t);
+        return Health.normalize(startScore + (endScore - startScore) * t);
     }
 
 

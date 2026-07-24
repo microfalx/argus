@@ -34,6 +34,35 @@
     <description>The API</description>
 
     <dependencies>
+
+        <dependency>
+            <groupId>net.microfalx</groupId>
+            <artifactId>lang</artifactId>
+
+            <exclusions>
+                <exclusion>
+                    <groupId>org.dom4j</groupId>
+                    <artifactId>dom4j</artifactId>
+                </exclusion>
+
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+
+                <exclusion>
+                    <groupId>org.atteo.classindex</groupId>
+                    <artifactId>classindex</artifactId>
+                </exclusion>
+
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-lang3</artifactId>
+                </exclusion>
+                
+            </exclusions>
+        </dependency>
+
     </dependencies>
 
 </project>

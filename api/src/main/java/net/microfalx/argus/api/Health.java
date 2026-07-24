@@ -17,9 +17,9 @@ import static net.microfalx.lang.ExceptionUtils.rethrowExceptionAndReturn;
 import static net.microfalx.lang.StringUtils.toIdentifier;
 
 /**
- * A global rating assigned to a service or the service replica (process) itself.
+ * A rating assigned to a resource to indicate the health of that resource.
  * <p>
- * The score is a value between 1 and 5, 1 being completely "faulty" and 5 being completely "healthy". The score is
+ * The outcome of the assessment is represented by a score is a value between 1 and 5, 1 being completely "faulty" and 5 being completely "healthy". The score is
  * calculated based on the thresholds defined for various internal services/metrics.
  * <p>
  * The score is linearly extrapolated by applying the following algorithm:
@@ -35,8 +35,9 @@ import static net.microfalx.lang.StringUtils.toIdentifier;
  * Areas:       healthy    with issues   faulty
  * </pre>
  */
+@Getter
 @ToString
-public final class Score extends IdentityAware<Long> {
+public final class Health extends IdentityAware<Long> {
 
     public static final float MIN = 1;
     public static final float MAX = 5;
@@ -54,7 +55,7 @@ public final class Score extends IdentityAware<Long> {
      * @return the normalized value
      */
     public static float normalize(float value) {
-        return Math.max(Score.MIN, Math.min(Score.MAX, value));
+        return Math.max(Health.MIN, Math.min(Health.MAX, value));
     }
 
     /**
@@ -86,8 +87,8 @@ public final class Score extends IdentityAware<Long> {
      *
      * @return a value between 1 and 5
      */
-    public float getValue() {
-        return getLowest().map(Item::getValue).orElse(5f);
+    public float getScore() {
+        return getLowest().map(Item::getScore).orElse(5f);
     }
 
     /**
@@ -97,7 +98,7 @@ public final class Score extends IdentityAware<Long> {
      */
     public Optional<Item> getLowest() {
         return groups.values().stream().flatMap(group -> group.items.stream())
-                .min(Comparator.comparing(Item::getValue));
+                .min(Comparator.comparing(Item::getScore));
     }
 
     /**
@@ -167,8 +168,8 @@ public final class Score extends IdentityAware<Long> {
          *
          * @return a value between 1 and 5
          */
-        public float getValue() {
-            return getLowest().map(Item::getValue).orElse(5f);
+        public float getScore() {
+            return getLowest().map(Item::getScore).orElse(5f);
         }
 
         /**
@@ -177,7 +178,7 @@ public final class Score extends IdentityAware<Long> {
          * @return an optional item
          */
         public Optional<Item> getLowest() {
-            return items.stream().min(Comparator.comparing(Item::getValue));
+            return items.stream().min(Comparator.comparing(Item::getScore));
         }
 
         /**
@@ -212,7 +213,7 @@ public final class Score extends IdentityAware<Long> {
         /**
          * The score of the item
          */
-        private final float value;
+        private final float score;
 
         /**
          * The policy associated with the item, which determines how it is reported in the score.
@@ -223,11 +224,11 @@ public final class Score extends IdentityAware<Long> {
          * Creates new item with a given name and score.
          *
          * @param name  the item name
-         * @param value the item score
+         * @param score the item score
          * @return a new item instance
          */
-        public static Item create(String name, float value) {
-            return new Item(name, value);
+        public static Item create(String name, float score) {
+            return new Item(name, score);
         }
 
         /**
@@ -236,7 +237,7 @@ public final class Score extends IdentityAware<Long> {
          * This method creates an item with a score based on an absolute value.
          *
          * @param thresholds the thresholds used to score the value
-         * @param value      the item score
+         * @param value      the item value
          * @return a new item instance
          */
         public static Item create(Thresholds thresholds, float value) {
@@ -268,10 +269,10 @@ public final class Score extends IdentityAware<Long> {
             return new Item(thresholds.getName(), score).withDescription(description);
         }
 
-        private Item(String name, float value) {
+        private Item(String name, float score) {
             requireNotEmpty(name);
             this.name = name;
-            this.value = Score.normalize(value);
+            this.score = Health.normalize(score);
         }
 
         /**
