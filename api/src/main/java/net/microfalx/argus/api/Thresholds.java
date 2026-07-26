@@ -3,23 +3,24 @@ package net.microfalx.argus.api;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
-import net.microfalx.lang.Nameable;
+import net.microfalx.lang.NamedIdentityAware;
 
+import javax.swing.text.html.Option;
+
+import java.util.Optional;
+
+import static java.util.Optional.ofNullable;
 import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 import static net.microfalx.lang.ArgumentUtils.requireNotEmpty;
+import static net.microfalx.lang.StringUtils.toIdentifier;
 
 /**
  * A pair of thresholds used to calculate scores.
  */
 @Getter
 @ToString
-@EqualsAndHashCode
-public final class Thresholds implements Nameable {
-
-    /**
-     * The name of the thresholds
-     */
-    private final String name;
+@EqualsAndHashCode(callSuper = true)
+public final class Thresholds extends NamedIdentityAware<String> {
 
     /**
      * The threshold for warning levels
@@ -32,6 +33,11 @@ public final class Thresholds implements Nameable {
     private final Threshold error;
 
     /**
+     * The group these thresholds belong.
+     */
+    private String group;
+
+    /**
      * The start of the range
      */
     private Float minimum;
@@ -41,6 +47,9 @@ public final class Thresholds implements Nameable {
      */
     private Float maximum;
 
+    /**
+     * Flag, indicates how the thresholds are applied
+     */
     private boolean reverse;
 
     /**
@@ -51,7 +60,7 @@ public final class Thresholds implements Nameable {
      * @return a new instance of {@link Thresholds}
      */
     public static Thresholds create(String name, float warn, float error) {
-        return new Thresholds(name, Threshold.warn(warn), Threshold.error(error));
+        return new Thresholds(toIdentifier(name), name, Threshold.warn(warn), Threshold.error(error));
     }
 
     /**
@@ -62,7 +71,7 @@ public final class Thresholds implements Nameable {
      * @return a new instance of {@link Thresholds}
      */
     public static Thresholds create(String name, float warn, float error, Unit unit) {
-        return new Thresholds(name, Threshold.warn(warn).withUnit(unit), Threshold.error(error).withUnit(unit));
+        return new Thresholds(toIdentifier(name), name, Threshold.warn(warn).withUnit(unit), Threshold.error(error).withUnit(unit));
     }
 
     /**
@@ -73,14 +82,16 @@ public final class Thresholds implements Nameable {
      * @return a new instance of {@link Thresholds}
      */
     public static Thresholds create(String name, Threshold warn, Threshold error) {
-        return new Thresholds(name, warn, error);
+        return new Thresholds(toIdentifier(name), name, warn, error);
     }
 
-    private Thresholds(String name, Threshold warn, Threshold error) {
+    private Thresholds(String id, String name, Threshold warn, Threshold error) {
+        requireNotEmpty(id);
         requireNotEmpty(name);
         requireNonNull(warn);
         requireNonNull(error);
-        this.name = name;
+        this.setId(id);
+        this.setName(name);
         this.warn = warn;
         this.error = error;
         if (error.getValue() < warn.getValue()) {
@@ -91,6 +102,15 @@ public final class Thresholds implements Nameable {
             throw new IllegalArgumentException("The error unit (" + error.getUnit() + ") cannot be different " +
                     "than warn threshold (" + warn.getUnit() + ")");
         }
+    }
+
+    /**
+     * Returns an optional group name these thresholds belong to.
+     *
+     * @return an optional group name
+     */
+    public Optional<String> getGroup() {
+        return ofNullable(group);
     }
 
     /**
@@ -109,8 +129,34 @@ public final class Thresholds implements Nameable {
      * @return a new instance of {@link Thresholds} with the specified reverse setting
      */
     public Thresholds withReverse(boolean reverse) {
-        Thresholds copy = new Thresholds(name, warn, error);
+        Thresholds copy = (Thresholds) copy();
         copy.reverse = reverse;
+        return copy;
+    }
+
+    /**
+     * Changes the identifier of the thresholds.
+     *
+     * @param id the new identifier
+     * @return a new instance of {@link Thresholds} with the specified reverse setting
+     */
+    public Thresholds withId(String id) {
+        requireNonNull(id);
+        Thresholds copy = (Thresholds) copy();
+        copy.setId(id);
+        return copy;
+    }
+
+    /**
+     * Changes the group name of the thresholds.
+     *
+     * @param group the group name
+     * @return a new instance of {@link Thresholds} with the specified reverse setting
+     */
+    public Thresholds withGroup(String group) {
+        requireNonNull(group);
+        Thresholds copy = (Thresholds) copy();
+        copy.group = group;
         return copy;
     }
 
@@ -179,7 +225,8 @@ public final class Thresholds implements Nameable {
             if (value < minimum) return Health.MAX;
             if (value < warnThreshold) return interpolate(value, minimum, warnThreshold, Health.MAX, Health.WARNING);
             if (value <= warnThreshold) return Health.WARNING;
-            if (value < errorThreshold) return interpolate(value, warnThreshold, errorThreshold, Health.WARNING, Health.ERROR);
+            if (value < errorThreshold)
+                return interpolate(value, warnThreshold, errorThreshold, Health.WARNING, Health.ERROR);
             if (value <= errorThreshold) return Health.ERROR;
             if (value < maximum) return interpolate(value, errorThreshold, maximum, Health.ERROR, Health.MIN);
             return Health.MIN;
@@ -188,7 +235,8 @@ public final class Thresholds implements Nameable {
         if (value < minimum) return Health.MIN;
         if (value < warnThreshold) return interpolate(value, minimum, warnThreshold, Health.MIN, Health.WARNING);
         if (value <= warnThreshold) return Health.WARNING;
-        if (value < errorThreshold) return interpolate(value, warnThreshold, errorThreshold, Health.WARNING, Health.ERROR);
+        if (value < errorThreshold)
+            return interpolate(value, warnThreshold, errorThreshold, Health.WARNING, Health.ERROR);
         if (value <= errorThreshold) return Health.ERROR;
         if (value < maximum) return interpolate(value, errorThreshold, maximum, Health.ERROR, Health.MAX);
         return Health.MAX;

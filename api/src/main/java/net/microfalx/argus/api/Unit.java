@@ -13,6 +13,16 @@ public enum Unit {
     PERCENT,
 
     /**
+     * A value in milliseconds.
+     */
+    MILLISECOND,
+
+    /**
+     * A value in nanoseconds.
+     */
+    NANOSECOND,
+
+    /**
      * A value without any unit of measurement
      */
     COUNTER,

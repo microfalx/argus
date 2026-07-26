@@ -84,6 +84,7 @@
         <metrics.version>1.0.3-SNAPSHOT</metrics.version>
         <tracing.version>1.0.2-SNAPSHOT</tracing.version>
         <jvm.version>1.0.3-SNAPSHOT</jvm.version>
+        <registry.version>1.0.0-SNAPSHOT</registry.version>
         <threadpool.version>1.0.2-SNAPSHOT</threadpool.version>
 
         <jacoco.file>jacoco.exec</jacoco.file>
@@ -147,6 +148,14 @@
                 <scope>import</scope>
             </dependency>
 
+            <dependency>
+                <groupId>net.microfalx.registry</groupId>
+                <artifactId>registry-bom</artifactId>
+                <version>${registry.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -192,6 +201,17 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-params</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
 

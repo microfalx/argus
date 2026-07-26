@@ -2,18 +2,15 @@ package net.microfalx.argus.api;
 
 import lombok.Getter;
 import lombok.ToString;
-import net.microfalx.lang.Descriptable;
-import net.microfalx.lang.IdentityAware;
-import net.microfalx.lang.Nameable;
-import net.microfalx.lang.NumberUtils;
+import net.microfalx.lang.*;
 
+import java.time.ZonedDateTime;
 import java.util.*;
 
 import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 import static net.microfalx.lang.ArgumentUtils.requireNotEmpty;
 import static net.microfalx.lang.CollectionUtils.immutableCollection;
 import static net.microfalx.lang.CollectionUtils.immutableSet;
-import static net.microfalx.lang.ExceptionUtils.rethrowExceptionAndReturn;
 import static net.microfalx.lang.StringUtils.toIdentifier;
 
 /**
@@ -37,7 +34,7 @@ import static net.microfalx.lang.StringUtils.toIdentifier;
  */
 @Getter
 @ToString
-public final class Health extends IdentityAware<Long> {
+public final class Health extends IdentityAware<Long> implements Timestampable<ZonedDateTime> {
 
     public static final float MIN = 1;
     public static final float MAX = 5;
@@ -45,6 +42,9 @@ public final class Health extends IdentityAware<Long> {
     public static final float ERROR = 4;
     public static final float BAD = 1.5f;
     public static final float WITH_ISSUES = 2.5f;
+
+    private ZonedDateTime createdAt = ZonedDateTime.now();
+    private ZonedDateTime modifiedAt = createdAt;
 
     private final Map<String, Group> groups = new LinkedHashMap<>();
 
@@ -56,6 +56,15 @@ public final class Health extends IdentityAware<Long> {
      */
     public static float normalize(float value) {
         return Math.max(Health.MIN, Math.min(Health.MAX, value));
+    }
+
+    public ZonedDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    @Override
+    public ZonedDateTime getModifiedAt() {
+        return modifiedAt;
     }
 
     /**
@@ -111,11 +120,14 @@ public final class Health extends IdentityAware<Long> {
     public void update(String group, String item, float score) {
         requireNotEmpty(group);
         requireNotEmpty(item);
+        modifiedAt = ZonedDateTime.now();
         getGroup(group).update(item, score);
     }
 
     /**
      * Registers an item with its score.
+     * <p>
+     * The registration ignores the possible group of the item and uses the provided group instead.
      *
      * @param group the name of the group which owns the item
      * @param item  the item
@@ -123,6 +135,21 @@ public final class Health extends IdentityAware<Long> {
     public void update(String group, Item item) {
         requireNotEmpty(group);
         requireNotEmpty(item);
+        modifiedAt = ZonedDateTime.now();
+        getGroup(group).update(item);
+    }
+
+    /**
+     * Registers an item with its score.
+     * <p>
+     * The group is picked from
+     *
+     * @param item the item
+     */
+    public void update(Item item) {
+        requireNotEmpty(item);
+        modifiedAt = ZonedDateTime.now();
+        String group = item.getGroup().orElse("General");
         getGroup(group).update(item);
     }
 
@@ -205,10 +232,12 @@ public final class Health extends IdentityAware<Long> {
 
     @Getter
     @ToString
-    public static class Item implements Nameable, Descriptable, Cloneable {
+    public static class Item extends NamedIdentityAware<String> {
 
-        private String name;
-        private String description;
+        /**
+         * The group to which this item belongs
+         */
+        private String group;
 
         /**
          * The score of the item
@@ -219,6 +248,11 @@ public final class Health extends IdentityAware<Long> {
          * The policy associated with the item, which determines how it is reported in the score.
          */
         private Set<Policy> policies = EMPTY_POLICIES;
+
+        /**
+         * The thresholds used to create this item
+         */
+        private Thresholds thresholds;
 
         /**
          * Creates new item with a given name and score.
@@ -243,7 +277,26 @@ public final class Health extends IdentityAware<Long> {
         public static Item create(Thresholds thresholds, float value) {
             requireNonNull(thresholds);
             float score = thresholds.getScore(value);
-            return new Item(thresholds.getName(), score);
+            return new Item(thresholds.getName(), score).withThresholds(thresholds);
+        }
+
+        /**
+         * Creates new item from a value and thresholds.
+         * <p>
+         * This method creates an item with a score based on the value relative to thresholds and updates the description
+         * with the value explained in the description
+         *
+         * @param thresholds the thresholds used to score the value
+         * @param value      the item score
+         * @return a new item instance
+         */
+        public static Item create(Thresholds thresholds, float value, Unit unit) {
+            requireNonNull(thresholds);
+            requireNonNull(unit);
+            float score = thresholds.getScore(value);
+            String description = String.format("%s", unit.format(value));
+            return new Item(thresholds.getName(), score).withDescription(description)
+                    .withThresholds(thresholds);
         }
 
         /**
@@ -266,12 +319,14 @@ public final class Health extends IdentityAware<Long> {
             float score = thresholds.getScore(percent);
             String description = String.format("%s (%s of %s)", Unit.PERCENT.format(percent),
                     unit.format(value), unit.format(maximum));
-            return new Item(thresholds.getName(), score).withDescription(description);
+            return new Item(thresholds.getName(), score).withDescription(description)
+                    .withThresholds(thresholds);
         }
 
         private Item(String name, float score) {
             requireNotEmpty(name);
-            this.name = name;
+            this.setId(toIdentifier(name));
+            this.setName(name);
             this.score = Health.normalize(score);
         }
 
@@ -284,6 +339,21 @@ public final class Health extends IdentityAware<Long> {
         public boolean has(Policy policy) {
             requireNonNull(policy);
             return policies.contains(policy);
+        }
+
+        /**
+         * Returns the group to which this item belongs.
+         *
+         * @return a non-null instance
+         */
+        public Optional<String> getGroup() {
+            if (StringUtils.isNotEmpty(group)) {
+                return Optional.of(group);
+            } else if (thresholds != null) {
+                return thresholds.getGroup();
+            } else {
+                return Optional.empty();
+            }
         }
 
         /**
@@ -302,8 +372,8 @@ public final class Health extends IdentityAware<Long> {
          * @return a new instance
          */
         public Item withName(String name) {
-            Item copy = copy();
-            copy.name = name;
+            Item copy = (Item) copy();
+            copy.setName(name);
             return copy;
         }
 
@@ -314,8 +384,8 @@ public final class Health extends IdentityAware<Long> {
          * @return a new instance
          */
         public Item withDescription(String description) {
-            Item copy = copy();
-            copy.description = description;
+            Item copy = (Item) copy();
+            copy.setDescription(description);
             return copy;
         }
 
@@ -327,19 +397,42 @@ public final class Health extends IdentityAware<Long> {
          */
         public Item withPolicy(Policy policy) {
             requireNonNull(policy);
-            Item copy = copy();
+            Item copy = (Item) copy();
             copy.policies.add(policy);
             return copy;
         }
 
-        private Item copy() {
-            try {
-                Item clone = (Item) clone();
-                clone.policies = EnumSet.copyOf(policies);
-                return clone;
-            } catch (CloneNotSupportedException e) {
-                return rethrowExceptionAndReturn(e);
-            }
+        /**
+         * Creates a new item with a different thresholds.
+         *
+         * @param thresholds the thresholds
+         * @return a new instance
+         */
+        public Item withThresholds(Thresholds thresholds) {
+            requireNonNull(thresholds);
+            Item copy = (Item) copy();
+            copy.thresholds = thresholds;
+            return copy;
+        }
+
+        /**
+         * Changes the group name of the thresholds.
+         *
+         * @param group the group name
+         * @return a new instance of {@link Thresholds} with the specified reverse setting
+         */
+        public Item withGroup(String group) {
+            requireNonNull(group);
+            Item copy = (Item) copy();
+            copy.group = group;
+            return copy;
+        }
+
+        @Override
+        protected void copyProperties(IdentityAware<String> source, IdentityAware<String> target) {
+            super.copyProperties(source, target);
+            ((Item) target).thresholds = thresholds;
+            ((Item) target).policies = EnumSet.copyOf(policies);
         }
     }
 

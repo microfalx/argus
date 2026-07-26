@@ -46,6 +46,16 @@
             <artifactId>threadpool</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>net.microfalx</groupId>
+            <artifactId>jvm</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>net.microfalx.registry</groupId>
+            <artifactId>registry-core</artifactId>
+        </dependency>
+
     </dependencies>
 
 </project>

@@ -2,15 +2,10 @@ package net.microfalx.argus.core;
 
 import net.microfalx.argus.api.IssueService;
 
-public class IssueServiceImpl extends BaseService implements IssueService {
+public class IssueServiceImpl extends AbstractService implements IssueService {
 
     @Override
-    public void start() {
-
-    }
-
-    @Override
-    public void stop() {
+    public void initialize(Object... context) {
 
     }
 }
