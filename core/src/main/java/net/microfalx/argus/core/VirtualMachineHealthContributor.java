@@ -5,9 +5,9 @@ import net.microfalx.argus.api.Thresholds;
 import net.microfalx.argus.api.Unit;
 import net.microfalx.jvm.VirtualMachineMetrics;
 import net.microfalx.jvm.model.BufferPool;
-import net.microfalx.jvm.model.GarbageCollection;
 import net.microfalx.jvm.model.MemoryPool;
 import net.microfalx.jvm.model.VirtualMachine;
+import net.microfalx.lang.Initializable;
 import net.microfalx.lang.JvmUtils;
 import net.microfalx.lang.annotation.Provider;
 import net.microfalx.metrics.statistics.MutableStatisticalSummary;
@@ -19,7 +19,7 @@ import java.util.List;
 
 @SuppressWarnings("FieldMayBeFinal")
 @Provider
-public class VirtualMachineHealthContributor extends AbstractHealthContributor {
+public class VirtualMachineHealthContributor extends AbstractHealthContributor implements Initializable {
 
     private final static String JVM_GROUP = "JVM";
     private final static String MEMORY_GROUP = JVM_GROUP + " / Memory";
@@ -32,11 +32,24 @@ public class VirtualMachineHealthContributor extends AbstractHealthContributor {
     private final MutableStatisticalSummary threadsSummary = new TimeWindowStatisticalSummary(longAverage);
     private final MutableStatisticalSummary fileDescriptorsSummary = new TimeWindowStatisticalSummary(longAverage);
 
+    @SuppressWarnings("NonAtomicOperationOnVolatileField")
+    @Override
+    public void initialize(Object... context) {
+
+        fileDescriptorsSummary.add(1000);
+        threadsSummary.add(100);
+
+        OTHER_FILE_DESCRIPTORS = OTHER_FILE_DESCRIPTORS.with((float) fileDescriptorsSummary.getMean() * 2,
+                (float) fileDescriptorsSummary.getMean() * 3);
+        OTHER_THREADS = OTHER_THREADS.with((float) threadsSummary.getMean() * 2,
+                (float) threadsSummary.getMean() * 3);
+    }
+
     @Override
     public void update(Health health) {
         VirtualMachineMetrics virtualMachineMetrics = VirtualMachineMetrics.get();
         VirtualMachine virtualMachine = virtualMachineMetrics.getLast();
-        updateMemory(health, virtualMachineMetrics);
+        updateMemory(health, virtualMachineMetrics, virtualMachine);
         updateGc(health, virtualMachineMetrics);
         updateFileSystem(health);
         updateOther(health, virtualMachineMetrics, virtualMachine);
@@ -49,12 +62,12 @@ public class VirtualMachineHealthContributor extends AbstractHealthContributor {
                 OTHER_THREADS, OTHER_FILE_DESCRIPTORS);
     }
 
-    private void updateMemory(Health health, VirtualMachineMetrics metrics) {
-        health.update(asPercentageItem(MEMORY_TENURED, metrics.getAverageTenuredMemory()));
-        health.update(asPercentageItem(MEMORY_EDEN, metrics.getAverageEdenMemory()));
-        health.update(asPercentageItem(MEMORY_METASPACE, metrics.getAverageMetaspaceMemory()));
-        //health.update(asPercentageItem(MEMORY_BUFFERS, virtualMachine.getBufferPools(BufferPool.Type.DIRECT), "Direct"));
-        // health.update(asPercentageItem(MEMORY_BUFFERS, virtualMachine.getBufferPools(BufferPool.Type.MAPPED), "Mapped"));
+    private void updateMemory(Health health, VirtualMachineMetrics metrics, VirtualMachine virtualMachine) {
+        health.update(asPercentageItem(MEMORY_EDEN, metrics.getAverageEdenMemory(), virtualMachine.getEdenMemoryPool()));
+        health.update(asPercentageItem(MEMORY_TENURED, metrics.getAverageTenuredMemory(), virtualMachine.getTenuredMemoryPool()));
+        health.update(asPercentageItem(MEMORY_METASPACE, metrics.getAverageMetaspaceMemory(), virtualMachine.getMetapaceMemoryPool()));
+        health.update(asPercentageItem(MEMORY_BUFFERS, virtualMachine.getBufferPools(BufferPool.Type.DIRECT), "Direct"));
+        health.update(asPercentageItem(MEMORY_BUFFERS, virtualMachine.getBufferPools(BufferPool.Type.MAPPED), "Mapped"));
     }
 
     private void updateFileSystem(Health health) {
@@ -64,23 +77,25 @@ public class VirtualMachineHealthContributor extends AbstractHealthContributor {
     }
 
     private void updateOther(Health health, VirtualMachineMetrics metrics, VirtualMachine virtualMachine) {
-        int threads = virtualMachine.getProcess().getThreads();
-        threadsSummary.add(threads);
-        health.update(OTHER_GROUP, asCounterItem(OTHER_THREADS, metrics.getAverageThreads()));
+        synchronized (lock) {
+            int threads = virtualMachine.getProcess().getThreads();
+            threadsSummary.add(threads);
+            health.update(asCounterItem(OTHER_THREADS, metrics.getAverageThreads()));
 
-        int fileDescriptors = virtualMachine.getProcess().getFileDescriptors();
-        fileDescriptorsSummary.add(fileDescriptors);
-        health.update(OTHER_GROUP, asCounterItem(OTHER_FILE_DESCRIPTORS, fileDescriptors));
+            int fileDescriptors = virtualMachine.getProcess().getFileDescriptors();
+            fileDescriptorsSummary.add(fileDescriptors);
+            health.update(asCounterItem(OTHER_FILE_DESCRIPTORS, fileDescriptors));
+        }
     }
 
     private void updateGc(Health health, VirtualMachineMetrics metrics) {
-        health.update(OTHER_GROUP, asDurationItem(GC_EDEN, metrics.getAverageGcEdenDuration()));
-        health.update(OTHER_GROUP, asDurationItem(GC_TENURED, metrics.getAverageGcTenuredDuration()));
+        health.update(asDurationItem(GC_EDEN, metrics.getAverageGcEdenDuration()));
+        health.update(asDurationItem(GC_TENURED, metrics.getAverageGcTenuredDuration()));
     }
 
-    private Health.Item asBytesItem(Thresholds thresholds, MemoryPool memoryPool) {
+    private Health.Item asPercentageItem(Thresholds thresholds, long used, MemoryPool memoryPool) {
         return Health.Item.create(thresholds,
-                memoryPool.getUsed(), memoryPool.getMaximum(), Unit.BYTE);
+                used, memoryPool.getMaximum(), Unit.BYTE);
     }
 
     private Health.Item asPercentageItem(Thresholds thresholds, BufferPool bufferPool, String suffix) {
@@ -95,13 +110,13 @@ public class VirtualMachineHealthContributor extends AbstractHealthContributor {
     private static volatile Thresholds MEMORY_METASPACE = Thresholds.create("Metaspace", 85f, 95f, Unit.PERCENT).withId("jvm.memory.metaspace").withGroup(MEMORY_GROUP);
     private static volatile Thresholds MEMORY_BUFFERS = Thresholds.create("Buffers", 85f, 95f, Unit.PERCENT).withId("jvm.memory.buffers").withGroup(MEMORY_GROUP);
 
-    private static volatile Thresholds GC_EDEN = Thresholds.create("Eden", 50, 100, Unit.MILLISECOND).withId("jvm.gc.eden").withGroup(JVM_GROUP);
-    private static volatile Thresholds GC_TENURED = Thresholds.create("Tenured", 100, 200, Unit.MILLISECOND).withId("jvm.gc.tenured").withGroup(JVM_GROUP);
+    private static volatile Thresholds GC_EDEN = Thresholds.create("Eden", 50, 100, Unit.MILLISECOND).withId("jvm.gc.eden").withGroup(GC_GROUP);
+    private static volatile Thresholds GC_TENURED = Thresholds.create("Tenured", 100, 200, Unit.MILLISECOND).withId("jvm.gc.tenured").withGroup(GC_GROUP);
 
     private static volatile Thresholds FILE_SYSTEM_HOME = Thresholds.create("Home Directory", 85f, 95f, Unit.PERCENT).withId("jvm.filesystem.home").withGroup(FILE_SYSTEM_GROUP);
     private static volatile Thresholds FILE_SYSTEM_VARIABLE = Thresholds.create("Variable Directory", 85f, 95f, Unit.PERCENT).withId("jvm.filesystem.variable").withGroup(FILE_SYSTEM_GROUP);
     private static volatile Thresholds FILE_SYSTEM_TEMPORARY = Thresholds.create("Temporary Directory", 85f, 95f, Unit.PERCENT).withId("jvm.filesystem.temporary").withGroup(FILE_SYSTEM_GROUP);
 
-    private static volatile Thresholds OTHER_THREADS = Thresholds.create("Threads", 85f, 95f, Unit.PERCENT).withId("jvm.threads").withGroup(OTHER_GROUP);
-    private static volatile Thresholds OTHER_FILE_DESCRIPTORS = Thresholds.create("File Descriptors", 85f, 95f, Unit.PERCENT).withId("jvm.threads").withGroup(OTHER_GROUP);
+    private static volatile Thresholds OTHER_THREADS = Thresholds.create("Threads", 100f, 200f, Unit.COUNTER).withId("jvm.threads").withGroup(OTHER_GROUP);
+    private static volatile Thresholds OTHER_FILE_DESCRIPTORS = Thresholds.create("File Descriptors", 500f, 1000f, Unit.COUNTER).withId("jvm.threads").withGroup(OTHER_GROUP);
 }

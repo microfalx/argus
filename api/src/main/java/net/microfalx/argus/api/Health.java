@@ -11,6 +11,7 @@ import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 import static net.microfalx.lang.ArgumentUtils.requireNotEmpty;
 import static net.microfalx.lang.CollectionUtils.immutableCollection;
 import static net.microfalx.lang.CollectionUtils.immutableSet;
+import static net.microfalx.lang.FormatterUtils.formatNumber;
 import static net.microfalx.lang.FormatterUtils.formatPercent;
 import static net.microfalx.lang.StringUtils.EMPTY_STRING;
 import static net.microfalx.lang.StringUtils.toIdentifier;
@@ -267,7 +268,7 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
                 boolean isLowestItem = item == lowestItem;
                 String description = item.getDescription();
                 String line;
-                String scoreAsString = formatPercent(item.getScore(), 1);
+                String scoreAsString = formatNumber(item.getScore(), 1);
                 if (description != null && !description.isEmpty()) {
                     line = String.format("%s: %s (%s)", item.getName(), scoreAsString, description);
                 } else {

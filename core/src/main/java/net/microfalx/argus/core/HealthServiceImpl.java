@@ -7,12 +7,15 @@ import net.microfalx.argus.api.HealthContributor;
 import net.microfalx.argus.api.HealthService;
 import net.microfalx.argus.api.Thresholds;
 import net.microfalx.lang.ClassUtils;
+import net.microfalx.lang.Initializable;
 import net.microfalx.threadpool.Trigger;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import static net.microfalx.lang.ArgumentUtils.requireNonNull;
@@ -56,6 +59,7 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
     @Override
     public void registerContributor(HealthContributor contributor) {
         requireNonNull(contributor);
+        initializeContributor(contributor);
         registeredContributors.add(contributor);
         LOGGER.debug("Register health contributor - {}", ClassUtils.getName(contributor));
         updateContributors();
@@ -72,6 +76,7 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
         LOGGER.info("Discover health contributors");
         for (HealthContributor contributor : resolveProviderInstances(HealthContributor.class)) {
             LOGGER.debug(" - {}", ClassUtils.getName(contributor));
+            initializeContributor(contributor);
             classPathContributors.add(contributor);
         }
         LOGGER.info("Discovered {} health contributors", classPathContributors.size());
@@ -93,7 +98,7 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
     }
 
     void scrape() {
-        Health nextHealth = getHealth();
+        Health nextHealth = new Health();
         for (HealthContributor contributor : contributors) {
             contributor.update(nextHealth);
         }
@@ -103,6 +108,12 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
     private void updateContributorsStats() {
         for (HealthContributor contributor : contributors) {
             contributor.updateStats();
+        }
+    }
+
+    private void initializeContributor(HealthContributor contributor) {
+        if (contributor instanceof Initializable) {
+            ((Initializable) contributor).initialize();
         }
     }
 

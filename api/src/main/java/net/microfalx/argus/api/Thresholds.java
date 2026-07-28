@@ -27,12 +27,12 @@ public final class Thresholds extends NamedIdentityAware<String> {
     /**
      * The threshold for warning levels
      */
-    private final Threshold warn;
+    private Threshold warn;
 
     /**
      * The thresholds for error levels
      */
-    private final Threshold error;
+    private Threshold error;
 
     /**
      * The group these thresholds belong.
@@ -159,6 +159,23 @@ public final class Thresholds extends NamedIdentityAware<String> {
         requireNonNull(group);
         Thresholds copy = (Thresholds) copy();
         copy.group = group;
+        return copy;
+    }
+
+
+    /**
+     * Changes the threshold values.
+     *
+     * @param warn  the warning level
+     * @param error the error level
+     * @return a new instance of {@link Thresholds} with the specified threshold values
+     */
+    public Thresholds with(float warn, float error) {
+        Thresholds copy = (Thresholds) copy();
+        copy.warn = Threshold.warn(warn).withUnit(getUnit());
+        copy.error = Threshold.error(error).withUnit(getUnit());
+        copy.maximum = null;
+        copy.minimum = null;
         return copy;
     }
 

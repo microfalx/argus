@@ -2,6 +2,8 @@ package net.microfalx.argus.api;
 
 import net.microfalx.lang.FormatterUtils;
 
+import java.time.Duration;
+
 /**
  * An enum representing the unit of measurement for a metric used to calculate scores.
  */
@@ -47,6 +49,8 @@ public enum Unit {
         return switch (this) {
             case PERCENT -> FormatterUtils.formatPercent(value);
             case BYTE -> FormatterUtils.formatBytes(value);
+            case NANOSECOND -> FormatterUtils.formatDuration(Duration.ofNanos((long)value));
+            case MILLISECOND -> FormatterUtils.formatDuration(Duration.ofMillis((long)value));
             case THROUGHPUT -> FormatterUtils.formatThroughput(value, "r/s");
             case COUNTER -> FormatterUtils.formatNumber(value, 0);
             default -> throw new IllegalArgumentException("Unsupported unit: " + this);

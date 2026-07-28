@@ -6,9 +6,9 @@ import net.microfalx.argus.api.HealthService;
 import net.microfalx.argus.api.Thresholds;
 import net.microfalx.jvm.ServerMetrics;
 import net.microfalx.jvm.VirtualMachineMetrics;
-import net.microfalx.jvm.model.VirtualMachine;
 import net.microfalx.threadpool.ThreadPool;
 import net.microfalx.threadpool.Trigger;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,8 +39,7 @@ class HealthServiceImplTest {
         healthService.initialize();
         healthService.start();
 
-        VirtualMachineMetrics.get().scrape();
-        ServerMetrics.get().scrape();
+        scrape();
     }
 
     @Test
@@ -92,6 +91,25 @@ class HealthServiceImplTest {
         assertEquals(1, contributor.updateCount.get());
         assertTrue(healthService.getHealth().getGroup("Test Group").getItems().stream()
                 .anyMatch(item -> "Test Item".equals(item.getName())));
+    }
+
+    @Test
+    void scrapeAndReport() {
+        for (int i = 0; i < 5; i++) {
+            healthService.scrape();
+            scrape();
+        }
+        String report = healthService.getHealth().getReport();
+        Assertions.assertThat(report).contains("Total:")
+                .contains("JVM / Memory")
+                .contains("Eden:").contains("Metaspace:")
+                .contains("JVM / GC")
+                .contains("JVM / Other");
+    }
+
+    private void scrape() {
+        VirtualMachineMetrics.get().scrape();
+        ServerMetrics.get().scrape();
     }
 
     private static final class RecordingContributor implements HealthContributor {

@@ -13,6 +13,8 @@ import java.time.Duration;
  */
 public abstract class AbstractHealthContributor implements HealthContributor {
 
+    protected final Object lock = new Object();
+
     protected final Health.Item asPercentageItem(Thresholds thresholds, float value) {
         return Health.Item.create(thresholds, value, Unit.PERCENT);
     }
@@ -24,11 +26,11 @@ public abstract class AbstractHealthContributor implements HealthContributor {
     }
 
     protected final Health.Item asCounterItem(Thresholds thresholds, int value) {
-        return Health.Item.create(thresholds, value);
+        return Health.Item.create(thresholds, value, Unit.COUNTER);
     }
 
     protected final Health.Item asDurationItem(Thresholds thresholds, Duration value) {
-        return Health.Item.create(thresholds, value.toMillis());
+        return Health.Item.create(thresholds, value.toMillis(), thresholds.getUnit());
     }
 
 
