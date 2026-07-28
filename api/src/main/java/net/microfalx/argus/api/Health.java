@@ -11,6 +11,8 @@ import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 import static net.microfalx.lang.ArgumentUtils.requireNotEmpty;
 import static net.microfalx.lang.CollectionUtils.immutableCollection;
 import static net.microfalx.lang.CollectionUtils.immutableSet;
+import static net.microfalx.lang.FormatterUtils.formatPercent;
+import static net.microfalx.lang.StringUtils.EMPTY_STRING;
 import static net.microfalx.lang.StringUtils.toIdentifier;
 
 /**
@@ -153,6 +155,24 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
         getGroup(group).update(item);
     }
 
+    /**
+     * Generates the health report, highlighting the group with the lowest score and the item which gives the group
+     * the lowest score out of all groups.
+     *
+     * @return a non-null instance
+     */
+    public String getReport() {
+        Logger logger = Logger.create();
+        Item lowestItem = getLowest().orElse(null);
+        Group lowestGroup = lowestItem != null ? groups.values().stream()
+                .filter(g -> g.getItems().contains(lowestItem))
+                .findFirst().orElse(null) : null;
+        groups.values().stream()
+                .sorted(Comparator.comparingInt(g -> g.order))
+                .forEach(group -> group.report(logger, lowestItem, group == lowestGroup));
+        return logger.getOutput();
+    }
+
     @Getter
     @ToString
     public static class Group implements Nameable {
@@ -227,6 +247,36 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
         public void update(Item item) {
             requireNonNull(item);
             items.add(item);
+        }
+
+        /**
+         * Writes a report for this group to the provided logger.
+         * <p>
+         * The group header is prefixed with {@code *} if {@code isLowest} is {@code true}.
+         * Each item is indented and prefixed with {@code *} if it is the globally lowest item.
+         *
+         * @param logger     the logger to write to
+         * @param lowestItem the item with the lowest score across all groups (may be {@code null})
+         * @param isLowest   {@code true} if this group contains the globally lowest item
+         */
+        void report(Logger logger, Item lowestItem, boolean isLowest) {
+            String lowestSuffix = isLowest ? " (*)" : EMPTY_STRING;
+            logger.info(name + lowestSuffix);
+            logger.increaseIndent();
+            items.forEach(item -> {
+                boolean isLowestItem = item == lowestItem;
+                String description = item.getDescription();
+                String line;
+                String scoreAsString = formatPercent(item.getScore(), 1);
+                if (description != null && !description.isEmpty()) {
+                    line = String.format("%s: %s (%s)", item.getName(), scoreAsString, description);
+                } else {
+                    line = String.format("%s: %s", item.getName(), scoreAsString);
+                }
+                logger.atInfo().bullet().append(line)
+                        .append(isLowestItem ? lowestSuffix : EMPTY_STRING).log();
+            });
+            logger.decreaseIndent();
         }
     }
 
@@ -317,7 +367,7 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
             }
             float percent = NumberUtils.percent(value, maximum);
             float score = thresholds.getScore(percent);
-            String description = String.format("%s (%s of %s)", Unit.PERCENT.format(percent),
+            String description = String.format("%s [%s of %s]", Unit.PERCENT.format(percent),
                     unit.format(value), unit.format(maximum));
             return new Item(thresholds.getName(), score).withDescription(description)
                     .withThresholds(thresholds);

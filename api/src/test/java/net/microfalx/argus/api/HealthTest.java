@@ -162,5 +162,66 @@ class HealthTest {
         assertThatThrownBy(() -> policies.add(Health.Policy.REPORT_IF_ERROR))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
+
+    @Test
+    void getReportIsEmptyWhenNoGroups() {
+        Health health = new Health();
+        assertThat(health.getReport()).isEmpty();
+    }
+
+    @Test
+    void getReportHighlightsLowestGroupAndItem() {
+        Health health = new Health();
+        health.update("Database", "Connections", 4.5f);
+        health.update("Database", "Latency", 3.0f);
+        health.update("Messaging", "Broker", 1.75f);
+
+        String report = health.getReport();
+
+        // The Messaging group has the lowest score, so it should be marked with *
+        assertThat(report).contains("Messaging (*)");
+        // The Broker item has the lowest score overall, so it should be marked with *
+        assertThat(report).doesNotContain("Broker (*)");
+        // Database group is not the lowest, so it should NOT be marked with *
+        assertThat(report).doesNotContain("Database (*)");
+        // Connections and Latency items are not the globally lowest
+        assertThat(report).doesNotContain("Connections (*)");
+        assertThat(report).doesNotContain("Latency (*)");
+        // Groups are sorted by order; Database was added first (order 0), Messaging second (order 10)
+        assertThat(report.indexOf("Database")).isLessThan(report.indexOf("Messaging"));
+    }
+
+    @Test
+    void getReportIncludesDescriptionWhenPresent() {
+        Health health = new Health();
+        Thresholds thresholds = Thresholds.create("Memory", 50f, 80f, Unit.PERCENT);
+        Health.Item item = Health.Item.create(thresholds, 500f, 1000f, Unit.BYTE);
+        health.update("System", item);
+
+        String report = health.getReport();
+
+        // Item has a description, so it should appear in parentheses
+        assertThat(report).contains("Memory:");
+        assertThat(report).containsPattern("Memory: \\d+\\.\\d+% \\(.*\\)");
+    }
+
+    @Test
+    void getReportItemsAreIndentedUnderGroup() {
+        Health health = new Health();
+        health.update("Database", "Connections", 3.5f);
+
+        String report = health.getReport();
+        String[] lines = report.split("\n");
+
+        // The group line should be less indented than the item line
+        String groupLine = java.util.Arrays.stream(lines)
+                .filter(l -> l.contains("Database")).findFirst().orElseThrow();
+        String itemLine = java.util.Arrays.stream(lines)
+                .filter(l -> l.contains("Connections")).findFirst().orElseThrow();
+
+        int groupLeadingSpaces = groupLine.length() - groupLine.stripLeading().length();
+        int itemLeadingSpaces = itemLine.length() - itemLine.stripLeading().length();
+        assertThat(itemLeadingSpaces).isGreaterThan(groupLeadingSpaces);
+    }
 }
 
