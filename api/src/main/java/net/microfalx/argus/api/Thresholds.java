@@ -5,17 +5,19 @@ import lombok.Getter;
 import lombok.ToString;
 import net.microfalx.lang.NamedIdentityAware;
 
-import javax.swing.text.html.Option;
-
 import java.util.Optional;
 
 import static java.util.Optional.ofNullable;
+import static net.microfalx.argus.api.Health.*;
 import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 import static net.microfalx.lang.ArgumentUtils.requireNotEmpty;
 import static net.microfalx.lang.StringUtils.toIdentifier;
 
 /**
  * A pair of thresholds used to calculate scores.
+ * <p>
+ * A lower value generates a high score (close to {@link Health#MAX}) and a higher value
+ * generates a low score (close to {@link Health#MIN}).
  */
 @Getter
 @ToString
@@ -114,7 +116,7 @@ public final class Thresholds extends NamedIdentityAware<String> {
     }
 
     /**
-     * Returns whether the score is calculated in reverse (i.e. lower values are better).
+     * Returns whether the score is calculated in reverse (i.e. higher values are better).
      *
      * @return {@code true} if thresholds are reversed, {@code false} otherwise
      */
@@ -123,7 +125,7 @@ public final class Thresholds extends NamedIdentityAware<String> {
     }
 
     /**
-     * Changes whether the score should be calculated in reverse (i.e. lower values are better).
+     * Changes whether the score should be calculated in reverse (i.e. higher values are better).
      *
      * @param reverse {@code true} to reverse the thresholds, {@code false} otherwise
      * @return a new instance of {@link Thresholds} with the specified reverse setting
@@ -178,13 +180,12 @@ public final class Thresholds extends NamedIdentityAware<String> {
     public Float getMinimum() {
         if (minimum == null) {
             if (getUnit() == Unit.PERCENT) {
-                return 0f;
+                minimum = 0f;
             } else {
-                return (reverse ? error.getValue() : warn.getValue()) / 2;
+                minimum = (reverse ? error.getValue() : warn.getValue()) / 2;
             }
-        } else {
-            return minimum;
         }
+        return minimum;
     }
 
     /**
@@ -196,13 +197,12 @@ public final class Thresholds extends NamedIdentityAware<String> {
     public Float getMaximum() {
         if (maximum == null) {
             if (getUnit() == Unit.PERCENT) {
-                return 100f;
+                maximum = 100f;
             } else {
-                return (reverse ? error.getValue() : warn.getValue()) * 2;
+                maximum = (reverse ? error.getValue() : warn.getValue()) * 2;
             }
-        } else {
-            return maximum;
         }
+        return maximum;
     }
 
     /**
@@ -216,37 +216,29 @@ public final class Thresholds extends NamedIdentityAware<String> {
         float maximum = getMaximum();
         float warnThreshold = warn.getValue();
         float errorThreshold = error.getValue();
-
-        if (warnThreshold == errorThreshold) {
-            return Health.WITH_ISSUES;
-        }
-
-        if (!reverse) {
-            if (value < minimum) return Health.MAX;
-            if (value < warnThreshold) return interpolate(value, minimum, warnThreshold, Health.MAX, Health.WARNING);
-            if (value <= warnThreshold) return Health.WARNING;
-            if (value < errorThreshold)
-                return interpolate(value, warnThreshold, errorThreshold, Health.WARNING, Health.ERROR);
-            if (value <= errorThreshold) return Health.ERROR;
-            if (value < maximum) return interpolate(value, errorThreshold, maximum, Health.ERROR, Health.MIN);
+        if (warnThreshold == errorThreshold) return Health.WITH_ISSUES;
+        if (reverse) {
+            if (value <= minimum) return Health.MIN;
+            if (value < warnThreshold) return interpolate(value, minimum, warnThreshold, Health.MIN, ERROR);
+            if (value <= warnThreshold) return ERROR;
+            if (value < errorThreshold) return interpolate(value, warnThreshold, errorThreshold, ERROR, WARNING);
+            if (value <= errorThreshold) return WARNING;
+            if (value < maximum) return interpolate(value, errorThreshold, maximum, WARNING, Health.MAX);
+            return Health.MAX;
+        } else {
+            if (value <= minimum) return Health.MAX;
+            if (value < warnThreshold) return interpolate(value, minimum, warnThreshold, Health.MAX, WARNING);
+            if (value <= warnThreshold) return WARNING;
+            if (value < errorThreshold) return interpolate(value, warnThreshold, errorThreshold, WARNING, ERROR);
+            if (value <= errorThreshold) return ERROR;
+            if (value < maximum) return interpolate(value, errorThreshold, maximum, ERROR, Health.MIN);
             return Health.MIN;
         }
-
-        if (value < minimum) return Health.MIN;
-        if (value < warnThreshold) return interpolate(value, minimum, warnThreshold, Health.MIN, Health.WARNING);
-        if (value <= warnThreshold) return Health.WARNING;
-        if (value < errorThreshold)
-            return interpolate(value, warnThreshold, errorThreshold, Health.WARNING, Health.ERROR);
-        if (value <= errorThreshold) return Health.ERROR;
-        if (value < maximum) return interpolate(value, errorThreshold, maximum, Health.ERROR, Health.MAX);
-        return Health.MAX;
     }
 
     private static float
     interpolate(float value, float start, float end, float startScore, float endScore) {
-        if (start == end) {
-            return endScore;
-        }
+        if (start == end) return endScore;
         float t = (value - start) / (end - start);
         return Health.normalize(startScore + (endScore - startScore) * t);
     }

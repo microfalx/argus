@@ -1,5 +1,6 @@
 package net.microfalx.argus.api;
 
+import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,6 +34,8 @@ class ThresholdsTest {
     void getScoreWithoutReverseInterpolatesAndClamps() {
         Thresholds thresholds = Thresholds.create("Test", 50f, 100f);
 
+        assertThat(thresholds.getScore(10f)).isEqualTo(Health.MAX);
+        assertThat(thresholds.getScore(30f)).isEqualTo(4.8f);
         assertThat(thresholds.getScore(50f)).isEqualTo(Health.WARNING);
         assertThat(thresholds.getScore(75f)).isEqualTo(3f);
         assertThat(thresholds.getScore(100f)).isEqualTo(Health.ERROR);
@@ -44,9 +47,9 @@ class ThresholdsTest {
     void getScoreWithReverseInterpolatesAndClamps() {
         Thresholds thresholds = Thresholds.create("Test", 50f, 100f).withReverse(true);
 
-        assertThat(thresholds.getScore(100f)).isEqualTo(Health.ERROR);
+        assertThat(thresholds.getScore(100f)).isEqualTo(Health.WARNING);
         assertThat(thresholds.getScore(75f)).isEqualTo(3f);
-        assertThat(thresholds.getScore(50f)).isEqualTo(Health.WARNING);
+        assertThat(thresholds.getScore(50f)).isEqualTo(Health.ERROR);
         assertThat(thresholds.getScore(500f)).isEqualTo(Health.MAX);
         assertThat(thresholds.getScore(-100f)).isEqualTo(Health.MIN);
     }
@@ -55,9 +58,22 @@ class ThresholdsTest {
     void getScoreWithPercentage() {
         Thresholds thresholds = Thresholds.create("Test", 50f, 80f, Unit.PERCENT);
 
-        assertThat(thresholds.getScore(100f)).isEqualTo(Health.ERROR);
-        assertThat(thresholds.getScore(75f)).isEqualTo(3f);
+        assertThat(thresholds.getScore(100f)).isEqualTo(Health.MIN);
+        assertThat(thresholds.getScore(80f)).isEqualTo(Health.ERROR);
+        assertThat(thresholds.getScore(75f)).isEqualTo(2.33f, Offset.offset(0.1f));
         assertThat(thresholds.getScore(50f)).isEqualTo(Health.WARNING);
+        assertThat(thresholds.getScore(500f)).isEqualTo(Health.MIN);
+        assertThat(thresholds.getScore(-100f)).isEqualTo(Health.MAX);
+    }
+
+    @Test
+    void getScoreWithPercentageReversed() {
+        Thresholds thresholds = Thresholds.create("Test", 50f, 80f, Unit.PERCENT).withReverse(true);
+
+        assertThat(thresholds.getScore(100f)).isEqualTo(Health.MAX);
+        assertThat(thresholds.getScore(80f)).isEqualTo(Health.WARNING);
+        assertThat(thresholds.getScore(75f)).isEqualTo(3.66f, Offset.offset(0.1f));
+        assertThat(thresholds.getScore(50f)).isEqualTo(Health.ERROR);
         assertThat(thresholds.getScore(500f)).isEqualTo(Health.MAX);
         assertThat(thresholds.getScore(-100f)).isEqualTo(Health.MIN);
     }

@@ -38,8 +38,8 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
 
     public static final float MIN = 1;
     public static final float MAX = 5;
-    public static final float WARNING = 2;
-    public static final float ERROR = 4;
+    public static final float WARNING = 4;
+    public static final float ERROR = 2;
     public static final float BAD = 1.5f;
     public static final float WITH_ISSUES = 2.5f;
 
