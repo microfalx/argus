@@ -56,6 +56,7 @@
                 </exclusion>
 
             </exclusions>
+
         </dependency>
 
     </dependencies>

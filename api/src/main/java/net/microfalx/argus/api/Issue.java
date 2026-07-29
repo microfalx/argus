@@ -8,8 +8,6 @@ import net.microfalx.lang.*;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
@@ -36,8 +34,6 @@ public class Issue implements Identifiable<String>, Nameable, Descriptable, Clon
     private Severity severity = Severity.MEDIUM;
     private Class<?> throwableClass;
     private boolean failed;
-
-    static final Queue<Issue> ISSUES = new ConcurrentLinkedQueue<>();
 
     public static Issue create(Type type, String name) {
         return new Issue(type, name);
@@ -260,7 +256,7 @@ public class Issue implements Identifiable<String>, Nameable, Descriptable, Clon
      */
     public void register() {
         try {
-            if (!failed) ISSUES.offer(this);
+            if (!failed) IssueService.getInstance().register(this);
         } catch (Exception e) {
             logError(e, "Failed to register issue {}", getName());
         }
@@ -383,7 +379,37 @@ public class Issue implements Identifiable<String>, Nameable, Descriptable, Clon
         /**
          * Corrupted data, duplicates, missing records
          */
-        DATA_INTEGRITY
+        DATA_INTEGRITY,
+
+        /**
+         * Recurring incidents, flaky behavior, intermittent service instability
+         */
+        RELIABILITY,
+
+        /**
+         * Capacity pressure in compute/memory/queues/connections before hard failures
+         */
+        CAPACITY,
+
+        /**
+         * Upstream/downstream or third-party dependency degradation impacting service behavior
+         */
+        DEPENDENCY,
+
+        /**
+         * Circuit-breaker/fallback/retry pressure and other resilience-mechanism related issues
+         */
+        RESILIENCE,
+
+        /**
+         * Sustained latency/SLO degradation observed at service level
+         */
+        LATENCY,
+
+        /**
+         * Throughput drops, processing slowdowns, queue/backlog growth
+         */
+        THROUGHPUT
     }
 
     /**
