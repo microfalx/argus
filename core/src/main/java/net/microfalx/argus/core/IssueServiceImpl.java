@@ -16,7 +16,7 @@ public class IssueServiceImpl extends AbstractService implements IssueService {
     private final Queue<Issue> issues = new ConcurrentLinkedQueue<>();
 
     public static IssueService getInstance() {
-        return Service.load(IssueService.class);
+        return Service.lookup(IssueService.class);
     }
 
     @Override

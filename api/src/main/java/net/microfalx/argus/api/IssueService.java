@@ -10,7 +10,7 @@ import java.util.Collection;
 public interface IssueService extends Service {
 
     static IssueService getInstance() {
-        return Service.load(IssueService.class);
+        return Service.lookup(IssueService.class);
     }
 
     /**

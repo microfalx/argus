@@ -59,6 +59,11 @@
 
         </dependency>
 
+        <dependency>
+            <groupId>net.microfalx.resource</groupId>
+            <artifactId>resource-core</artifactId>
+        </dependency>
+
     </dependencies>
 
 </project>

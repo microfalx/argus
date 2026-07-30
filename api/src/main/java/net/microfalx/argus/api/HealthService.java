@@ -10,7 +10,7 @@ import java.util.Collection;
 public interface HealthService extends Service {
 
     static HealthService getInstance() {
-        return Service.load(HealthService.class);
+        return Service.lookup(HealthService.class);
     }
 
     /**
