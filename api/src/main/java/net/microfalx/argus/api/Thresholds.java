@@ -253,6 +253,18 @@ public final class Thresholds extends NamedIdentityAware<String> {
         }
     }
 
+    /**
+     * Registers the threshold.
+     *
+     * @return self
+     * @see HealthService#register(Thresholds)
+     */
+    public Thresholds register() {
+        HealthService.getInstance().register(this);
+        return this;
+    }
+
+
     private static float
     interpolate(float value, float start, float end, float startScore, float endScore) {
         if (start == end) return endScore;

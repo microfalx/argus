@@ -11,14 +11,14 @@ import net.microfalx.lang.Initializable;
 import net.microfalx.threadpool.Trigger;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 import static net.microfalx.lang.ClassUtils.resolveProviderInstances;
 import static net.microfalx.lang.CollectionUtils.immutableCollection;
+import static net.microfalx.lang.CollectionUtils.immutableSet;
 
 @Slf4j
 public class HealthServiceImpl extends AbstractService implements HealthService {
@@ -26,6 +26,8 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
     private volatile Collection<HealthContributor> contributors = Collections.emptyList();
     private final Collection<HealthContributor> registeredContributors = new CopyOnWriteArraySet<>();
     private final Collection<HealthContributor> classPathContributors = new CopyOnWriteArraySet<>();
+
+    private final Map<String, Thresholds> thresholds = new ConcurrentHashMap<>();
 
     @Getter private volatile Health health = new Health();
 
@@ -46,16 +48,23 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
     }
 
     @Override
-    public Collection<Thresholds> getThresholds() {
-        Collection<Thresholds> thresholds = new ArrayList<>();
+    public Set<Thresholds> getThresholds() {
+        Set<Thresholds> thresholds = new HashSet<>();
         for (HealthContributor contributor : contributors) {
             thresholds.addAll(contributor.getThresholds());
         }
-        return immutableCollection(thresholds);
+        return immutableSet(thresholds);
     }
 
     @Override
-    public void registerContributor(HealthContributor contributor) {
+    public void register(Thresholds threshold) {
+        requireNonNull(threshold);
+        thresholds.put(threshold.getName(), threshold);
+        LOGGER.debug("Register health threshold - {}", threshold.getName());
+    }
+
+    @Override
+    public void register(HealthContributor contributor) {
         requireNonNull(contributor);
         initializeContributor(contributor);
         registeredContributors.add(contributor);
@@ -64,10 +73,11 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
     }
 
     @Override
-    public void unregisterContributor(HealthContributor contributor) {
+    public void unregister(HealthContributor contributor) {
         requireNonNull(contributor);
         registeredContributors.remove(contributor);
         LOGGER.debug("Unregister health contributor - {}", ClassUtils.getName(contributor));
+        updateContributors();
     }
 
     private void discoverHealthContributors() {

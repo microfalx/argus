@@ -56,7 +56,7 @@ class HealthServiceImplTest {
     @Test
     void startSchedulesMaintenanceAndScrapeTasksOnThreadPool() {
         RecordingContributor contributor = new RecordingContributor();
-        healthService.registerContributor(contributor);
+        healthService.register(contributor);
 
         healthService.maintenance();
         healthService.scrape();
@@ -70,8 +70,8 @@ class HealthServiceImplTest {
     void maintenanceInvokesUpdateStatsForAllContributors() {
         RecordingContributor first = new RecordingContributor();
         RecordingContributor second = new RecordingContributor();
-        healthService.registerContributor(first);
-        healthService.registerContributor(second);
+        healthService.register(first);
+        healthService.register(second);
 
         healthService.maintenance();
 
@@ -84,7 +84,7 @@ class HealthServiceImplTest {
     @Test
     void scrapeInvokesContributorsAndUpdatesHealth() {
         RecordingContributor contributor = new RecordingContributor();
-        healthService.registerContributor(contributor);
+        healthService.register(contributor);
 
         healthService.scrape();
 

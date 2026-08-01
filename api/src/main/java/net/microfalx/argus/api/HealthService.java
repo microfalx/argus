@@ -3,6 +3,7 @@ package net.microfalx.argus.api;
 import net.microfalx.lang.service.Service;
 
 import java.util.Collection;
+import java.util.Set;
 
 /**
  * A service responsible to calculate the health of the service.
@@ -24,7 +25,7 @@ public interface HealthService extends Service {
      * Returns registered health contributors.
      * <p>
      * The complete list is based on contributors discovered from class path and those registered
-     * with {@link #registerContributor(HealthContributor)}.
+     * with {@link #register(HealthContributor)}.
      *
      * @return a non-null collection
      */
@@ -35,19 +36,26 @@ public interface HealthService extends Service {
      *
      * @return a non-null collection
      */
-    Collection<Thresholds> getThresholds();
+    Set<Thresholds> getThresholds();
+
+    /**
+     * Registers a  threshold.
+     *
+     * @param threshold the threshold
+     */
+    void register(Thresholds threshold);
 
     /**
      * Registers a new contributor.
      *
      * @param contributor the contributor
      */
-    void registerContributor(HealthContributor contributor);
+    void register(HealthContributor contributor);
 
     /**
      * Unregisters a new contributor.
      *
      * @param contributor the contributor
      */
-    void unregisterContributor(HealthContributor contributor);
+    void unregister(HealthContributor contributor);
 }
