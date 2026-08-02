@@ -27,10 +27,10 @@ import java.util.List;
 public class VirtualMachineHealthContributor extends AbstractHealthContributor implements Initializable {
 
     private final static String JVM_GROUP = "JVM";
-    private final static String MEMORY_GROUP = JVM_GROUP + " / Memory";
-    private final static String GC_GROUP = JVM_GROUP + " / GC";
-    private final static String FILE_SYSTEM_GROUP = JVM_GROUP + " / File System";
-    private final static String OTHER_GROUP = JVM_GROUP + " / Other";
+    private final static String MEMORY_GROUP = "Memory";
+    private final static String GC_GROUP = "GC";
+    private final static String FILE_SYSTEM_GROUP = "File System";
+    private final static String OTHER_GROUP = "Other";
 
     private final Duration longAverage = Duration.ofHours(1);
 
@@ -64,10 +64,11 @@ public class VirtualMachineHealthContributor extends AbstractHealthContributor i
     public void update(Health health) {
         VirtualMachineMetrics virtualMachineMetrics = VirtualMachineMetrics.get();
         VirtualMachine virtualMachine = virtualMachineMetrics.getLast();
-        updateMemory(health, virtualMachineMetrics, virtualMachine);
-        updateGc(health, virtualMachineMetrics);
-        updateFileSystem(health);
-        updateOther(health, virtualMachineMetrics, virtualMachine);
+        Health.Group jvmGroup = health.getGroup(JVM_GROUP);
+        updateMemory(jvmGroup, virtualMachineMetrics, virtualMachine);
+        updateGc(jvmGroup, virtualMachineMetrics);
+        updateFileSystem(jvmGroup);
+        updateOther(jvmGroup, virtualMachineMetrics, virtualMachine);
     }
 
     @Override
@@ -83,35 +84,39 @@ public class VirtualMachineHealthContributor extends AbstractHealthContributor i
                 OTHER_THREADS, OTHER_FILE_DESCRIPTORS);
     }
 
-    private void updateMemory(Health health, VirtualMachineMetrics metrics, VirtualMachine virtualMachine) {
-        health.update(asPercentageItem(MEMORY_EDEN, metrics.getAverageEdenMemory(), virtualMachine.getEdenMemoryPool()));
-        health.update(asPercentageItem(MEMORY_TENURED, metrics.getAverageTenuredMemory(), virtualMachine.getTenuredMemoryPool()));
-        health.update(asPercentageItem(MEMORY_METASPACE, metrics.getAverageMetaspaceMemory(), virtualMachine.getMetapaceMemoryPool()));
-        health.update(asPercentageItem(MEMORY_BUFFERS, virtualMachine.getBufferPools(BufferPool.Type.DIRECT), "Direct"));
-        health.update(asPercentageItem(MEMORY_BUFFERS, virtualMachine.getBufferPools(BufferPool.Type.MAPPED), "Mapped"));
+    private void updateMemory(Health.Group group, VirtualMachineMetrics metrics, VirtualMachine virtualMachine) {
+        group = group.getGroup(MEMORY_GROUP);
+        group.update(asPercentageItem(MEMORY_EDEN, metrics.getAverageEdenMemory(), virtualMachine.getEdenMemoryPool()));
+        group.update(asPercentageItem(MEMORY_TENURED, metrics.getAverageTenuredMemory(), virtualMachine.getTenuredMemoryPool()));
+        group.update(asPercentageItem(MEMORY_METASPACE, metrics.getAverageMetaspaceMemory(), virtualMachine.getMetapaceMemoryPool()));
+        group.update(asPercentageItem(MEMORY_BUFFERS, virtualMachine.getBufferPools(BufferPool.Type.DIRECT), "Direct"));
+        group.update(asPercentageItem(MEMORY_BUFFERS, virtualMachine.getBufferPools(BufferPool.Type.MAPPED), "Mapped"));
     }
 
-    private void updateFileSystem(Health health) {
-        health.update(asPercentageItem(FILE_SYSTEM_HOME, JvmUtils.getHomeDirectory()));
-        health.update(asPercentageItem(FILE_SYSTEM_VARIABLE, JvmUtils.getVariableDirectory()));
-        health.update(asPercentageItem(FILE_SYSTEM_TEMPORARY, JvmUtils.getTemporaryDirectory()));
+    private void updateFileSystem(Health.Group group) {
+        group = group.getGroup(FILE_SYSTEM_GROUP);
+        group.update(asPercentageItem(FILE_SYSTEM_HOME, JvmUtils.getHomeDirectory()));
+        group.update(asPercentageItem(FILE_SYSTEM_VARIABLE, JvmUtils.getVariableDirectory()));
+        group.update(asPercentageItem(FILE_SYSTEM_TEMPORARY, JvmUtils.getTemporaryDirectory()));
     }
 
-    private void updateOther(Health health, VirtualMachineMetrics metrics, VirtualMachine virtualMachine) {
+    private void updateOther(Health.Group group, VirtualMachineMetrics metrics, VirtualMachine virtualMachine) {
+        group = group.getGroup(OTHER_GROUP);
         synchronized (lock) {
             int threads = virtualMachine.getProcess().getThreads();
             threadsSummary.add(threads);
-            health.update(asCounterItem(OTHER_THREADS, metrics.getAverageThreads()));
+            group.update(asCounterItem(OTHER_THREADS, metrics.getAverageThreads()));
 
             int fileDescriptors = virtualMachine.getProcess().getFileDescriptors();
             fileDescriptorsSummary.add(fileDescriptors);
-            health.update(asCounterItem(OTHER_FILE_DESCRIPTORS, fileDescriptors));
+            group.update(asCounterItem(OTHER_FILE_DESCRIPTORS, fileDescriptors));
         }
     }
 
-    private void updateGc(Health health, VirtualMachineMetrics metrics) {
-        health.update(asDurationItem(GC_EDEN, metrics.getAverageGcEdenDuration()));
-        health.update(asDurationItem(GC_TENURED, metrics.getAverageGcTenuredDuration()));
+    private void updateGc(Health.Group group, VirtualMachineMetrics metrics) {
+        group = group.getGroup(GC_GROUP);
+        group.update(asDurationItem(GC_EDEN, metrics.getAverageGcEdenDuration()));
+        group.update(asDurationItem(GC_TENURED, metrics.getAverageGcTenuredDuration()));
     }
 
     private Health.Item asPercentageItem(Thresholds thresholds, long used, MemoryPool memoryPool) {

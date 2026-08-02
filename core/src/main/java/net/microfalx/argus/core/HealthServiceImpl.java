@@ -3,6 +3,8 @@ package net.microfalx.argus.core;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.microfalx.argus.api.*;
+import net.microfalx.jvm.ServerMetrics;
+import net.microfalx.jvm.VirtualMachineMetrics;
 import net.microfalx.lang.ClassUtils;
 import net.microfalx.lang.Initializable;
 import net.microfalx.metrics.Batch;
@@ -103,6 +105,7 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
         discoverHealthContributors();
         updateContributors();
         initializeStore();
+        initializeMetrics();
     }
 
     private void discoverHealthContributors() {
@@ -168,6 +171,11 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
 
     private void initializeStore() {
         seriesStore = memory ? SeriesStore.memory() : SeriesStore.disk("health");
+    }
+
+    private void initializeMetrics() {
+        VirtualMachineMetrics.get().setExecutor(getThreadPool());
+        ServerMetrics.get().setExecutor(getThreadPool());
     }
 
     private class MaintenanceTask implements Runnable {

@@ -118,10 +118,10 @@ class HealthServiceImplTest {
         }
         String report = healthService.getHealth(Resource.Type.SERVICE).getReport();
         Assertions.assertThat(report).contains("Total:")
-                .contains("JVM / Memory")
+                .contains("JVM").contains("Memory")
                 .contains("Eden:").contains("Metaspace:")
-                .contains("JVM / GC")
-                .contains("JVM / Other");
+                .contains("GC")
+                .contains("Other");
     }
 
     private void scrape() {

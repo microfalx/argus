@@ -12,7 +12,6 @@ import static net.microfalx.lang.ArgumentUtils.requireNotEmpty;
 import static net.microfalx.lang.CollectionUtils.immutableCollection;
 import static net.microfalx.lang.CollectionUtils.immutableSet;
 import static net.microfalx.lang.FormatterUtils.formatNumber;
-import static net.microfalx.lang.FormatterUtils.formatPercent;
 import static net.microfalx.lang.StringUtils.EMPTY_STRING;
 import static net.microfalx.lang.StringUtils.toIdentifier;
 
@@ -46,7 +45,7 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
     public static final float BAD = 1.5f;
     public static final float WITH_ISSUES = 2.5f;
 
-    private ZonedDateTime createdAt = ZonedDateTime.now();
+    private final ZonedDateTime createdAt = ZonedDateTime.now();
     private ZonedDateTime modifiedAt = createdAt;
 
     private final Map<String, Group> groups = new LinkedHashMap<>();
@@ -61,14 +60,6 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
         return Math.max(Health.MIN, Math.min(Health.MAX, value));
     }
 
-    public ZonedDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    @Override
-    public ZonedDateTime getModifiedAt() {
-        return modifiedAt;
-    }
 
     /**
      * Returns the groups part of this score.
@@ -109,7 +100,7 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
      * @return an optional item
      */
     public Optional<Item> getLowest() {
-        return groups.values().stream().flatMap(group -> group.items.stream())
+        return groups.values().stream().flatMap(group -> group.getAllItems().stream())
                 .min(Comparator.comparing(Item::getScore));
     }
 
@@ -170,7 +161,7 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
                 .findFirst().orElse(null) : null;
         groups.values().stream()
                 .sorted(Comparator.comparingInt(g -> g.order))
-                .forEach(group -> group.report(logger, lowestItem, group == lowestGroup));
+                .forEach(group -> group.report(logger, lowestItem, group == lowestGroup, 1));
         return logger.getOutput();
     }
 
@@ -180,6 +171,7 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
 
         private final String name;
         private final Collection<Item> items = new ArrayList<>();
+        private final Map<String, Group> groups = new LinkedHashMap<>();
 
         /**
          * Holds the order of the group within the score.
@@ -202,12 +194,48 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
         }
 
         /**
+         * Returns the subgroups of this group.
+         *
+         * @return a non-null instance
+         */
+        public Collection<Group> getGroups() {
+            return immutableCollection(groups.values());
+        }
+
+        /**
+         * Returns a subgroup by its name.
+         *
+         * @param name the name of the subgroup
+         * @return a non-null instance
+         */
+        public Group getGroup(String name) {
+            requireNotEmpty(name);
+            return groups.computeIfAbsent(toIdentifier(name), s -> {
+                Group group = new Group(name);
+                group.order = groups.size() * 10;
+                return group;
+            });
+        }
+
+        /**
          * Returns the  items of this group.
          *
          * @return a non-null instance
          */
         public Collection<Item> getItems() {
             return immutableCollection(items);
+        }
+
+        /**
+         * Returns the items of this group and all its subgroups.
+         *
+         * @return a non-null instance
+         */
+        public Collection<Item> getAllItems() {
+            Collection<Item> allItems = new ArrayList<>(items);
+            groups.values().forEach(group -> allItems.addAll(group.getAllItems()));
+            allItems.addAll(items);
+            return immutableCollection(allItems);
         }
 
         /**
@@ -260,10 +288,20 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
          * @param lowestItem the item with the lowest score across all groups (may be {@code null})
          * @param isLowest   {@code true} if this group contains the globally lowest item
          */
-        void report(Logger logger, Item lowestItem, boolean isLowest) {
+        void report(Logger logger, Item lowestItem, boolean isLowest, int depth) {
             String lowestSuffix = isLowest ? " (*)" : EMPTY_STRING;
-            logger.info(name + lowestSuffix);
+            String finalName = name + lowestSuffix;
+            if (depth > 1) {
+                logger.atInfo().bullet().append(finalName).log();
+            } else {
+                logger.info(finalName);
+            }
             logger.increaseIndent();
+            groups.values().stream()
+                    .sorted(Comparator.comparingInt(g -> g.order))
+                    .forEach(group -> {
+                        group.report(logger, lowestItem, isLowest, depth + 1);
+                    });
             items.forEach(item -> {
                 boolean isLowestItem = item == lowestItem;
                 String description = item.getDescription();
@@ -274,8 +312,13 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
                 } else {
                     line = String.format("%s: %s", item.getName(), scoreAsString);
                 }
-                logger.atInfo().bullet().append(line)
-                        .append(isLowestItem ? lowestSuffix : EMPTY_STRING).log();
+                Logger.Entry bullet;
+                if (depth > 1) {
+                    bullet = logger.atInfo().square();
+                } else {
+                    bullet = logger.atInfo().bullet();
+                }
+                bullet.append(line).append(isLowestItem ? lowestSuffix : EMPTY_STRING).log();
             });
             logger.decreaseIndent();
         }

@@ -1,5 +1,6 @@
 package net.microfalx.argus.api;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
@@ -190,6 +191,19 @@ class HealthTest {
         // Groups are sorted by order; Database was added first (order 0), Messaging second (order 10)
         assertThat(report.indexOf("Database")).isLessThan(report.indexOf("Messaging"));
     }
+
+    @Test
+    void getReportWithSubgroups() {
+        Health health = new Health();
+        health.update("Database", "Connections", 4.5f);
+        health.update("Database", "Latency", 3.0f);
+        health.update("Messaging", "Broker", 1.75f);
+        health.getGroup("JVM").getGroup("Memory").update("Heap", 2.5f);
+
+        String report = health.getReport();
+        Assertions.assertThat(report).contains("Broker: 1.8 (*)").contains("Heap: 2.5");
+    }
+
 
     @Test
     void getReportIncludesDescriptionWhenPresent() {
