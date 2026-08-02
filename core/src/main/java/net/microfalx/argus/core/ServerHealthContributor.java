@@ -1,19 +1,41 @@
 package net.microfalx.argus.core;
 
 import net.microfalx.argus.api.Health;
+import net.microfalx.argus.api.Resource;
 import net.microfalx.argus.api.Thresholds;
 import net.microfalx.argus.api.Unit;
 import net.microfalx.jvm.ServerMetrics;
+import net.microfalx.jvm.VirtualMachineMetrics;
 import net.microfalx.lang.annotation.Provider;
+import net.microfalx.lang.annotation.Tag;
+import net.microfalx.metrics.Batch;
+import net.microfalx.metrics.Metric;
 
 import java.util.Collection;
 import java.util.List;
 
 @SuppressWarnings("FieldMayBeFinal")
 @Provider
+@Tag("server")
 public class ServerHealthContributor extends AbstractHealthContributor {
 
     private final static String CPU_GROUP = "CPU";
+
+    @Override
+    public String getName() {
+        return "Server";
+    }
+
+    @Override
+    public boolean supports(Resource.Type type) {
+        return type == Resource.Type.SERVER;
+    }
+
+    @Override
+    public void update(Batch batch) {
+        Health health = getHealth(Resource.Type.SERVER);
+        batch.add(SCORE_METRIC, health.getScore());
+    }
 
     @Override
     public void update(Health health) {
@@ -39,4 +61,6 @@ public class ServerHealthContributor extends AbstractHealthContributor {
     private static volatile Thresholds CPU_SYSTEM = Thresholds.create("System", 5f, 15f, Unit.PERCENT).withId("server.cpu.system").withGroup(CPU_GROUP);
     private static volatile Thresholds CPU_NICE = Thresholds.create("Nice", 85f, 95f, Unit.PERCENT).withId("server.cpu.total").withGroup(CPU_GROUP);
     private static volatile Thresholds CPU_IO_WAIT = Thresholds.create("I/O Wait", 5f, 15f, Unit.PERCENT).withId("server.cpu.total").withGroup(CPU_GROUP);
+
+    public static final Metric SCORE_METRIC = Metric.get(ServerMetrics.METRIC_PREFIX + "score").withGroup("Health").withDisplayName("Server Score");
 }

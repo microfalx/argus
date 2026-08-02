@@ -1,9 +1,6 @@
 package net.microfalx.argus.core;
 
-import net.microfalx.argus.api.Health;
-import net.microfalx.argus.api.HealthContributor;
-import net.microfalx.argus.api.Thresholds;
-import net.microfalx.argus.api.Unit;
+import net.microfalx.argus.api.*;
 
 import java.io.File;
 import java.time.Duration;
@@ -11,9 +8,14 @@ import java.time.Duration;
 /**
  * Base class for all health contributors.
  */
-public abstract class AbstractHealthContributor implements HealthContributor {
+public abstract class AbstractHealthContributor implements HealthContributor, HealthProvider {
 
     protected final Object lock = new Object();
+
+    @Override
+    public final Health getHealth(Resource.Type type) {
+        return HealthService.getInstance().getHealth(type);
+    }
 
     protected final Health.Item asPercentageItem(Thresholds thresholds, float value) {
         return Health.Item.create(thresholds, value, Unit.PERCENT);

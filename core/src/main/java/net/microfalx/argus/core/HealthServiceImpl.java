@@ -2,12 +2,11 @@ package net.microfalx.argus.core;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.microfalx.argus.api.Health;
-import net.microfalx.argus.api.HealthContributor;
-import net.microfalx.argus.api.HealthService;
-import net.microfalx.argus.api.Thresholds;
+import net.microfalx.argus.api.*;
 import net.microfalx.lang.ClassUtils;
 import net.microfalx.lang.Initializable;
+import net.microfalx.metrics.Batch;
+import net.microfalx.metrics.SeriesStore;
 import net.microfalx.threadpool.Trigger;
 
 import java.time.Duration;
@@ -15,6 +14,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+import static java.lang.System.currentTimeMillis;
+import static net.microfalx.jvm.VirtualMachineUtils.METRICS_METRICS;
 import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 import static net.microfalx.lang.ClassUtils.resolveProviderInstances;
 import static net.microfalx.lang.CollectionUtils.immutableCollection;
@@ -28,13 +29,30 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
     private final Collection<HealthContributor> classPathContributors = new CopyOnWriteArraySet<>();
 
     private final Map<String, Thresholds> thresholds = new ConcurrentHashMap<>();
+    private volatile boolean memory = true;
+    private volatile SeriesStore seriesStore;
 
-    @Getter private volatile Health health = new Health();
+    @Getter private final Map<Resource.Type, Health> healths = new ConcurrentHashMap<>();
 
     @Override
-    public void initialize(Object... context) {
-        discoverHealthContributors();
-        updateContributors();
+    public SeriesStore getStore() {
+        return seriesStore;
+    }
+
+    @Override
+    public Health getHealth(Resource.Type type) {
+        requireNonNull(type);
+        return healths.computeIfAbsent(type, t -> new Health());
+    }
+
+    /**
+     * Changes the location of the store metrics.
+     *
+     * @param memory {@code true} to store in memory, {@code false} to store on disk
+     */
+    public void setMemory(boolean memory) {
+        this.memory = memory;
+        initializeStore();
     }
 
     @Override
@@ -80,6 +98,13 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
         updateContributors();
     }
 
+    @Override
+    public void initialize(Object... context) {
+        discoverHealthContributors();
+        updateContributors();
+        initializeStore();
+    }
+
     private void discoverHealthContributors() {
         LOGGER.info("Discover health contributors");
         for (HealthContributor contributor : resolveProviderInstances(HealthContributor.class)) {
@@ -99,18 +124,34 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
     private void registerTasks() {
         getThreadPool().schedule(new MaintenanceTask(), Trigger.fixedDelay(Duration.ofMinutes(15)));
         getThreadPool().schedule(new ScrapeTask(), Trigger.fixedDelay(Duration.ofSeconds(30)));
+        getThreadPool().schedule(this::updateMetrics, Trigger.fixedDelay(Duration.ofSeconds(10)));
     }
 
     void maintenance() {
         updateContributorsStats();
     }
 
-    void scrape() {
-        Health nextHealth = new Health();
-        for (HealthContributor contributor : contributors) {
-            contributor.update(nextHealth);
+    void updateHealth() {
+        for (Resource.Type type : Resource.Type.values()) {
+            Health nextHealth = new Health();
+            for (HealthContributor contributor : contributors) {
+                if (!contributor.supports(type)) continue;
+                METRICS_METRICS.time("Scrape Health " + contributor.getName(), (t) -> contributor.update(nextHealth));
+            }
+            this.healths.put(type, nextHealth);
         }
-        this.health = nextHealth;
+    }
+
+    void updateMetrics() {
+        Batch batch = Batch.create(currentTimeMillis());
+        METRICS_METRICS.time("Scrape Health", t -> updateMetrics(batch));
+        METRICS_METRICS.time("Store Health", t -> seriesStore.add(batch));
+    }
+
+    private void updateMetrics(Batch batch) {
+        for (HealthContributor contributor : contributors) {
+            contributor.update(batch);
+        }
     }
 
     private void updateContributorsStats() {
@@ -125,6 +166,10 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
         }
     }
 
+    private void initializeStore() {
+        seriesStore = memory ? SeriesStore.memory() : SeriesStore.disk("health");
+    }
+
     private class MaintenanceTask implements Runnable {
         @Override
         public void run() {
@@ -133,9 +178,11 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
     }
 
     private class ScrapeTask implements Runnable {
+
         @Override
         public void run() {
-            scrape();
+            updateHealth();
+            updateMetrics();
         }
     }
 }

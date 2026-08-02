@@ -1,11 +1,9 @@
 package net.microfalx.argus.core;
 
-import net.microfalx.argus.api.Health;
-import net.microfalx.argus.api.HealthContributor;
-import net.microfalx.argus.api.HealthService;
-import net.microfalx.argus.api.Thresholds;
+import net.microfalx.argus.api.*;
 import net.microfalx.jvm.ServerMetrics;
 import net.microfalx.jvm.VirtualMachineMetrics;
+import net.microfalx.metrics.Metric;
 import net.microfalx.threadpool.ThreadPool;
 import net.microfalx.threadpool.Trigger;
 import org.assertj.core.api.Assertions;
@@ -37,6 +35,7 @@ class HealthServiceImplTest {
         healthService = new HealthServiceImpl();
         healthService.setThreadPool(threadPool);
         healthService.initialize();
+        healthService.setMemory(true);
         healthService.start();
 
         scrape();
@@ -49,8 +48,14 @@ class HealthServiceImplTest {
     }
 
     @Test
+    void getStore() {
+        HealthService instance = HealthService.getInstance();
+        assertNotNull(instance.getStore());
+    }
+
+    @Test
     void checkRegisteredTasks() {
-        verify(threadPool, times(2)).schedule(any(Runnable.class), any(Trigger.class));
+        verify(threadPool, times(3)).schedule(any(Runnable.class), any(Trigger.class));
     }
 
     @Test
@@ -59,8 +64,7 @@ class HealthServiceImplTest {
         healthService.register(contributor);
 
         healthService.maintenance();
-        healthService.scrape();
-
+        healthService.updateHealth();
 
         assertEquals(1, contributor.updateStatsCount.get());
         assertEquals(1, contributor.updateCount.get());
@@ -86,20 +90,33 @@ class HealthServiceImplTest {
         RecordingContributor contributor = new RecordingContributor();
         healthService.register(contributor);
 
-        healthService.scrape();
+        healthService.updateHealth();
 
         assertEquals(1, contributor.updateCount.get());
-        assertTrue(healthService.getHealth().getGroup("Test Group").getItems().stream()
+        assertTrue(healthService.getHealth(Resource.Type.SERVICE)
+                .getGroup("Test Group").getItems().stream()
                 .anyMatch(item -> "Test Item".equals(item.getName())));
+    }
+
+    @Test
+    void scrapeInvokesContributorsAndUpdatesMetrics() {
+        RecordingContributor contributor = new RecordingContributor();
+        healthService.register(contributor);
+
+        healthService.updateMetrics();
+
+        assertEquals(2, healthService.getStore().getMetrics().size());
+        assertEquals(1, healthService.getStore().get(Metric.get("jvm.score")).getCount());
+        assertEquals(1, healthService.getStore().get(Metric.get("server.score")).getCount());
     }
 
     @Test
     void scrapeAndReport() {
         for (int i = 0; i < 5; i++) {
-            healthService.scrape();
+            healthService.updateHealth();
             scrape();
         }
-        String report = healthService.getHealth().getReport();
+        String report = healthService.getHealth(Resource.Type.SERVICE).getReport();
         Assertions.assertThat(report).contains("Total:")
                 .contains("JVM / Memory")
                 .contains("Eden:").contains("Metaspace:")
@@ -116,6 +133,16 @@ class HealthServiceImplTest {
 
         private final AtomicInteger updateCount = new AtomicInteger();
         private final AtomicInteger updateStatsCount = new AtomicInteger();
+
+        @Override
+        public String getName() {
+            return "Test";
+        }
+
+        @Override
+        public boolean supports(Resource.Type type) {
+            return true;
+        }
 
         @Override
         public void update(Health health) {

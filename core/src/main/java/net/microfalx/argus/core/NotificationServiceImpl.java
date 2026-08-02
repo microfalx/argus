@@ -66,7 +66,7 @@ public class NotificationServiceImpl extends AbstractService implements Notifica
     }
 
     private void discoverListeners() {
-        LOGGER.info("Discover health contributors");
+        LOGGER.info("Discover notification listeners");
         for (NotificationListener listener : resolveProviderInstances(NotificationListener.class)) {
             LOGGER.debug(" - {}", ClassUtils.getName(listener));
             initializeListener(listener);
@@ -86,4 +86,5 @@ public class NotificationServiceImpl extends AbstractService implements Notifica
             ((Initializable) listener).initialize();
         }
     }
+
 }

@@ -1,6 +1,7 @@
 package net.microfalx.argus.core;
 
 import net.microfalx.argus.api.Health;
+import net.microfalx.argus.api.Resource;
 import net.microfalx.argus.api.Thresholds;
 import net.microfalx.argus.api.Unit;
 import net.microfalx.jvm.VirtualMachineMetrics;
@@ -10,6 +11,9 @@ import net.microfalx.jvm.model.VirtualMachine;
 import net.microfalx.lang.Initializable;
 import net.microfalx.lang.JvmUtils;
 import net.microfalx.lang.annotation.Provider;
+import net.microfalx.lang.annotation.Tag;
+import net.microfalx.metrics.Batch;
+import net.microfalx.metrics.Metric;
 import net.microfalx.metrics.statistics.MutableStatisticalSummary;
 import net.microfalx.metrics.statistics.TimeWindowStatisticalSummary;
 
@@ -19,6 +23,7 @@ import java.util.List;
 
 @SuppressWarnings("FieldMayBeFinal")
 @Provider
+@Tag("jvm")
 public class VirtualMachineHealthContributor extends AbstractHealthContributor implements Initializable {
 
     private final static String JVM_GROUP = "JVM";
@@ -31,6 +36,11 @@ public class VirtualMachineHealthContributor extends AbstractHealthContributor i
 
     private final MutableStatisticalSummary threadsSummary = new TimeWindowStatisticalSummary(longAverage);
     private final MutableStatisticalSummary fileDescriptorsSummary = new TimeWindowStatisticalSummary(longAverage);
+
+    @Override
+    public String getName() {
+        return "JVM";
+    }
 
     @SuppressWarnings("NonAtomicOperationOnVolatileField")
     @Override
@@ -46,6 +56,11 @@ public class VirtualMachineHealthContributor extends AbstractHealthContributor i
     }
 
     @Override
+    public boolean supports(Resource.Type type) {
+        return type == Resource.Type.SERVICE;
+    }
+
+    @Override
     public void update(Health health) {
         VirtualMachineMetrics virtualMachineMetrics = VirtualMachineMetrics.get();
         VirtualMachine virtualMachine = virtualMachineMetrics.getLast();
@@ -53,6 +68,12 @@ public class VirtualMachineHealthContributor extends AbstractHealthContributor i
         updateGc(health, virtualMachineMetrics);
         updateFileSystem(health);
         updateOther(health, virtualMachineMetrics, virtualMachine);
+    }
+
+    @Override
+    public void update(Batch batch) {
+        Health health = getHealth(Resource.Type.SERVICE);
+        batch.add(SCORE_METRIC, health.getScore());
     }
 
     @Override
@@ -119,4 +140,6 @@ public class VirtualMachineHealthContributor extends AbstractHealthContributor i
 
     private static volatile Thresholds OTHER_THREADS = Thresholds.create("Threads", 100f, 200f, Unit.COUNTER).withId("jvm.threads").withGroup(OTHER_GROUP);
     private static volatile Thresholds OTHER_FILE_DESCRIPTORS = Thresholds.create("File Descriptors", 500f, 1000f, Unit.COUNTER).withId("jvm.threads").withGroup(OTHER_GROUP);
+
+    public static final Metric SCORE_METRIC = Metric.get(VirtualMachineMetrics.METRIC_PREFIX + "score").withGroup("Health").withDisplayName("JVM Score");
 }

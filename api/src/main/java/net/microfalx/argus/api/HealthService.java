@@ -1,6 +1,7 @@
 package net.microfalx.argus.api;
 
 import net.microfalx.lang.service.Service;
+import net.microfalx.metrics.SeriesStore;
 
 import java.util.Collection;
 import java.util.Set;
@@ -8,18 +9,25 @@ import java.util.Set;
 /**
  * A service responsible to calculate the health of the service.
  */
-public interface HealthService extends Service {
+public interface HealthService extends Service, HealthProvider {
 
     static HealthService getInstance() {
         return Service.lookup(HealthService.class);
     }
 
     /**
-     * Returns the last calculated score.
+     * Returns the metrics store for health related metrics.
      *
      * @return a non-null instance
      */
-    Health getHealth();
+    SeriesStore getStore();
+
+    /**
+     * Returns the last calculated score for a given resource type.
+     *
+     * @return a non-null instance
+     */
+    Health getHealth(Resource.Type type);
 
     /**
      * Returns registered health contributors.
