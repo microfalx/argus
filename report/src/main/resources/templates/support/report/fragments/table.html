@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="code" th:remove="tag">
+    <script>
+        $( document ).ready(function() {
+           $('.datatable').DataTable({
+               "order": [],
+                scrollX: true,
+                autoWidth: false
+           });
+        });
+    </script>
+</div>
+
+</body>
+</html>

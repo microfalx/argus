@@ -1,0 +1,29 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org" th:attr="data-bs-theme=${theme}">
+<head th:replace="~{fragments/page :: header}"></head>
+<body>
+
+<th:block th:if="${report.hasNavigation()}">
+    <div class="page">
+        <div class="page-wrapper" style="margin-left: 18rem">
+            <div th:replace="~{fragments/page :: navigation}"></div>
+            <div th:replace="~{fragments/page :: content}"></div>
+        </div>
+    </div>
+</th:block>
+
+<th:block th:unless="${report.hasNavigation()}">
+    <div th:replace="~{fragments/page :: content}"></div>
+</th:block>
+
+<button type="button" class="btn btn-secondary btn-floating" id="btn-back-to-top"><i class="fas fa-arrow-up"></i></button>
+<th:block th:if="${report.isDynamic()}">
+    <div th:replace="~{fragments/page :: code}"></div>
+    <div th:replace="~{fragments/chart :: code}"></div>
+    <div th:replace="~{fragments/table :: code}"></div>
+    <th:block th:each="fragmentTemplate : ${fragmentTemplates}">
+        <div th:replace="~{${fragmentTemplate} :: code}"></div>
+    </th:block>
+</th:block>
+</body>
+</html>
