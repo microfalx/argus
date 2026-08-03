@@ -14,6 +14,30 @@ public interface IssueService extends Service {
     }
 
     /**
+     * Returns registered notification listeners.
+     * <p>
+     * The complete list is based on listeners discovered from class path and those registered
+     * with {@link #register(IssueListener)} .
+     *
+     * @return a non-null collection
+     */
+    Collection<IssueListener> getListeners();
+
+    /**
+     * Registers a listener.
+     *
+     * @param listener the listener
+     */
+    void register(IssueListener listener);
+
+    /**
+     * Unregisters a listener.
+     *
+     * @param listener the listener
+     */
+    void unregister(IssueListener listener);
+
+    /**
      * Returns pending issues.
      *
      * @return a non-null instance
@@ -21,9 +45,23 @@ public interface IssueService extends Service {
     Collection<Issue> getPendingIssues();
 
     /**
+     * Returns pending alerts.
+     *
+     * @return a non-null instance
+     */
+    Collection<Alert> getPendingAlerts();
+
+    /**
      * Registers a new issue.
      *
      * @param issue the issue
      */
     void register(Issue issue);
+
+    /**
+     * Registers a new alert.
+     *
+     * @param alert the alert
+     */
+    void register(Alert alert);
 }

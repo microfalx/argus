@@ -10,6 +10,21 @@ import java.util.List;
 public class IssueServiceImpl extends AbstractService implements IssueService {
 
     @Override
+    public Collection<IssueListener> getListeners() {
+        return List.of();
+    }
+
+    @Override
+    public void register(IssueListener listener) {
+
+    }
+
+    @Override
+    public void unregister(IssueListener listener) {
+
+    }
+
+    @Override
     protected void doStart() {
 
     }
@@ -25,7 +40,17 @@ public class IssueServiceImpl extends AbstractService implements IssueService {
     }
 
     @Override
+    public Collection<Alert> getPendingAlerts() {
+        return List.of();
+    }
+
+    @Override
     public void register(Issue issue) {
 
+    }
+
+    @Override
+    public void register(Alert alert) {
+        
     }
 }

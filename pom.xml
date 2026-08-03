@@ -58,11 +58,12 @@
     </scm>
 
     <modules>
-		<module>api</module>
-		<module>spi</module>
+        <module>api</module>
+        <module>spi</module>
         <module>core</module>
         <module>inspector</module>
         <module>monitor</module>
+        <module>logger</module>
         <module>report</module>
         <module>web</module>
         <module>spring</module>
@@ -85,6 +86,8 @@
         <tracing.version>1.0.2-SNAPSHOT</tracing.version>
         <jvm.version>1.0.3-SNAPSHOT</jvm.version>
         <registry.version>1.0.0-SNAPSHOT</registry.version>
+        <configuration.version>1.0.0-SNAPSHOT</configuration.version>
+        <store.version>1.0.0-SNAPSHOT</store.version>
         <threadpool.version>1.0.2-SNAPSHOT</threadpool.version>
 
         <jacoco.file>jacoco.exec</jacoco.file>
@@ -141,6 +144,12 @@
             </dependency>
 
             <dependency>
+                <groupId>net.microfalx</groupId>
+                <artifactId>configuration</artifactId>
+                <version>${configuration.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>net.microfalx.resource</groupId>
                 <artifactId>resource-bom</artifactId>
                 <version>${resource.version}</version>
@@ -152,6 +161,14 @@
                 <groupId>net.microfalx.registry</groupId>
                 <artifactId>registry-bom</artifactId>
                 <version>${registry.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>net.microfalx.store</groupId>
+                <artifactId>store-bom</artifactId>
+                <version>${store.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

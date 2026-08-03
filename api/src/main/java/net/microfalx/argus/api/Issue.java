@@ -17,6 +17,11 @@ import static net.microfalx.lang.ExceptionUtils.getRootCauseDescription;
 import static net.microfalx.lang.StringUtils.*;
 import static net.microfalx.lang.TextUtils.abbreviateMiddle;
 
+/**
+ * An issue represents a problem detected in the system, which can be reported and tracked.
+ * <p>
+ * An issue, compared with an alert, is a voluntary declaration of a "problem" from a service.
+ */
 @Getter
 @ToString
 @Slf4j

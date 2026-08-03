@@ -37,5 +37,10 @@ public interface NotificationService extends Service {
      */
     void unregister(NotificationListener listener);
 
+    /**
+     * Sends a notification to registered listeners
+     *
+     * @param notification the notification
+     */
     void send(Notification notification);
 }

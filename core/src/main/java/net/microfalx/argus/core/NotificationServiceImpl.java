@@ -66,13 +66,13 @@ public class NotificationServiceImpl extends AbstractService implements Notifica
     }
 
     private void discoverListeners() {
-        LOGGER.info("Discover notification listeners");
+        LOGGER.info("Discover listeners");
         for (NotificationListener listener : resolveProviderInstances(NotificationListener.class)) {
             LOGGER.debug(" - {}", ClassUtils.getName(listener));
             initializeListener(listener);
             classPathListeners.add(listener);
         }
-        LOGGER.info("Discovered {} notification listeners", classPathListeners.size());
+        LOGGER.info("Discovered {} listeners", classPathListeners.size());
     }
 
     private void updateListeners() {
