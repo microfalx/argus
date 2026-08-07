@@ -14,6 +14,7 @@ public abstract class AbstractReportServiceTestCase {
 
     @BeforeEach
     void setup() throws Exception {
+        System.setProperty("logback.debug", "false");
         reportService.initialize();
         collectVMStats();
     }

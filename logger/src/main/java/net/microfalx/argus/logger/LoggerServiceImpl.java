@@ -1,10 +1,5 @@
 package net.microfalx.argus.logger;
 
-import biz.paluch.logging.gelf.logback.GelfLogbackAppender;
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.net.SyslogAppender;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.Appender;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -13,28 +8,32 @@ import net.microfalx.argus.api.LoggerEvent;
 import net.microfalx.argus.api.LoggerListener;
 import net.microfalx.argus.api.LoggerService;
 import net.microfalx.argus.core.AbstractService;
-import net.microfalx.lang.*;
+import net.microfalx.lang.ClassUtils;
+import net.microfalx.lang.Initializable;
+import net.microfalx.lang.JvmUtils;
 import net.microfalx.lang.annotation.Provider;
 import net.microfalx.resource.Resource;
 import net.microfalx.store.api.Query;
 import net.microfalx.store.api.Store;
 import net.microfalx.store.api.StoreService;
-import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static net.microfalx.argus.logger.LoggerUtils.*;
+import static net.microfalx.argus.logger.LoggerUtils.METRICS_COUNTS_EXCEPTION;
+import static net.microfalx.argus.logger.LoggerUtils.METRICS_COUNTS_SEVERITY;
 import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 import static net.microfalx.lang.ClassUtils.resolveProviderInstances;
 import static net.microfalx.lang.CollectionUtils.immutableCollection;
-import static net.microfalx.lang.StringUtils.defaultIfNull;
+import static net.microfalx.lang.ExceptionUtils.getRootCauseName;
 
 @Slf4j
 @Provider
@@ -47,10 +46,10 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
     @Setter
     private LoggerSettings settings = new LoggerSettings();
 
-    private String hostname;
-
+    private final LoggerManager loggerManager = new LoggerManager(this);
     private final Map<String, Alert> alerts = new ConcurrentHashMap<>();
     private final Queue<LoggerEvent> lastLoggerEvents = new ArrayBlockingQueue<>(100);
+    private final Collection<Appender> appenders = new CopyOnWriteArrayList<>();
 
     private Store<LoggerEvent, Long> store;
     private Store<Alert, String> alertStore;
@@ -60,12 +59,32 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
     private final Collection<LoggerListener> classPathListeners = new CopyOnWriteArraySet<>();
 
     /**
+     * The hostname of the server where the process runs.
+     */
+    @Getter
+    private String hostname;
+
+    /**
      * Returns the registered listeners.
      *
      * @return a non-null instance
      */
     public Collection<LoggerListener> getListeners() {
         return immutableCollection(listeners);
+    }
+
+    /**
+     * Loads and returns the appenders created by this service in the active logging library.
+     *
+     * @return a non-null instance
+     */
+    public Collection<Appender> getAppenders() {
+        return immutableCollection(appenders);
+    }
+
+    @Override
+    public Optional<File> getDirectory() {
+        return loggerManager.hasLogsDirectory() ? Optional.of(loggerManager.getLogsDirectory()) : Optional.empty();
     }
 
     @Override
@@ -87,7 +106,7 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
 
     @Override
     public Collection<Alert> getAlerts() {
-        return CollectionUtils.immutableCollection(alerts.values());
+        return immutableCollection(alerts.values());
     }
 
     public Collection<Alert> getAlerts(LocalDateTime start, LocalDateTime end) {
@@ -101,13 +120,12 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
 
     @Override
     public Collection<LoggerEvent> getLoggerEvents() {
-        return CollectionUtils.immutableCollection(lastLoggerEvents);
+        return immutableCollection(lastLoggerEvents);
     }
 
     public void register() {
         discoverListeners();
         updateListeners();
-        registerLogBackAppender();
         registerAppenders();
     }
 
@@ -116,7 +134,6 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
         initHostInformation();
         initializeStores();
         initializeListeners();
-        initializeAppenders();
         initializeTasks();
     }
 
@@ -173,17 +190,19 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
             processAlertEvent(event);
             forwardLogEvent(event);
         } catch (Throwable e) {
-            LoggerUtils.METRICS_FAILURE.increment(ExceptionUtils.getRootCauseName(e));
+            LoggerUtils.METRICS_FAILURE.increment(getRootCauseName(e));
         }
     }
 
-    private void registerLogBackAppender() {
-        LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-        RecorderAppender.initialize(loggerContext);
-    }
-
     private void registerAppenders() {
-        ApplicationAppenders appenders = new ApplicationAppenders();
+        this.appenders.clear();
+        LoggerLoader loader = new LoggerLoader();
+        loader.load();
+        this.appenders.addAll(loader.getAppenders());
+        LoggerManager appenders = new LoggerManager(this);
+        if (appenders.hasLogsDirectory()) {
+            LOGGER.info("Use logs directory: {}", appenders.getLogsDirectory().getAbsolutePath());
+        }
         appenders.register();
     }
 
@@ -207,67 +226,6 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
         alertStore = StoreService.getInstance().register(options);
     }
 
-    private void initializeAppenders() {
-        initializeApplicationAppender();
-        initializeGelfAppender();
-        initializeSyslogAppender();
-    }
-
-    private void initializeApplicationAppender() {
-        ApplicationAppenders appenders = new ApplicationAppenders();
-        if (appenders.hasLogsDirectory()) {
-            LOGGER.info("Use logs directory: {}", appenders.getLogsDirectory().getAbsolutePath());
-        }
-        ch.qos.logback.classic.Logger logger = getRootLogger();
-        Iterator<Appender<ILoggingEvent>> appenderIterator = logger.iteratorForAppenders();
-        while (appenderIterator.hasNext()) {
-            Appender<ILoggingEvent> appender = appenderIterator.next();
-            if (appender instanceof RecorderAppender internalAppender) {
-                internalAppender.storage = this;
-                processQueuedLoggerEvents(internalAppender.pendingEvents);
-            }
-        }
-    }
-
-    private void initializeGelfAppender() {
-        LoggerSettings.Gelf gelf = settings.getGelf();
-        if (StringUtils.isEmpty(gelf.getHostname())) return;
-        LOGGER.info("Send logs using GELF to '{}'", gelf.toUri());
-        LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-        GelfLogbackAppender appender = new GelfLogbackAppender();
-        appender.setHost(gelf.getHostname());
-        appender.setPort(gelf.getPort());
-        appender.setIncludeFullMdc(true);
-        appender.setIncludeLocation(true);
-        appender.setExtractStackTrace("true");
-        appender.setOriginHost(hostname);
-        appender.setFacility(gelf.getFacility());
-        appender.setAdditionalFields("Application=" + defaultIfNull(settings.getApplication(), "Bootstrap"));
-        appender.setAdditionalFields("Process=" + defaultIfNull(settings.getProcess(), "Web"));
-        appender.setContext(loggerContext);
-        appender.setName("gelf");
-        appender.start();
-        ch.qos.logback.classic.Logger logger = loggerContext.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
-        logger.addAppender(appender);
-    }
-
-    private void initializeSyslogAppender() {
-        LoggerSettings.Syslog syslog = settings.getSyslog();
-        if (StringUtils.isEmpty(syslog.getHostname())) return;
-        LOGGER.info("Send logs using Syslog to '{}'", syslog.toUri());
-        LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-        SyslogAppender appender = new SyslogAppender();
-        appender.setSyslogHost(syslog.getHostname());
-        appender.setPort(syslog.getPort());
-        appender.setFacility(syslog.getFacility());
-        appender.setThrowableExcluded(true);
-        appender.setContext(loggerContext);
-        appender.setName("syslog");
-        appender.start();
-        ch.qos.logback.classic.Logger logger = loggerContext.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
-        logger.addAppender(appender);
-    }
-
     private void initializeTasks() {
         getThreadPool().submit(new AcknowledgeAlertsTask());
         getThreadPool().submit(new ArchiveLogsTask());
@@ -278,13 +236,6 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
         if (event.getExceptionClassName() != null) METRICS_COUNTS_EXCEPTION.count(event.getExceptionClassName());
     }
 
-    private void processQueuedLoggerEvents(Queue<LoggerEvent> events) {
-        for (; ; ) {
-            LoggerEvent event = events.poll();
-            if (event == null) break;
-            onEvent(event);
-        }
-    }
 
     private void forwardLogEvent(LoggerEvent event) {
         for (LoggerListener listener : listeners) {
@@ -303,14 +254,14 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
             store.add(event);
         } catch (Throwable e) {
             LOGGER.debug("Failed to store logging event '{}' to internal storage", event);
-            LoggerUtils.METRICS_EVENT_STORE_FAILURE.increment(ExceptionUtils.getRootCauseName(e));
+            LoggerUtils.METRICS_EVENT_STORE_FAILURE.increment(getRootCauseName(e));
         }
         for (LoggerListener listener : listeners) {
             try {
                 listener.onEvent(event);
             } catch (Throwable e) {
                 LOGGER.debug("Failed to store logging event '{}' with listener {}", event, ClassUtils.getName(listener));
-                LoggerUtils.METRICS_EVENT_STORE_FAILURE.increment(ExceptionUtils.getRootCauseName(e));
+                LoggerUtils.METRICS_EVENT_STORE_FAILURE.increment(getRootCauseName(e));
             }
         }
 
@@ -328,7 +279,7 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
             alertStore.add(event);
         } catch (Throwable e) {
             LOGGER.debug("Failed to store alert event '{}' to internal storage", event);
-            LoggerUtils.METRICS_ALERT_STORE_FAILURE.increment(ExceptionUtils.getRootCauseName(e));
+            LoggerUtils.METRICS_ALERT_STORE_FAILURE.increment(getRootCauseName(e));
         }
     }
 
@@ -376,7 +327,7 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
         @Override
         public void run() {
             Resource logs = Resource.directory(JvmUtils.getVariableDirectory()).get("logs", Resource.Type.DIRECTORY);
-            ApplicationAppenders appenders = new ApplicationAppenders();
+            LoggerManager appenders = new LoggerManager(LoggerServiceImpl.this);
             appenders.move(logs);
         }
     }

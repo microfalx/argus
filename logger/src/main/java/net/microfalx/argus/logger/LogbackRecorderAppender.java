@@ -17,9 +17,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 /**
  * An appender which takes all the log events and publish them to an application logger storage.
  */
-class RecorderAppender extends ch.qos.logback.core.AppenderBase<ILoggingEvent> {
+class LogbackRecorderAppender extends ch.qos.logback.core.AppenderBase<ILoggingEvent> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(RecorderAppender.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LogbackRecorderAppender.class);
 
     static final String INSTALLED_FLAG = "ARGUS_APPENDER";
 
@@ -34,7 +34,7 @@ class RecorderAppender extends ch.qos.logback.core.AppenderBase<ILoggingEvent> {
     static void initialize(LoggerContext loggerContext) {
         try {
             if (loggerContext.getObject(INSTALLED_FLAG) != null) return;
-            RecorderAppender appender = new RecorderAppender();
+            LogbackRecorderAppender appender = new LogbackRecorderAppender();
             appender.setContext(loggerContext);
             appender.setName("storage");
             appender.start();

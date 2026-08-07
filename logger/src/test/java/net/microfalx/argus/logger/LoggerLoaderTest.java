@@ -18,7 +18,7 @@ class LoggerLoaderTest {
     }
 
     @Test
-    void loadAppender() throws IOException {
+    void loadCustom() throws IOException {
         LoggerLoader loader = new LoggerLoader();
         loader.load(ClassPathResource.file("logger1.xml"));
         assertEquals(3, loader.getAppenders().size());
@@ -39,10 +39,10 @@ class LoggerLoaderTest {
         assertEquals(1, appender.getExcluded().size());
 
         appender = iterator.next();
-        assertEquals("test2", appender.getId());
-        assertEquals("Test2", appender.getName());
-        assertEquals("test2.log", appender.getFileName());
-        assertEquals(1, appender.getIncluded().size());
+        assertEquals("test3", appender.getId());
+        assertEquals("Test3", appender.getName());
+        assertEquals("test3.log", appender.getFileName());
+        assertEquals(2, appender.getIncluded().size());
         assertEquals(1, appender.getExcluded().size());
     }
 

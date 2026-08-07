@@ -1,5 +1,6 @@
 package net.microfalx.argus.logger;
 
+import net.microfalx.lang.CollectionUtils;
 import net.microfalx.resource.Resource;
 import net.microfalx.resource.ResourceException;
 import org.dom4j.Document;
@@ -14,6 +15,7 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
 
+import static net.microfalx.lang.CollectionUtils.immutableCollection;
 import static net.microfalx.lang.StringUtils.isNotEmpty;
 import static net.microfalx.lang.XmlUtils.*;
 
@@ -26,12 +28,12 @@ public class LoggerLoader {
     private final Collection<Appender> appenders = new ArrayList<>();
 
     Collection<Appender> getAppenders() {
-        return appenders;
+        return immutableCollection(appenders);
     }
 
     void load() {
         LOGGER.debug("Discover logger appenders from descriptors");
-        Collection<URL> descriptors = null;
+        Collection<URL> descriptors;
         try {
             descriptors = getDescriptors();
             for (URL descriptor : descriptors) {
@@ -78,7 +80,7 @@ public class LoggerLoader {
         }
         List<Element> excludeElements = root.elements("exclude");
         for (Element excludeElement : excludeElements) {
-            appenderBuilder.included(getElementText(excludeElement, true));
+            appenderBuilder.excluded(getElementText(excludeElement, true));
         }
     }
 

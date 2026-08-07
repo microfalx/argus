@@ -2,8 +2,10 @@ package net.microfalx.argus.api;
 
 import net.microfalx.lang.service.Service;
 
+import java.io.File;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.Optional;
 
 /**
  * A service responsible to track log entries and report them.
@@ -23,6 +25,15 @@ public interface LoggerService extends Service {
      * @return a non-null collection
      */
     Collection<LoggerListener> getListeners();
+
+    /**
+     * Return the logging directory, if enabled.
+     * <p>
+     * If the logging directory is not enabled, the file appenders are not created.
+     *
+     * @return a non-null instance
+     */
+    Optional<File> getDirectory();
 
     /**
      * Registers a listener.
