@@ -41,22 +41,19 @@ class LogbackLoggingLibraryTest {
     @Test
     void addsErrorAppenderToRootLogger() {
         installLibrary();
-
-        assertAppenderPresent(getRootLogger(), "process.error");
+        assertAppenderPresent(getRootLogger(), "Process Error");
     }
 
     @Test
     void addsWarningAppenderToRootLogger() {
         installLibrary();
-
-        assertAppenderPresent(getRootLogger(), "process.warn");
+        assertAppenderPresent(getRootLogger(), "Process Warn");
     }
 
     @Test
     void addsAllLogsAppenderToRootLogger() {
         installLibrary();
-
-        assertAppenderPresent(getRootLogger(), "process");
+        assertAppenderPresent(getRootLogger(), "Process");
     }
 
     @Test

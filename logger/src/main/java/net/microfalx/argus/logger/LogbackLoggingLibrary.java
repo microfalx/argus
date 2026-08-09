@@ -16,6 +16,7 @@ import ch.qos.logback.core.util.Duration;
 import ch.qos.logback.core.util.FileSize;
 import lombok.extern.slf4j.Slf4j;
 import net.microfalx.argus.api.LoggerEvent;
+import net.microfalx.argus.api.LoggerSettings;
 import net.microfalx.lang.StringUtils;
 import net.microfalx.lang.annotation.Provider;
 import org.slf4j.LoggerFactory;

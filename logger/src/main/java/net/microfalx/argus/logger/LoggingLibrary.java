@@ -1,8 +1,5 @@
 package net.microfalx.argus.logger;
 
-import java.io.File;
-import java.util.Collection;
-
 /**
  * An interface used to set up the library.
  */

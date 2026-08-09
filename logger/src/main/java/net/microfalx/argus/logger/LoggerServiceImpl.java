@@ -1,12 +1,8 @@
 package net.microfalx.argus.logger;
 
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import net.microfalx.argus.api.Alert;
-import net.microfalx.argus.api.LoggerEvent;
-import net.microfalx.argus.api.LoggerListener;
-import net.microfalx.argus.api.LoggerService;
+import net.microfalx.argus.api.*;
 import net.microfalx.argus.core.AbstractService;
 import net.microfalx.lang.ClassUtils;
 import net.microfalx.lang.Initializable;
@@ -39,11 +35,6 @@ import static net.microfalx.lang.ExceptionUtils.getRootCauseName;
 @Provider
 public class LoggerServiceImpl extends AbstractService implements LoggerService, Initializable, LoggerListener {
 
-    /**
-     * Holds the settings to control the behaviour of the service.
-     */
-    @Getter
-    @Setter
     private LoggerSettings settings = new LoggerSettings();
 
     private final LoggerManager loggerManager = new LoggerManager(this);
@@ -63,6 +54,17 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
      */
     @Getter
     private String hostname;
+
+    @Override
+    public LoggerSettings getSettings() {
+        return settings;
+    }
+
+    @Override
+    public void setSettings(LoggerSettings settings) {
+        requireNonNull(settings);
+        this.settings = settings;
+    }
 
     /**
      * Returns the registered listeners.
@@ -194,16 +196,19 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
         }
     }
 
-    private void registerAppenders() {
+    private void loadRegisteredAppenders() {
         this.appenders.clear();
         LoggerLoader loader = new LoggerLoader();
         loader.load();
         this.appenders.addAll(loader.getAppenders());
-        LoggerManager appenders = new LoggerManager(this);
-        if (appenders.hasLogsDirectory()) {
-            LOGGER.info("Use logs directory: {}", appenders.getLogsDirectory().getAbsolutePath());
+    }
+
+    private void registerAppenders() {
+        loadRegisteredAppenders();
+        if (loggerManager.hasLogsDirectory()) {
+            LOGGER.info("Use logs directory: {}", loggerManager.getLogsDirectory());
         }
-        appenders.register();
+        loggerManager.register();
     }
 
     private void initializeListeners() {

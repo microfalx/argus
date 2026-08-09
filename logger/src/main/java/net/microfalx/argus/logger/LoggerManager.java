@@ -109,42 +109,22 @@ class LoggerManager {
             if (library instanceof AbstractLoggingLibrary all) {
                 all.directory = getLogsDirectory();
                 all.appenders = loggerService.getAppenders();
+                all.settings = loggerService.getSettings();
                 all.listener = loggerService;
             }
             library.install();
         }
     }
 
-    private int getFileCount() {
-        return configuration.get("bootstrap.logger.file-count", 5);
-    }
-
-    private long getFileSize() {
-        return configuration.get("bootstrap.logger.file-size", Long.class, 20_000_000L);
-    }
-
     private File getConfiguredLogsDirectory() {
-        String path = configuration.get("bootstrap.logger.directory");
+        String path = loggerService.getSettings().getDirectory();
+        if (isEmpty(path)) path = configuration.get("argus.logger.directory");
         if (isEmpty(path)) {
             File logs = new File(JvmUtils.getWorkingDirectory(false), "logs");
             if (logs.exists() && isDirectoryWritable(logs)) path = logs.getAbsolutePath();
-            if (isEmpty(path)) {
-                path = configuration.get("bootstrap.resource.directory");
-                if (isNotEmpty(path)) {
-                    logs = new File(path);
-                    if (isDirectoryWritable(logs)) {
-                        try {
-                            path = FileUtils.validateDirectoryExists(new File(logs, "logs")).getAbsolutePath();
-                        } catch (Exception e) {
-                            // if we fail, no logs
-                        }
-                    }
-                }
-            }
         }
         return isNotEmpty(path) && new File(path).exists() && isDirectoryWritable(new File(path)) ? new File(path) : null;
     }
-
 
     private void add(ZipOutputStream outputStream, File file) throws IOException {
         String name = file.getName();

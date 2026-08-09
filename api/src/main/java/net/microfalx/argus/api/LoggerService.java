@@ -17,6 +17,20 @@ public interface LoggerService extends Service {
     }
 
     /**
+     * Returns the settings.
+     *
+     * @return a non-null instance
+     */
+    LoggerSettings getSettings();
+
+    /**
+     * Changes the settings.
+     *
+     * @param settings a new settings
+     */
+    void setSettings(LoggerSettings settings);
+
+    /**
      * Returns registered notification listeners.
      * <p>
      * The complete list is based on listeners discovered from class path and those registered
