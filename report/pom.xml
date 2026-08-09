@@ -47,6 +47,16 @@
         </dependency>
 
         <dependency>
+            <groupId>net.microfalx.webjar</groupId>
+            <artifactId>webjar-bootstrap-base</artifactId>
+        </dependency>
+        
+        <dependency>
+            <groupId>net.microfalx.webjar</groupId>
+            <artifactId>webjar-bootstrap-theme-tabler</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.thymeleaf</groupId>
             <artifactId>thymeleaf</artifactId>
         </dependency>

@@ -14,7 +14,7 @@ class ReportServiceTest extends AbstractReportServiceTestCase {
 
     @Test
     void initialize() {
-        assertEquals(4, reportService.getProviders().size());
+        assertEquals(6, reportService.getProviders().size());
     }
 
     @Test
@@ -33,7 +33,7 @@ class ReportServiceTest extends AbstractReportServiceTestCase {
     void createReport() throws IOException {
         Report report = reportService.createReport();
         assertNotNull(report);
-        assertEquals(4, report.getFragments().size());
+        assertEquals(6, report.getFragments().size());
     }
 
 

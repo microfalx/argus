@@ -14,7 +14,16 @@ class ReportTest extends AbstractReportServiceTestCase {
         Resource resource = Resource.memory();
         report.render(resource);
         Assertions.assertThat(resource.loadAsString()).contains("btn-back-to-top")
-                .contains("class=\"page\"").contains("aaa");
+                .contains("class=\"page\"").contains("Average CPU");
+    }
+
+    @Test
+    void offlineSettings() throws IOException {
+        Report report = reportService.createReport().setOffline(false);
+        Resource resource = Resource.memory();
+        report.render(resource);
+        Assertions.assertThat(resource.loadAsString()).contains("btn-back-to-top")
+                .contains("class=\"page\"").contains("Average CPU");
     }
 
 }

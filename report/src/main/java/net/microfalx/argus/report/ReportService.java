@@ -15,7 +15,6 @@ import net.microfalx.resource.Resource;
 import net.microfalx.threadpool.CronTrigger;
 import net.microfalx.threadpool.IdentifiableTask;
 import net.microfalx.threadpool.ThreadPool;
-import org.apache.commons.math3.exception.util.ArgUtils;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.cache.StandardCacheManager;
 import org.thymeleaf.linkbuilder.StandardLinkBuilder;
@@ -339,7 +338,7 @@ public class ReportService extends AbstractService implements Initializable {
         // init resolver
         ClassLoaderTemplateResolver templateResolver = new ClassLoaderTemplateResolver(Template.class.getClassLoader());
         templateResolver.setTemplateMode(TemplateMode.HTML);
-        templateResolver.setPrefix("/templates/support/report/");
+        templateResolver.setPrefix("/templates/argus/report/");
         templateResolver.setSuffix(".html");
         templateResolver.setCacheTTLMs(3600000L);
         templateResolver.setCacheable(false);

@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.microfalx.lang.Nameable;
 import net.microfalx.resource.ClassPathResource;
 import net.microfalx.resource.Resource;
+import net.microfalx.resource.ResourceUtils;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -361,12 +362,21 @@ public class Report implements Nameable {
         StringBuilder builder = new StringBuilder();
         builder.append("\n");
         for (String resource : resources) {
+            Resource classPathResource = ClassPathResource.file(resource);
+            boolean exists = ResourceUtils.exists(classPathResource);
             if (!builder.isEmpty()) builder.append("\n\n");
-            builder.append("/* ").append(resource).append(" */\n\n");
-            try {
-                builder.append(ClassPathResource.file(resource).loadAsString());
-            } catch (IOException e) {
-                LOGGER.warn("Failed to load resource '{}', root cause: {}", resource, getRootCauseDescription(e));
+            builder.append("/* ").append(resource);
+            if (!exists) {
+                builder.append(" (not found)");
+                LOGGER.warn("Resource '{}' not found", resource);
+            }
+            builder.append(" */\n\n");
+            if (exists) {
+                try {
+                    builder.append(classPathResource.loadAsString());
+                } catch (IOException e) {
+                    LOGGER.warn("Failed to load resource '{}', root cause: {}", resource, getRootCauseDescription(e));
+                }
             }
         }
         return builder.toString();

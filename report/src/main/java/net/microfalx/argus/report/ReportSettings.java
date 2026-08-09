@@ -1,11 +1,15 @@
 package net.microfalx.argus.report;
 
-import lombok.Data;
+import lombok.*;
 
 /**
  * The configuration for Mail service.
  */
-@Data
+@Getter
+@With
+@NoArgsConstructor
+@AllArgsConstructor
+@ToString
 public class ReportSettings {
 
     /**

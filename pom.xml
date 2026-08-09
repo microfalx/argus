@@ -89,6 +89,7 @@
         <configuration.version>1.0.0-SNAPSHOT</configuration.version>
         <store.version>1.0.0-SNAPSHOT</store.version>
         <threadpool.version>1.0.2-SNAPSHOT</threadpool.version>
+        <webjar.version>1.0.2-SNAPSHOT</webjar.version>
 
         <jacoco.file>jacoco.exec</jacoco.file>
         <jacoco.ut.dest>${project.build.directory}/${jacoco.file}</jacoco.ut.dest>
@@ -169,6 +170,14 @@
                 <groupId>net.microfalx.store</groupId>
                 <artifactId>store-bom</artifactId>
                 <version>${store.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>net.microfalx.webjar</groupId>
+                <artifactId>webjar-bom</artifactId>
+                <version>${webjar.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
