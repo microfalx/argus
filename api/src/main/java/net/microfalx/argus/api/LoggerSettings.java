@@ -17,14 +17,51 @@ import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 @ToString
 public class LoggerSettings {
 
+    /**
+     * Indicates whether the DEBUG statements are logged across all appenders.
+     */
     private boolean debug;
+
+    /**
+     * Indicates whether the TRACE statements are logged across all appenders.
+     */
     private boolean trace;
+
+    /**
+     * The number of files to be kept for each file appender.
+     */
     private int fileCount = 5;
+
+    /**
+     * Returns the maximum file size of a file within one appender.
+     */
     private long fileSize = 20_000_000L;
+
+    /**
+     * The location of the logs.
+     * <p>
+     * If missing, it will be auto-detected
+     */
     private String directory;
+
+    /**
+     * The name of the application, which is sent to the external logs aggregation systems
+     */
     private String application;
+
+    /**
+     * The name of the process/service, which is sent to the external logs aggregation systems
+     */
     private String process;
+
+    /**
+     * The settings for the receiver where syslog events are sent.
+     */
     private Syslog syslog = new Syslog();
+
+    /**
+     * The settings for the receiver where the GELF event are sent.
+     */
     private Gelf gelf = new Gelf();
 
     public static LoggerSettings create(File directory) {

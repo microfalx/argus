@@ -5,7 +5,7 @@ package net.microfalx.argus.api;
  * <p>
  * Each listener has its own configuration to where the notification is sent. Common implementations are:
  * <ul>
- *     <li>EMail</li>
+ *     <li>Email</li>
  *     <li>SMS</li>
  * </ul>
  */
