@@ -114,6 +114,9 @@ class LoggerManager {
             }
             library.install();
         }
+        for (LoggingLibrary library : libraries) {
+            library.start();
+        }
     }
 
     private File getConfiguredLogsDirectory() {

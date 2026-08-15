@@ -126,30 +126,15 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
     }
 
     public void register() {
-        discoverListeners();
-        updateListeners();
         registerAppenders();
     }
 
     @Override
     public void initialize(Object... context) {
         initHostInformation();
+        discoverListeners();
         initializeStores();
-        initializeListeners();
         initializeTasks();
-    }
-
-    /**
-     * Registers a logger listener.
-     *
-     * @param loggerListener the listener
-     */
-    public void registerLoggerListener(LoggerListener loggerListener) {
-        requireNonNull(loggerListener);
-        if (!(loggerListener instanceof LoggerServiceImpl)) {
-            LOGGER.info("Logger listener '{}'", ClassUtils.getName(loggerListener));
-            classPathListeners.add(loggerListener);
-        }
     }
 
     /**
@@ -209,11 +194,6 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
             LOGGER.info("Use logs directory: {}", loggerManager.getLogsDirectory());
         }
         loggerManager.register();
-    }
-
-    private void initializeListeners() {
-        ClassUtils.resolveProviderInstances(LoggerListener.class).forEach(this::registerLoggerListener);
-        updateListeners();
     }
 
     private void initHostInformation() {
@@ -297,9 +277,9 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
     }
 
     private void discoverListeners() {
-        classPathListeners.clear();
         LOGGER.info("Discover listeners");
         for (LoggerListener listener : resolveProviderInstances(LoggerListener.class)) {
+            if (listener instanceof LoggerServiceImpl) continue;
             LOGGER.debug(" - {}", ClassUtils.getName(listener));
             initializeListener(listener);
             classPathListeners.add(listener);

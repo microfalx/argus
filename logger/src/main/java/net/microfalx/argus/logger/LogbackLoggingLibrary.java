@@ -44,6 +44,11 @@ public class LogbackLoggingLibrary extends AbstractLoggingLibrary {
     }
 
     @Override
+    public void start() {
+        processQueuedLoggerEvents();
+    }
+
+    @Override
     public void uninstall() {
 
     }
@@ -186,7 +191,7 @@ public class LogbackLoggingLibrary extends AbstractLoggingLibrary {
         logger.addAppender(appender);
     }
 
-    private void a() {
+    private void processQueuedLoggerEvents() {
         ch.qos.logback.classic.Logger logger = getRootLogger();
         Iterator<ch.qos.logback.core.Appender<ILoggingEvent>> appenderIterator = logger.iteratorForAppenders();
         while (appenderIterator.hasNext()) {

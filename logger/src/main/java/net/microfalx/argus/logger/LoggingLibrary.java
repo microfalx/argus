@@ -14,4 +14,9 @@ public interface LoggingLibrary {
      * Removes the configuration and uninstalls the appenders.
      */
     void uninstall();
+
+    /**
+     * Starts the library.
+     */
+    void start();
 }

@@ -101,6 +101,12 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
     }
 
     @Override
+    public void update() {
+        updateHealth();
+        updateMetrics();
+    }
+
+    @Override
     public void initialize(Object... context) {
         discoverHealthContributors();
         updateContributors();
@@ -189,8 +195,7 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
 
         @Override
         public void run() {
-            updateHealth();
-            updateMetrics();
+            update();
         }
     }
 }

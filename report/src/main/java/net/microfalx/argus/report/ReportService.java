@@ -143,7 +143,7 @@ public class ReportService extends AbstractService implements Initializable {
      *
      * @param issue the issue
      */
-    public void addIssue(Issue issue) {
+    public void register(Issue issue) {
         requireNonNull(issue);
         synchronized (lock) {
             mergeIssue(reportedIssues, issue);
@@ -462,7 +462,7 @@ public class ReportService extends AbstractService implements Initializable {
         // take all reported issues, accumulate them for the 24h report, and start fresh for the next interval
         synchronized (lock) {
             issues.putAll(reportedIssues);
-            dailyReportedIssues.putAll(reportedIssues);
+            reportedIssues.values().forEach((issue) -> mergeIssue(dailyReportedIssues, issue));
             reportedIssues = new ConcurrentHashMap<>();
         }
         cachedIssues = new ArrayList<>(issues.values());
@@ -487,7 +487,15 @@ public class ReportService extends AbstractService implements Initializable {
     }
 
     @Provider
-    public static class ReportingLoggerListener implements LoggerListener {
+    public static class ReportingLoggerListener implements LoggerListener, Initializable {
+
+        @Override
+        public void initialize(Object... context) {
+            Issue.create(Issue.Type.AVAILABILITY, "Reporting")
+                    .withSeverity(Issue.Severity.NOTICE)
+                    .withDescription("Reporting service initialized")
+                    .register();
+        }
 
         @Override
         public void onEvent(LoggerEvent event) {
@@ -506,7 +514,7 @@ public class ReportService extends AbstractService implements Initializable {
 
         @Override
         public void onIssue(Issue issue) {
-            reportService.addIssue(issue);
+            getReportService().register(issue);
         }
 
         @Override

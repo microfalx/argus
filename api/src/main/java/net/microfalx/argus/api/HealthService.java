@@ -66,4 +66,9 @@ public interface HealthService extends Service, HealthProvider {
      * @param contributor the contributor
      */
     void unregister(HealthContributor contributor);
+
+    /**
+     * Updates the health status of all resources.
+     */
+    void update();
 }
