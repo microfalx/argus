@@ -1,7 +1,6 @@
 package net.microfalx.argus.report;
 
 import net.microfalx.argus.api.Health;
-import net.microfalx.argus.api.Threshold;
 import net.microfalx.lang.*;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -52,7 +51,7 @@ public class ReportHelper {
         return FormatterUtils.formatNumber(number);
     }
 
-    public String getCls(Health.Severity severity) {
+    public String getRibbonCls(Health.Severity severity) {
         if (severity == null) return "";
         return switch (severity) {
             case NONE -> "bg-green";
@@ -60,8 +59,43 @@ public class ReportHelper {
             case MEDIUM -> "bg-orange";
             case HIGH -> "bg-red bg-opacity-75";
             case CRITICAL -> "bg-red";
+        };
+    }
+
+    public String getBadgeFromScoreCls(float score) {
+        return getBadgeCls(Health.toSeverity(score));
+    }
+
+    public String getBadgeFromScoreCls(Float score) {
+        if (score == null) return "";
+        return getBadgeFromScoreCls(score.floatValue());
+    }
+
+    public String getBadgeCls(Health.Severity severity) {
+        if (severity == null) return "";
+        String result = switch (severity) {
+            case NONE -> "bg-green text-green-fg";
+            case LOW -> "bg-yellow text-yellow-fg";
+            case MEDIUM -> "bg-orange text-orange-fg";
+            case HIGH -> "bg-red text-red-fg bg-opacity-75";
+            case CRITICAL -> "bg-red text-red-fg";
             default -> "";
         };
+        return "badge ms-2 " + result;
+    }
+
+    public String getGroupStyle(Health.Group group) {
+        return "padding-left: " + (0.75 + (group.getDepth() - 1) / 2f) + "rem";
+    }
+
+    public String getGroupIcon(Health.Group group) {
+        if (group.getDepth() < 2) return "";
+        String result = switch (group.getDepth()) {
+            case 2 -> "fa-solid fa-caret-right";
+            case 3 -> "fa-solid fa-chevron-right";
+            default -> "";
+        };
+        return result + " me-2";
     }
 
     public String toString(Object value) {

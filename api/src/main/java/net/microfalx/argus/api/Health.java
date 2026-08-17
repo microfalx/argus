@@ -51,10 +51,27 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
     public static final float BAD = 1.5f;
     public static final float WITH_ISSUES = 2.5f;
 
+    /**
+     * Holds the timestamp when this health score was created. The timestamp is set when the instance
+     * is created and cannot be modified.
+     */
     private final ZonedDateTime createdAt = ZonedDateTime.now();
+
+    /**
+     * Holds the timestamp when this health score was last modified. The timestamp is updated whenever
+     * the score is modified.
+     */
     private ZonedDateTime modifiedAt = createdAt;
 
+    /**
+     * Indicates whether this health score is read-only. If {@code true}, the score cannot be modified.
+     */
     private boolean readOnly;
+
+    /**
+     * The type of the health score, which indicates whether the score is calculated for the entire site,
+     * a specific resource, or a specific instance of a resource.
+     */
     private Type type = Type.INSTANCE;
     private final Map<String, Group> groups = new LinkedHashMap<>();
 
@@ -79,6 +96,25 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
      */
     public Collection<Group> getGroups() {
         return immutableCollection(groups.values());
+    }
+
+    /**
+     * Returns the groups part of this score.
+     *
+     * @param all if {@code true}, returns all groups from this score and its subgroups,
+     *            otherwise returns only the groups of this score
+     * @return a non-null instance
+     */
+    public Collection<Group> getGroups(boolean all) {
+        if (all) {
+            Collection<Group> allGroups = new ArrayList<>();
+            for (Group group : groups.values()) {
+                group.addGroups(allGroups);
+            }
+            return allGroups;
+        } else {
+            return getGroups();
+        }
     }
 
     /**
@@ -113,18 +149,7 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
      * @return a non-null instance
      */
     public Severity getSeverity() {
-        float score = getScore();
-        if (score >= WARNING) {
-            return Severity.NONE;
-        } else if (score >= WITH_ISSUES) {
-            return Severity.LOW;
-        } else if (score >= ERROR) {
-            return Severity.MEDIUM;
-        } else if (score >= BAD) {
-            return Severity.HIGH;
-        } else {
-            return Severity.CRITICAL;
-        }
+        return toSeverity(getScore());
     }
 
     /**
@@ -133,7 +158,7 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
      * @return an optional item
      */
     public Optional<Item> getLowest() {
-        return groups.values().stream().flatMap(group -> group.getAllItems().stream())
+        return groups.values().stream().flatMap(group -> group.getItems(true).stream())
                 .min(Comparator.comparing(Item::getScore));
     }
 
@@ -226,6 +251,20 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
         return copy;
     }
 
+    public static Severity toSeverity(float score) {
+        if (score >= WARNING) {
+            return Severity.NONE;
+        } else if (score >= WITH_ISSUES) {
+            return Severity.LOW;
+        } else if (score >= ERROR) {
+            return Severity.MEDIUM;
+        } else if (score >= BAD) {
+            return Severity.HIGH;
+        } else {
+            return Severity.CRITICAL;
+        }
+    }
+
     private void checkReadOnly() {
         if (readOnly) {
             throw new IllegalStateException("Health is read-only");
@@ -301,7 +340,15 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
          */
         private int order;
 
+        /**
+         * Holds the depth of the group within the score. The root group has a depth of 1,
+         * its subgroups have a depth of 2, and so on.
+         */
+        private int depth = 1;
 
+        /**
+         * Indicates whether the group is read-only. If {@code true}, the group cannot be modified.
+         */
         private boolean readOnly;
 
         /**
@@ -341,6 +388,7 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
                 Group group = new Group(name);
                 group.order = groups.size() * 10;
                 group.readOnly = readOnly;
+                group.depth = depth + 1;
                 return group;
             });
         }
@@ -357,13 +405,19 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
         /**
          * Returns the items of this group and all its subgroups.
          *
+         * @param all if {@code true}, returns all items from this group and its subgroups,
+         *            otherwise returns only the items of this group
          * @return a non-null instance
          */
-        public Collection<Item> getAllItems() {
-            Collection<Item> allItems = new ArrayList<>(items);
-            groups.values().forEach(group -> allItems.addAll(group.getAllItems()));
-            allItems.addAll(items);
-            return immutableCollection(allItems);
+        public Collection<Item> getItems(boolean all) {
+            if (all) {
+                Collection<Item> allItems = new ArrayList<>(items);
+                groups.values().forEach(group -> allItems.addAll(group.getItems(true)));
+                allItems.addAll(items);
+                return immutableCollection(allItems);
+            } else {
+                return getItems();
+            }
         }
 
         /**
@@ -456,6 +510,13 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
                 bullet.append(line).append(isLowestItem ? lowestSuffix : EMPTY_STRING).log();
             });
             logger.decreaseIndent();
+        }
+
+        private void addGroups(Collection<Group> groups) {
+            groups.add(this);
+            for (Group group : this.groups.values()) {
+                group.addGroups(groups);
+            }
         }
 
         private void readOnly() {

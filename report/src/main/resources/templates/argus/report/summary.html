@@ -146,8 +146,8 @@
     <h3 th:replace="~{fragments/utils :: h2('Health')}"></h3>
     <div class="container-fluid">
         <div class="row row-cards">
-            <h3 th:replace="~{fragments/health :: card('Service', ${serviceResource})}"></h3>
-            <h3 th:replace="~{fragments/health :: card('Server', ${serverResource})}"></h3>
+            <h3 th:replace="~{fragments/health :: card('Service', ${serviceResource}, false)}"></h3>
+            <h3 th:replace="~{fragments/health :: card('Server', ${serverResource}, false)}"></h3>
         </div>
     </div>
 

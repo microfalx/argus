@@ -8,13 +8,13 @@ import net.microfalx.argus.api.IssueService;
 import net.microfalx.lang.ClassUtils;
 import net.microfalx.lang.Initializable;
 import net.microfalx.lang.service.Service;
+import net.microfalx.metrics.statistics.MutableStatisticalSummary;
+import net.microfalx.metrics.statistics.TrendStatisticalSummary;
 import net.microfalx.threadpool.Trigger;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Queue;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -33,6 +33,9 @@ public class IssueServiceImpl extends AbstractService implements IssueService, I
     private final Collection<IssueListener> registeredListeners = new CopyOnWriteArraySet<>();
     private final Collection<IssueListener> classPathListeners = new CopyOnWriteArraySet<>();
 
+    private final Map<Alert.Severity, TrendStatisticalSummary> alertSummaries = new ConcurrentHashMap<>();
+    private final Map<Issue.Type, TrendStatisticalSummary> issueSummaries = new ConcurrentHashMap<>();
+
     public static IssueService getInstance() {
         return Service.lookup(IssueService.class);
     }
@@ -45,6 +48,18 @@ public class IssueServiceImpl extends AbstractService implements IssueService, I
     @Override
     public Collection<Alert> getPendingAlerts() {
         return unmodifiableCollection(alerts);
+    }
+
+    @Override
+    public TrendStatisticalSummary getTrend(Alert.Severity severity) {
+        requireNonNull(severity);
+        return doGetTrend(severity);
+    }
+
+    @Override
+    public TrendStatisticalSummary getTrend(Issue.Type type) {
+        requireNonNull(type);
+        return doGetTrend(type);
     }
 
     @Override
@@ -72,12 +87,16 @@ public class IssueServiceImpl extends AbstractService implements IssueService, I
     public void register(Issue issue) {
         requireNonNull(issue);
         issues.offer(issue);
+        TrendStatisticalSummary summary = doGetTrend(issue.getType());
+        ((MutableStatisticalSummary) summary).add(1);
     }
 
     @Override
     public void register(Alert alert) {
         requireNonNull(alert);
         alerts.offer(alert);
+        TrendStatisticalSummary summary = doGetTrend(alert.getSeverity());
+        ((MutableStatisticalSummary) summary).add(1);
     }
 
     @Override
@@ -129,6 +148,16 @@ public class IssueServiceImpl extends AbstractService implements IssueService, I
     private void registerTasks() {
         getThreadPool().schedule(new IssueProcessorWorker(), Trigger.fixedDelay(Duration.ofSeconds(5)));
         getThreadPool().schedule(new AlertProcessorWorker(), Trigger.fixedDelay(Duration.ofSeconds(5)));
+    }
+
+    private TrendStatisticalSummary doGetTrend(Alert.Severity severity) {
+        requireNonNull(severity);
+        return alertSummaries.computeIfAbsent(severity, key -> TrendStatisticalSummary.create());
+    }
+
+    private TrendStatisticalSummary doGetTrend(Issue.Type type) {
+        requireNonNull(type);
+        return issueSummaries.computeIfAbsent(type, key -> TrendStatisticalSummary.create());
     }
 
     private class IssueProcessorWorker implements Runnable {

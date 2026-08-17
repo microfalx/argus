@@ -2,6 +2,8 @@ package net.microfalx.argus.api;
 
 import com.google.common.util.concurrent.AbstractService;
 import net.microfalx.lang.annotation.Provider;
+import net.microfalx.metrics.statistics.TimeWindowStatisticalSummary;
+import net.microfalx.metrics.statistics.TrendStatisticalSummary;
 
 import java.util.Collection;
 import java.util.List;
@@ -45,12 +47,22 @@ public class IssueServiceImpl extends AbstractService implements IssueService {
     }
 
     @Override
+    public TrendStatisticalSummary getTrend(Alert.Severity severity) {
+        return new TimeWindowStatisticalSummary();
+    }
+
+    @Override
+    public TrendStatisticalSummary getTrend(Issue.Type type) {
+        return new TimeWindowStatisticalSummary();
+    }
+
+    @Override
     public void register(Issue issue) {
 
     }
 
     @Override
     public void register(Alert alert) {
-        
+
     }
 }

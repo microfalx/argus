@@ -2,9 +2,9 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 
-<div th:fragment="card(title, resource)" class="col-md-6 col-lg-3">
+<div th:fragment="card(title, resource, all)" class="col-md-6">
     <div class="card">
-        <div class="ribbon ribbon-top" th:classappend="${helper.getCls(resource.health.severity)}">
+        <div class="ribbon ribbon-top" th:classappend="${helper.getRibbonCls(resource.health.severity)}">
             <span th:text="${helper.formatNumber(resource.health.score)}"></span>
         </div>
         <div class="card-body">
@@ -12,15 +12,15 @@
             <table class="table table-hover">
                 <thead class="table-light">
                 <tr>
-                    <th scope="col">Group</th>
-                    <th scope="col">Score</th>
-                    <th scope="col">Trend</th>
+                    <th scope="col" style="width:200px">Group</th>
+                    <th scope="col" style="width:100px">Score</th>
+                    <th scope="col" style="width:70%">Trend</th>
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:each="group : ${resource.health.groups}">
-                    <td><span th:text="${group.name}"></span></td>
-                    <td><span th:text="${helper.formatNumber(group.score)}"></span></td>
+                <tr th:each="group : ${resource.health.getGroups(all)}">
+                    <td class="text-nowrap" th:style="${helper.getGroupStyle(group)}"><i th:if="${group.depth > 1}" th:class="${helper.getGroupIcon(group)}"></i><span th:text="${group.name}" ></span></td>
+                    <td class="text-nowrap"><span th:text="${helper.formatNumber(group.score)}" th:classappend="${helper.getBadgeFromScoreCls(group.score)}"></span></td>
                     <td></td>
                 </tr>
                 </tbody>
@@ -29,12 +29,5 @@
     </div>
 </div>
 
-<div th:fragment="content" class="container-fluid">
-    <div class="row row-cards">
-        <h3 th:replace="~{fragments/health :: card('Service', ${serviceResource})}"></h3>
-        <h3 th:replace="~{fragments/health :: card('Server', ${serverResource})}"></h3>
-    </div>
-</div>
-`
 </body>
 </html>

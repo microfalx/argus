@@ -1,4 +1,4 @@
-package net.microfalx.argus.core;
+package net.microfalx.argus.core.contributor;
 
 import net.microfalx.argus.api.Health;
 import net.microfalx.argus.api.Resource;

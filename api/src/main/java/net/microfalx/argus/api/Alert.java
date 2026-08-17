@@ -47,6 +47,14 @@ public class Alert implements Identifiable<String>, Timestampable<LocalDateTime>
         return event.getLevel();
     }
 
+    public Severity getSeverity() {
+        return switch (getLevel()) {
+            case WARN -> Severity.WARN;
+            case ERROR -> Severity.ERROR;
+            default -> Severity.INFO;
+        };
+    }
+
     @Override
     public LocalDateTime getCreatedAt() {
         return TimeUtils.toLocalDateTime(createdAt);
@@ -55,6 +63,12 @@ public class Alert implements Identifiable<String>, Timestampable<LocalDateTime>
     @Override
     public LocalDateTime getModifiedAt() {
         return TimeUtils.toLocalDateTime(modifiedAt);
+    }
+
+    public enum Severity {
+        INFO,
+        WARN,
+        ERROR
     }
 
     /**
