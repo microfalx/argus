@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.ToString;
 import net.microfalx.lang.NamedIdentityAware;
 import net.microfalx.lang.StringUtils;
+import net.microfalx.metrics.statistics.TimeWindowStatisticalSummary;
+import net.microfalx.metrics.statistics.TrendStatisticalSummary;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -39,6 +41,11 @@ public final class Resource extends NamedIdentityAware<String> implements Serial
      * Holds the health of the resource.
      */
     private Health health;
+
+    /**
+     * Holds the trend of the health.
+     */
+    private TrendStatisticalSummary trend;
 
     /**
      * A collection of instances of the resource. This collection is empty by default and can be populated.
@@ -86,6 +93,18 @@ public final class Resource extends NamedIdentityAware<String> implements Serial
     public Resource withHealth(Health health) {
         Resource copy = (Resource) copy();
         copy.health = health.readOnly();
+        return copy;
+    }
+
+    /**
+     * Returns a new resource with a different health trend.
+     *
+     * @param trend the new health trend
+     * @return a new instance
+     */
+    public Resource withHealthTrend(TrendStatisticalSummary trend) {
+        Resource copy = (Resource) copy();
+        copy.trend = trend;
         return copy;
     }
 

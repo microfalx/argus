@@ -5,9 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import net.microfalx.argus.api.*;
 import net.microfalx.jvm.ServerMetrics;
 import net.microfalx.jvm.VirtualMachineMetrics;
-import net.microfalx.lang.*;
+import net.microfalx.lang.ClassUtils;
+import net.microfalx.lang.IdGenerator;
+import net.microfalx.lang.Initializable;
+import net.microfalx.lang.JvmUtils;
 import net.microfalx.metrics.Batch;
 import net.microfalx.metrics.SeriesStore;
+import net.microfalx.metrics.statistics.TimeWindowStatisticalSummary;
 import net.microfalx.registry.Data;
 import net.microfalx.registry.Registry;
 import net.microfalx.threadpool.Trigger;
@@ -39,6 +43,9 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
     private volatile SeriesStore seriesStore;
     private volatile net.microfalx.argus.api.Service service;
 
+    private volatile TimeWindowStatisticalSummary serviceHealthTrend = new TimeWindowStatisticalSummary();
+    private volatile TimeWindowStatisticalSummary serverHealthTrend = new TimeWindowStatisticalSummary();
+
     @Getter private final Map<Resource.Type, Health> healths = new ConcurrentHashMap<>();
 
     @Override
@@ -65,6 +72,15 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
     public Health getHealth(Resource.Type type) {
         requireNonNull(type);
         return healths.computeIfAbsent(type, t -> new Health());
+    }
+
+    @Override
+    public Resource getResource(Resource.Type type) {
+        return switch (type) {
+            case SERVICE -> createServiceResource();
+            case SERVER -> createServerResource();
+            default -> throw new IllegalArgumentException("Unknown resource type: " + type);
+        };
     }
 
     @Override
@@ -232,7 +248,7 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
         return new Health();
     }
 
-    private void storeResources() {
+    private synchronized void storeResources() {
         Registry registry = Registry.get();
         // first, store the service info
         Resource serviceResource = createServiceResource();
@@ -273,15 +289,21 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
     }
 
     private Resource createServiceResource() {
-        return (Resource) Resource.create(Resource.Type.SERVICE, getSlotId())
-                .withGroup(getService().getName()).withHealth(getHealth(Resource.Type.SERVICE))
+        Health health = getHealth(Resource.Type.SERVICE);
+        Resource resource = (Resource) Resource.create(Resource.Type.SERVICE, getSlotId())
+                .withGroup(getService().getName()).withHealth(health)
                 .withName(getService().getName() + " " + service.getSlotId());
+        serverHealthTrend.add(health.getScore());
+        return resource.withHealthTrend(serverHealthTrend);
     }
 
     private Resource createServerResource() {
-        return (Resource) Resource.create(Resource.Type.SERVER, getHostname())
-                .withGroup(getClusterName()).withHealth(getHealth(Resource.Type.SERVER))
+        Health health = getHealth(Resource.Type.SERVER);
+        Resource resource = (Resource) Resource.create(Resource.Type.SERVER, getHostname())
+                .withGroup(getClusterName()).withHealth(health)
                 .withName(getHostname());
+        serverHealthTrend.add(health.getScore());
+        return resource.withHealthTrend(serverHealthTrend);
     }
 
     private class MaintenanceTask implements Runnable {

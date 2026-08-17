@@ -38,10 +38,23 @@ public interface HealthService extends Service, HealthProvider {
 
     /**
      * Returns the last calculated score for a given resource type.
+     * <p>
+     * The health is calculated based on the registered contributors and thresholds.
      *
      * @return a non-null instance
      */
     Health getHealth(Resource.Type type);
+
+    /**
+     * Returns the resource for a given type.
+     * <p>
+     * The resource has the health and health trend calculated based on the registered
+     * contributors and thresholds.
+     *
+     * @param type the type
+     * @return a non-null instance
+     */
+    Resource getResource(Resource.Type type);
 
     /**
      * Returns the last calculated score for a given health type.
