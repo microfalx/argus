@@ -112,16 +112,37 @@ class HealthServiceImplTest {
 
     @Test
     void scrapeAndReport() {
-        for (int i = 0; i < 5; i++) {
-            healthService.updateHealth();
-            scrape();
-        }
+        update();
         String report = healthService.getHealth(Resource.Type.SERVICE).getReport();
         Assertions.assertThat(report).contains("Total:")
                 .contains("JVM").contains("Memory")
                 .contains("Eden:").contains("Metaspace:")
                 .contains("GC")
                 .contains("Other");
+    }
+
+    @Test
+    void scrapeAndGetResources() {
+        update();
+        Collection<Resource> resources = healthService.getResources(Resource.Type.SERVICE);
+        assertEquals(1, resources.size());
+        Resource resource = resources.iterator().next();
+        assertNotNull(resource.getId());
+        assertNotNull(resource.getName());
+        assertEquals(Resource.Type.SERVICE, resource.getType());
+
+        resources = healthService.getResources(Resource.Type.SERVER);
+        assertEquals(1, resources.size());
+        resource = resources.iterator().next();
+        assertNotNull(resource.getId());
+        assertEquals(Resource.Type.SERVER, resource.getType());
+    }
+
+    private void update() {
+        for (int i = 0; i < 5; i++) {
+            scrape();
+            healthService.update();
+        }
     }
 
     private void scrape() {

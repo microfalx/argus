@@ -2,6 +2,9 @@ package net.microfalx.argus.api;
 
 import lombok.*;
 
+import java.io.Serial;
+import java.io.Serializable;
+
 import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 
 /**
@@ -11,7 +14,9 @@ import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 @Getter
 @ToString
 @EqualsAndHashCode
-public final class Threshold {
+public final class Threshold implements Serializable {
+
+    @Serial private static final long serialVersionUID = -8267284574822847550L;
 
     /**
      * The type of the threshold

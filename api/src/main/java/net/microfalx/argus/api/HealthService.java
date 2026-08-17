@@ -16,6 +16,20 @@ public interface HealthService extends Service, HealthProvider {
     }
 
     /**
+     * Returns the service metadata.
+     *
+     * @return a non-null instance
+     */
+    net.microfalx.argus.api.Service getService();
+
+    /**
+     * Changes the service metadata.
+     *
+     * @param service the service metadata
+     */
+    void setService(net.microfalx.argus.api.Service service);
+
+    /**
      * Returns the metrics store for health related metrics.
      *
      * @return a non-null instance
@@ -28,6 +42,20 @@ public interface HealthService extends Service, HealthProvider {
      * @return a non-null instance
      */
     Health getHealth(Resource.Type type);
+
+    /**
+     * Returns the last calculated score for a given health type.
+     *
+     * @return a non-null instance
+     */
+    Health getHealth(Health.Type type);
+
+    /**
+     * Returns the resources of a given type.
+     *
+     * @return a non-null instance
+     */
+    Collection<Resource> getResources(Resource.Type type);
 
     /**
      * Returns registered health contributors.

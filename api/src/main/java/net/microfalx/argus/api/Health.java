@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.ToString;
 import net.microfalx.lang.*;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.*;
 
@@ -35,8 +37,11 @@ import static net.microfalx.lang.StringUtils.toIdentifier;
  * </pre>
  */
 @Getter
-@ToString
-public final class Health extends IdentityAware<Long> implements Timestampable<ZonedDateTime> {
+@ToString(callSuper = true)
+@net.microfalx.lang.annotation.Version
+public final class Health extends IdentityAware<Long> implements Timestampable<ZonedDateTime>, Serializable {
+
+    @Serial private static final long serialVersionUID = 8458921058638887336L;
 
     public static final float MIN = 1;
     public static final float MAX = 5;
@@ -48,7 +53,13 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
     private final ZonedDateTime createdAt = ZonedDateTime.now();
     private ZonedDateTime modifiedAt = createdAt;
 
+    private boolean readOnly;
+    private Type type = Type.INSTANCE;
     private final Map<String, Group> groups = new LinkedHashMap<>();
+
+    public Health() {
+        setId(IdGenerator.get().next());
+    }
 
     /**
      * Normalizes the score value to be within its bounds.
@@ -59,7 +70,6 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
     public static float normalize(float value) {
         return Math.max(Health.MIN, Math.min(Health.MAX, value));
     }
-
 
     /**
      * Returns the groups part of this score.
@@ -79,8 +89,10 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
     public Group getGroup(String name) {
         requireNotEmpty(name);
         return groups.computeIfAbsent(toIdentifier(name), s -> {
+            checkReadOnly();
             Group group = new Group(name);
             group.order = groups.size() * 10;
+            group.readOnly = readOnly;
             return group;
         });
     }
@@ -114,6 +126,7 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
     public void update(String group, String item, float score) {
         requireNotEmpty(group);
         requireNotEmpty(item);
+        checkReadOnly();
         modifiedAt = ZonedDateTime.now();
         getGroup(group).update(item, score);
     }
@@ -129,6 +142,7 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
     public void update(String group, Item item) {
         requireNotEmpty(group);
         requireNotEmpty(item);
+        checkReadOnly();
         modifiedAt = ZonedDateTime.now();
         getGroup(group).update(item);
     }
@@ -142,6 +156,7 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
      */
     public void update(Item item) {
         requireNotEmpty(item);
+        checkReadOnly();
         modifiedAt = ZonedDateTime.now();
         String group = item.getGroup().orElse("General");
         getGroup(group).update(item);
@@ -165,9 +180,68 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
         return logger.getOutput();
     }
 
+    /**
+     * Changes the type of this health score.
+     *
+     * @param type a non-null instance
+     */
+    public void setType(Type type) {
+        requireNonNull(type);
+        checkReadOnly();
+        this.type = type;
+    }
+
+    /**
+     * Creates a read-only copy of this health instance.
+     *
+     * @return a non-null instance
+     */
+    public Health readOnly() {
+        Health copy = (Health) copy();
+        copy.readOnly = true;
+        for (Group group : copy.groups.values()) {
+            group.readOnly();
+        }
+        return copy;
+    }
+
+    private void checkReadOnly() {
+        if (readOnly) {
+            throw new IllegalStateException("Health is read-only");
+        }
+    }
+
+    /**
+     * An enum which provides the type of the health score.
+     */
+    public enum Type {
+
+        /**
+         * The score is calculated for the entire site, which includes all resources supporting the site
+         * (services, servers, etc).
+         */
+        SITE,
+
+        /**
+         * The score is calculated for a specific resource, which may include multiple instances
+         * (a service, a server cluster, etc).
+         */
+        RESOURCE,
+
+        /**
+         * The score is calculated for a specific instance of a resource
+         * (service replica, single server, etc).
+         */
+        INSTANCE
+    }
+
     @Getter
     @ToString
-    public static class Group implements Nameable {
+    @net.microfalx.lang.annotation.Version
+    public static class Group implements Nameable, Serializable {
+
+        @Serial
+        private static final long serialVersionUID = 5737407091915538304L;
 
         private final String name;
         private final Collection<Item> items = new ArrayList<>();
@@ -177,6 +251,9 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
          * Holds the order of the group within the score.
          */
         private int order;
+
+
+        private boolean readOnly;
 
         /**
          * Creates a group.
@@ -211,8 +288,10 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
         public Group getGroup(String name) {
             requireNotEmpty(name);
             return groups.computeIfAbsent(toIdentifier(name), s -> {
+                checkReadOnly();
                 Group group = new Group(name);
                 group.order = groups.size() * 10;
+                group.readOnly = readOnly;
                 return group;
             });
         }
@@ -265,6 +344,7 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
          */
         public void update(String name, float score) {
             Item item = new Item(name, score);
+            checkReadOnly();
             items.add(item);
         }
 
@@ -275,6 +355,7 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
          */
         public void update(Item item) {
             requireNonNull(item);
+            checkReadOnly();
             items.add(item);
         }
 
@@ -322,11 +403,28 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
             });
             logger.decreaseIndent();
         }
+
+        private void readOnly() {
+            readOnly = true;
+            for (Group group : groups.values()) {
+                group.readOnly();
+            }
+        }
+
+        private void checkReadOnly() {
+            if (readOnly) {
+                throw new IllegalStateException("Health is read-only");
+            }
+        }
     }
 
     @Getter
     @ToString
-    public static class Item extends NamedIdentityAware<String> {
+    @net.microfalx.lang.annotation.Version
+    public static class Item extends NamedIdentityAware<String> implements Serializable {
+
+        @Serial
+        private static final long serialVersionUID = 3745495489398322801L;
 
         /**
          * The group to which this item belongs
