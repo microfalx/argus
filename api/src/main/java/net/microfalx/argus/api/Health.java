@@ -326,11 +326,12 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
     @Getter
     @ToString
     @net.microfalx.lang.annotation.Version
-    public static class Group implements Nameable, Serializable {
+    public static class Group implements Identifiable<String>, Nameable, Serializable {
 
         @Serial
         private static final long serialVersionUID = 5737407091915538304L;
 
+        private String id;
         private final String name;
         private final Collection<Item> items = new ArrayList<>();
         private final Map<String, Group> groups = new LinkedHashMap<>();
@@ -363,6 +364,7 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
 
         private Group(String name) {
             requireNotEmpty(name);
+            this.id = toIdentifier(name);
             this.name = name;
         }
 
@@ -389,6 +391,7 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
                 group.order = groups.size() * 10;
                 group.readOnly = readOnly;
                 group.depth = depth + 1;
+                group.setParent(this);
                 return group;
             });
         }
@@ -517,6 +520,10 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
             for (Group group : this.groups.values()) {
                 group.addGroups(groups);
             }
+        }
+
+        private void setParent(Group parent) {
+            this.id = parent.getId() + "." + toIdentifier(name);
         }
 
         private void readOnly() {

@@ -2,6 +2,25 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 
+<div th:fragment="items(group)" class="collapse" th:id="'group-items-' + ${group.id}">
+    <table class="table table-hover">
+        <thead class="table-light">
+        <tr>
+            <th scope="col" style="width:70%">Item</th>
+            <th scope="col" style="width:10%">Score</th>
+            <th scope="col" style="width:20%">Description</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="item : ${group.getItems()}">
+            <td class="text-nowrap"><span th:text="${item.name}" ></span></td>
+            <td class="text-nowrap"><span th:text="${helper.formatNumber(item.score)}" th:classappend="${helper.getBadgeFromScoreCls(item.score)}"></span></td>
+            <td><span th:text="${item.description}"></span></td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
 <div th:fragment="card(title, resource, all)" class="col-md-6">
     <div class="card">
         <div class="ribbon ribbon-top" th:classappend="${helper.getRibbonCls(resource.health.severity)}">
@@ -19,9 +38,15 @@
                 </thead>
                 <tbody>
                 <tr th:each="group : ${resource.health.getGroups(all)}">
-                    <td class="text-nowrap" th:style="${helper.getGroupStyle(group)}"><i th:if="${group.depth > 1}" th:class="${helper.getGroupIcon(group)}"></i><span th:text="${group.name}" ></span></td>
+                    <td class="text-nowrap" th:style="${helper.getGroupStyle(group)}"><i th:if="${helper.hasGroupIcon(group, all)}" th:style="${helper.getGroupIconStyle(group)}" th:classappend="${helper.getGroupIconClass(group)}" data-bs-toggle="collapse" th:data-bs-target="'#group-items-' + ${group.id}"></i><span th:text="${group.name}" ></span></td>
                     <td class="text-nowrap"><span th:text="${helper.formatNumber(group.score)}" th:classappend="${helper.getBadgeFromScoreCls(group.score)}"></span></td>
-                    <td></td>
+                    <td>
+                        <div></div>
+                        <th:block th:if="${all}">
+                            <div th:replace="~{fragments/health :: items(${group})}"></div>
+                        </th:block>
+
+                    </td>
                 </tr>
                 </tbody>
             </table>

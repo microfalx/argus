@@ -8,6 +8,8 @@ import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 
+import static net.microfalx.lang.StringUtils.EMPTY_STRING;
+
 /**
  * Various helper methods for reports.
  */
@@ -15,6 +17,7 @@ public class ReportHelper {
 
     private static final ZonedDateTime startupTime = ZonedDateTime.now();
     private static final int SECURE_WORD_COUNT = 5;
+    private static final String EXPANDER_ICON = "fa-solid fa-caret-right";
     static final ZonedDateTime currentTime = ZonedDateTime.now();
 
     private final Report report;
@@ -88,13 +91,23 @@ public class ReportHelper {
         return "padding-left: " + (0.75 + (group.getDepth() - 1) / 2f) + "rem";
     }
 
-    public String getGroupIcon(Health.Group group) {
-        if (group.getDepth() < 2) return "";
-        String result = switch (group.getDepth()) {
-            case 2 -> "fa-solid fa-caret-right";
-            case 3 -> "fa-solid fa-chevron-right";
-            default -> "";
-        };
+    public boolean hasGroupIcon(Health.Group group, boolean all) {
+        return group.getDepth() > 1 || (all && !group.getItems().isEmpty());
+    }
+
+    public String getGroupIconStyle(Health.Group group) {
+        String style = "";
+        if (!group.getItems().isEmpty()) {
+            style = "cursor: pointer";
+        }
+        return style;
+    }
+
+    public String getGroupIconClass(Health.Group group) {
+        String result = hasGroupIcon(group, true) ? EXPANDER_ICON : EMPTY_STRING;
+        if (!group.getItems().isEmpty()) {
+            result += " text-primary";
+        }
         return result + " me-2";
     }
 
