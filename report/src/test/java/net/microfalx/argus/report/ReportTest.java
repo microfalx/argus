@@ -10,7 +10,7 @@ class ReportTest extends AbstractReportServiceTestCase {
 
     @Test
     void defaultSettings() throws IOException {
-        Report report = reportService.createReport();
+        Report report = reportService.createReport().setTheme(Report.Theme.LIGHT);
         Resource resource = Resource.memory();
         report.render(resource);
         Assertions.assertThat(resource.loadAsString()).contains("btn-back-to-top")
@@ -20,7 +20,7 @@ class ReportTest extends AbstractReportServiceTestCase {
 
     @Test
     void offlineSettings() throws IOException {
-        Report report = reportService.createReport().setOffline(false);
+        Report report = reportService.createReport().setOffline(false).setTheme(Report.Theme.DARK);
         Resource resource = Resource.memory();
         report.render(resource);
         Assertions.assertThat(resource.loadAsString()).contains("btn-back-to-top")

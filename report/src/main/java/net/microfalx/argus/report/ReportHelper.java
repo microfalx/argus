@@ -1,5 +1,7 @@
 package net.microfalx.argus.report;
 
+import net.microfalx.argus.api.Health;
+import net.microfalx.argus.api.Threshold;
 import net.microfalx.lang.*;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -48,6 +50,18 @@ public class ReportHelper {
 
     public String formatNumber(Number number) {
         return FormatterUtils.formatNumber(number);
+    }
+
+    public String getCls(Health.Severity severity) {
+        if (severity == null) return "";
+        return switch (severity) {
+            case NONE -> "bg-green";
+            case LOW -> "bg-yellow";
+            case MEDIUM -> "bg-orange";
+            case HIGH -> "bg-red bg-opacity-75";
+            case CRITICAL -> "bg-red";
+            default -> "";
+        };
     }
 
     public String toString(Object value) {

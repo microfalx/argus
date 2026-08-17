@@ -143,8 +143,16 @@
                                     th:text="${helper.formatDateTime(helper.currentTime)}"></span>, timezone
         <span class="text-primary-emphasis fw-bold" th:text="${helper.startupTime.zone}"></span>
     </p>
+    <h3 th:replace="~{fragments/utils :: h2('Health')}"></h3>
+    <div class="container-fluid">
+        <div class="row row-cards">
+            <h3 th:replace="~{fragments/health :: card('Service', ${serviceResource})}"></h3>
+            <h3 th:replace="~{fragments/health :: card('Server', ${serverResource})}"></h3>
+        </div>
+    </div>
+
     <th:block th:if="${issues.size()}">
-        <h3 th:replace="~{fragments/utils :: h3_count('Issue Types', ${issues.size()})}"></h3>
+        <h3 th:replace="~{fragments/utils :: h3('Issue Types', ${issues.size()})}"></h3>
         <div th:replace="~{summary :: render-issues}" ></div>
     </th:block>
     <th:block th:if="${pendingAlerts.size()}">

@@ -36,6 +36,7 @@ public abstract class AbstractReportServiceTestCase {
         File directory = new File(JvmUtils.getMavenTargetDirectory().orElseThrow(), "logs");
         JvmUtils.setLogsDirectory(validateDirectoryExists(directory));
         reportService.initialize();
+        reportService.setSettings(new ReportSettings().withSystemName("Test System"));
         collectVMStats();
     }
 

@@ -8,6 +8,7 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.stream.Stream;
 
 import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 import static net.microfalx.lang.ArgumentUtils.requireNotEmpty;
@@ -104,6 +105,26 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
      */
     public float getScore() {
         return getLowest().map(Item::getScore).orElse(5f);
+    }
+
+    /**
+     * Returns the severity of the score.
+     *
+     * @return a non-null instance
+     */
+    public Severity getSeverity() {
+        float score = getScore();
+        if (score >= WARNING) {
+            return Severity.NONE;
+        } else if (score >= WITH_ISSUES) {
+            return Severity.LOW;
+        } else if (score >= ERROR) {
+            return Severity.MEDIUM;
+        } else if (score >= BAD) {
+            return Severity.HIGH;
+        } else {
+            return Severity.CRITICAL;
+        }
     }
 
     /**
@@ -209,6 +230,34 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
         if (readOnly) {
             throw new IllegalStateException("Health is read-only");
         }
+    }
+
+    /**
+     * A severity associated with the issue.
+     */
+    public enum Severity {
+
+        NONE,
+
+        /**
+         * Low severity issue - minor impact
+         */
+        LOW,
+
+        /**
+         * Medium severity issue - moderate impact
+         */
+        MEDIUM,
+
+        /**
+         * High severity issue - significant impact
+         */
+        HIGH,
+
+        /**
+         * Critical severity issue - severe impact
+         */
+        CRITICAL
     }
 
     /**
@@ -328,12 +377,17 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
         }
 
         /**
-         * Returns the item with the lowest score in this group.
+         * Returns the item with the lowest score in this group or any subgroup.
          *
          * @return an optional item
          */
         public Optional<Item> getLowest() {
-            return items.stream().min(Comparator.comparing(Item::getScore));
+            Optional<Group> minGroup = groups.values().stream().min(Comparator.comparing(Group::getScore));
+            Optional<Item> minItem = items.stream().min(Comparator.comparing(Item::getScore));
+            return Stream.of(minGroup.flatMap(Group::getLowest), minItem)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .min(Comparator.comparing(Item::getScore));
         }
 
         /**

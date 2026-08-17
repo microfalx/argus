@@ -2,6 +2,7 @@ package net.microfalx.argus.report.fragment;
 
 import net.microfalx.argus.report.AbstractFragmentProvider;
 import net.microfalx.argus.report.Fragment;
+import net.microfalx.argus.report.Template;
 import net.microfalx.argus.report.TrendHelper;
 
 @net.microfalx.lang.annotation.Provider
@@ -17,4 +18,8 @@ public class SummaryProvider extends AbstractFragmentProvider {
                 .build();
     }
 
+    @Override
+    public void update(Template template) {
+        HealthProvider.doUpdate(template);
+    }
 }
