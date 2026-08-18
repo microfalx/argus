@@ -1,12 +1,16 @@
 package net.microfalx.argus.report;
 
 import net.microfalx.argus.api.Health;
+import net.microfalx.argus.api.Resource;
 import net.microfalx.lang.*;
+import net.microfalx.metrics.statistics.TrendStatisticalSummary;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 import static net.microfalx.lang.StringUtils.EMPTY_STRING;
 
@@ -109,6 +113,21 @@ public class ReportHelper {
             result += " text-primary";
         }
         return result + " me-2";
+    }
+
+    public String getTrend(Health.Group group) {
+        return "1,2,4,5,3,5,3.5,4.5,1.2,1.3,1.8";
+    }
+
+    public String getTrend(Resource resource) {
+        return getTrend(resource.getTrend());
+    }
+
+    public String getTrend(TrendStatisticalSummary summary) {
+        if (summary == null) return EMPTY_STRING;
+        return Arrays.stream(summary.getValues())
+                .mapToObj(FormatterUtils::formatNumber)
+                .collect(Collectors.joining(","));
     }
 
     public String toString(Object value) {

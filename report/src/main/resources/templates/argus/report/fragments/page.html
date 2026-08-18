@@ -21,6 +21,28 @@
             font-size: 1.3rem;
         }
 
+        .sparkline-bar {
+            display: inline-block;
+            overflow: hidden;
+            /* display: block; */
+            height: 18px;
+            max-height: 18px;
+            margin: 1px 1px 3px 10px;
+            vertical-align: top;
+        }
+
+        .sparkline-bar canvas, .sparkline-bar span {
+            max-height: 100% !important;
+            box-sizing: border-box;
+        }
+
+        .jqstooltip {
+            box-sizing: content-box !important;
+            width: auto !important;
+            height: auto !important;
+            padding: 5px !important;
+        }
+
         #btn-back-to-top {
             position: fixed !important;
             bottom: 1rem;
@@ -76,6 +98,7 @@
 <div th:fragment="code" th:remove="tag">
     <th:block th:if="${report.isDynamic()}">
     <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-sparklines/2.1.2/jquery.sparkline.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/js/tabler.min.js"></script>
     <script src="https://cdn.datatables.net/2.2.1/js/dataTables.js"></script>
     <script src="https://cdn.datatables.net/2.2.1/js/dataTables.bootstrap5.js"></script>
@@ -106,6 +129,17 @@
                 backToTopButton.style.display = "none";
             }
         }
+
+        // converts elements with this class in sparklines, using bar chart type and no zero axis
+        $('.sparkline-bar').sparkline('html',{
+            type: 'bar',
+            barColor: '#4099ff', // Default color for unmapped values
+            colorMap: {
+                '1:2': '#d63939',
+                '2:4': '#f59f00',
+                '4:5': '#2fb344'
+            },
+            zeroAxis: false});
     </script>
 </div>
 

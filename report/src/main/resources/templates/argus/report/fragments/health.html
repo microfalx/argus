@@ -27,7 +27,10 @@
             <span th:text="${helper.formatNumber(resource.health.score)}"></span>
         </div>
         <div class="card-body">
-            <h3 class="card-title" th:text="${title}"></h3>
+            <h3 class="card-title">
+                <span th:text="${title}"></span>
+                <span class="sparkline-bar" style="height: 20px" th:text="${helper.getTrend(resource)}"></span>
+            </h3>
             <table class="table table-hover">
                 <thead class="table-light">
                 <tr>
@@ -41,7 +44,7 @@
                     <td class="text-nowrap" th:style="${helper.getGroupStyle(group)}"><i th:if="${helper.hasGroupIcon(group, all)}" th:style="${helper.getGroupIconStyle(group)}" th:classappend="${helper.getGroupIconClass(group)}" data-bs-toggle="collapse" th:data-bs-target="'#group-items-' + ${group.id}"></i><span th:text="${group.name}" ></span></td>
                     <td class="text-nowrap"><span th:text="${helper.formatNumber(group.score)}" th:classappend="${helper.getBadgeFromScoreCls(group.score)}"></span></td>
                     <td>
-                        <div></div>
+                        <div><span class="sparkline-bar" th:text="${helper.getTrend(group)}"></span></div>
                         <th:block th:if="${all}">
                             <div th:replace="~{fragments/health :: items(${group})}"></div>
                         </th:block>
