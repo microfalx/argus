@@ -3,6 +3,8 @@ package net.microfalx.argus.api;
 import lombok.Getter;
 import lombok.ToString;
 import net.microfalx.lang.*;
+import net.microfalx.metrics.statistics.MutableStatisticalSummary;
+import net.microfalx.metrics.statistics.TrendStatisticalSummary;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -69,6 +71,11 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
     private boolean readOnly;
 
     /**
+     * Holds the trend of the scores for this health score and its groups.
+     */
+    private TrendStatisticalSummary trend;
+
+    /**
      * The type of the health score, which indicates whether the score is calculated for the entire site,
      * a specific resource, or a specific instance of a resource.
      */
@@ -80,13 +87,26 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
     }
 
     /**
-     * Normalizes the score value to be within its bounds.
+     * Returns the summary of the scores for this group and its subgroups.
      *
-     * @param value the value
-     * @return the normalized value
+     * @return a non-null instance
      */
-    public static float normalize(float value) {
-        return Math.max(Health.MIN, Math.min(Health.MAX, value));
+    public TrendStatisticalSummary getTrend() {
+        if (trend == null) {
+            trend = TrendStatisticalSummary.create();
+            ((MutableStatisticalSummary) trend).add(getScore());
+        }
+        return trend;
+    }
+
+    /**
+     * Attaches a new summary to this group.
+     *
+     * @param trend the summary to attach
+     */
+    public void setTrend(TrendStatisticalSummary trend) {
+        requireNonNull(trend);
+        this.trend = trend;
     }
 
     /**
@@ -251,6 +271,22 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
         return copy;
     }
 
+    /**
+     * Normalizes the score value to be within its bounds.
+     *
+     * @param value the value
+     * @return the normalized value
+     */
+    public static float normalize(float value) {
+        return Math.max(Health.MIN, Math.min(Health.MAX, value));
+    }
+
+    /**
+     * Converts a score to a severity level.
+     *
+     * @param score the score
+     * @return a non-null instance
+     */
     public static Severity toSeverity(float score) {
         if (score >= WARNING) {
             return Severity.NONE;
@@ -335,6 +371,8 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
         private final String name;
         private final Collection<Item> items = new ArrayList<>();
         private final Map<String, Group> groups = new LinkedHashMap<>();
+
+        private TrendStatisticalSummary trend;
 
         /**
          * Holds the order of the group within the score.
@@ -468,6 +506,29 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
             requireNonNull(item);
             checkReadOnly();
             items.add(item);
+        }
+
+        /**
+         * Returns the summary of the scores for this group and its subgroups.
+         *
+         * @return a non-null instance
+         */
+        public TrendStatisticalSummary getTrend() {
+            if (trend == null) {
+                trend = TrendStatisticalSummary.create();
+                ((MutableStatisticalSummary) trend).add(getScore());
+            }
+            return trend;
+        }
+
+        /**
+         * Attaches a new summary to this group.
+         *
+         * @param trend the trend to attach
+         */
+        public void setTrend(TrendStatisticalSummary trend) {
+            requireNonNull(trend);
+            this.trend = trend;
         }
 
         /**

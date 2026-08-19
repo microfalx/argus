@@ -130,6 +130,19 @@ public class ReportHelper {
                 .collect(Collectors.joining(","));
     }
 
+    public String getTrendGlyph(Health.Group group) {
+        return getTrendGlyph(group.getTrend());
+    }
+
+    public String getTrendGlyph(Resource resource) {
+        return getTrendGlyph(resource.getTrend());
+    }
+
+    public String getTrendGlyph(TrendStatisticalSummary summary) {
+        if (summary == null) return EMPTY_STRING;
+        return summary.getTrend().toHtml();
+    }
+
     public String toString(Object value) {
         if (value instanceof Collection<?>) {
             StringBuilder builder = new StringBuilder();
