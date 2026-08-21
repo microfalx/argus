@@ -14,7 +14,7 @@
         <tbody>
         <tr th:each="item : ${group.getItems()}">
             <td class="text-nowrap"><span th:text="${item.name}" ></span></td>
-            <td class="text-nowrap"><span th:text="${helper.formatNumber(item.score)}" th:classappend="${helper.getBadgeFromScoreCls(item.score)}"></span></td>
+            <td class="text-nowrap"><span th:text="${helper.formatScore(item.score)}" th:classappend="${helper.getBadgeFromScoreCls(item.score)}"></span></td>
             <td><span th:text="${item.description}"></span></td>
         </tr>
         </tbody>
@@ -24,7 +24,7 @@
 <div th:fragment="card(title, resource, all)" class="col-md-6">
     <div class="card">
         <div class="ribbon ribbon-top" th:classappend="${helper.getRibbonCls(resource.health.severity)}">
-            <span th:text="${helper.formatNumber(resource.health.score)}"></span>
+            <span th:text="${helper.formatScore(resource.health.score)}"></span>
         </div>
         <div class="card-body">
             <h3 class="card-title">
@@ -44,7 +44,7 @@
                 <tr th:each="group : ${resource.health.getGroups(all)}">
                     <td class="text-nowrap" th:style="${helper.getGroupStyle(group)}"><i th:if="${helper.hasGroupIcon(group, all)}" th:style="${helper.getGroupIconStyle(group)}" th:classappend="${helper.getGroupIconClass(group)}" data-bs-toggle="collapse" th:data-bs-target="'#group-items-' + ${group.id}"></i><span th:text="${group.name}" ></span></td>
                     <td class="text-nowrap">
-                        <span th:text="${helper.formatNumber(group.score)}" th:classappend="${helper.getBadgeFromScoreCls(group.score)}"></span>
+                        <span th:text="${helper.formatScore(group.score)}" th:classappend="${helper.getBadgeFromScoreCls(group.score)}"></span>
                         <span class="ms-1" th:utext="${helper.getTrendGlyph(group)}"></span>
                     </td>
                     <td>

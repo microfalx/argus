@@ -133,7 +133,7 @@ public class VirtualMachineHealthContributor extends AbstractHealthContributor i
 
     private static volatile Thresholds MEMORY_TENURED = Thresholds.create("Tenured", 85f, 95f, Unit.PERCENT).withId("jvm.memory.tenured").withGroup(MEMORY_GROUP);
     private static volatile Thresholds MEMORY_EDEN = Thresholds.create("Eden", 85f, 95f, Unit.PERCENT).withId("jvm.memory.eden").withGroup(MEMORY_GROUP);
-    private static volatile Thresholds MEMORY_METASPACE = Thresholds.create("Metaspace", 85f, 95f, Unit.PERCENT).withId("jvm.memory.metaspace").withGroup(MEMORY_GROUP);
+    private static volatile Thresholds MEMORY_METASPACE = Thresholds.create("Metaspace", 100f, 100f, Unit.PERCENT).withId("jvm.memory.metaspace").withGroup(MEMORY_GROUP);
     private static volatile Thresholds MEMORY_BUFFERS = Thresholds.create("Buffers", 85f, 95f, Unit.PERCENT).withId("jvm.memory.buffers").withGroup(MEMORY_GROUP);
 
     private static volatile Thresholds GC_EDEN = Thresholds.create("Eden", 50, 100, Unit.MILLISECOND).withId("jvm.gc.eden").withGroup(GC_GROUP);

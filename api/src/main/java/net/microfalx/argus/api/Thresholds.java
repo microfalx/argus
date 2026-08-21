@@ -233,23 +233,23 @@ public final class Thresholds extends NamedIdentityAware<String> {
         float maximum = getMaximum();
         float warnThreshold = warn.getValue();
         float errorThreshold = error.getValue();
-        if (warnThreshold == errorThreshold) return Health.WITH_ISSUES;
+        if (warnThreshold == errorThreshold) return NA;
         if (reverse) {
-            if (value <= minimum) return Health.MIN;
-            if (value < warnThreshold) return interpolate(value, minimum, warnThreshold, Health.MIN, ERROR);
+            if (value <= minimum) return MIN;
+            if (value < warnThreshold) return interpolate(value, minimum, warnThreshold, MIN, ERROR);
             if (value <= warnThreshold) return ERROR;
             if (value < errorThreshold) return interpolate(value, warnThreshold, errorThreshold, ERROR, WARNING);
             if (value <= errorThreshold) return WARNING;
-            if (value < maximum) return interpolate(value, errorThreshold, maximum, WARNING, Health.MAX);
-            return Health.MAX;
+            if (value < maximum) return interpolate(value, errorThreshold, maximum, WARNING, MAX);
+            return MAX;
         } else {
-            if (value <= minimum) return Health.MAX;
-            if (value < warnThreshold) return interpolate(value, minimum, warnThreshold, Health.MAX, WARNING);
+            if (value <= minimum) return MAX;
+            if (value < warnThreshold) return interpolate(value, minimum, warnThreshold, MAX, WARNING);
             if (value <= warnThreshold) return WARNING;
             if (value < errorThreshold) return interpolate(value, warnThreshold, errorThreshold, WARNING, ERROR);
             if (value <= errorThreshold) return ERROR;
-            if (value < maximum) return interpolate(value, errorThreshold, maximum, ERROR, Health.MIN);
-            return Health.MIN;
+            if (value < maximum) return interpolate(value, errorThreshold, maximum, ERROR, MIN);
+            return MIN;
         }
     }
 

@@ -58,10 +58,19 @@ public class ReportHelper {
         return FormatterUtils.formatNumber(number);
     }
 
+    public String formatScore(float score) {
+        if (score == Health.MAX) {
+            return formatNumber(10);
+        } else {
+            return formatNumber(score);
+        }
+    }
+
     public String getRibbonCls(Health.Severity severity) {
         if (severity == null) return "";
         return switch (severity) {
-            case NONE -> "bg-green";
+            case NA -> "bg-gray";
+            case OK -> "bg-green";
             case LOW -> "bg-yellow";
             case MEDIUM -> "bg-orange";
             case HIGH -> "bg-red bg-opacity-75";
@@ -81,7 +90,8 @@ public class ReportHelper {
     public String getBadgeCls(Health.Severity severity) {
         if (severity == null) return "";
         String result = switch (severity) {
-            case NONE -> "bg-green text-green-fg";
+            case NA -> "bg-gray text-gray-fg";
+            case OK -> "bg-green text-green-fg";
             case LOW -> "bg-yellow text-yellow-fg";
             case MEDIUM -> "bg-orange text-orange-fg";
             case HIGH -> "bg-red text-red-fg bg-opacity-75";
@@ -116,7 +126,7 @@ public class ReportHelper {
     }
 
     public String getTrend(Health.Group group) {
-        return "1,2,4,5,3,5,3.5,4.5,1.2,1.3,1.8";
+        return "1,2,4,5,6,8,7,9,10,9,3,8.1,7.3,7,5,3.5,4.5,5.8,3.7,1.2,1.3,1.8";
     }
 
     public String getTrend(Resource resource) {

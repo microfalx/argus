@@ -146,6 +146,19 @@ class HealthTest {
     }
 
     @Test
+    void groupUpdateWithNA() {
+        Health.Group group = Health.Group.create("Database");
+        group.update(Health.Item.create("Connections1", 3.5f));
+        group.update(Health.Item.create("Connections2", Health.NA));
+        assertThat(group.getScore()).isEqualTo(3.5f);
+
+        Health.Group subgroup = group.getGroup("Subgroup");
+        subgroup.update(Health.Item.create("Connections3", 2.5f));
+        subgroup.update(Health.Item.create("Connections4", 0f));
+        assertThat(group.getScore()).isEqualTo(2.5f);
+    }
+
+    @Test
     void exposedCollectionsAreImmutable() {
         Health health = new Health();
         Health.Group group = health.getGroup("Database");

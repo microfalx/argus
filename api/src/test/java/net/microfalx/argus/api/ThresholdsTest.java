@@ -35,9 +35,9 @@ class ThresholdsTest {
         Thresholds thresholds = Thresholds.create("Test", 50f, 100f);
 
         assertThat(thresholds.getScore(10f)).isEqualTo(Health.MAX);
-        assertThat(thresholds.getScore(30f)).isEqualTo(4.8f);
+        assertThat(thresholds.getScore(30f)).isEqualTo(9.4f);
         assertThat(thresholds.getScore(50f)).isEqualTo(Health.WARNING);
-        assertThat(thresholds.getScore(75f)).isEqualTo(3f);
+        assertThat(thresholds.getScore(75f)).isEqualTo(5.5f);
         assertThat(thresholds.getScore(100f)).isEqualTo(Health.ERROR);
         assertThat(thresholds.getScore(-100f)).isEqualTo(Health.MAX);
         assertThat(thresholds.getScore(500f)).isEqualTo(Health.MIN);
@@ -48,7 +48,7 @@ class ThresholdsTest {
         Thresholds thresholds = Thresholds.create("Test", 50f, 100f).withReverse(true);
 
         assertThat(thresholds.getScore(100f)).isEqualTo(Health.WARNING);
-        assertThat(thresholds.getScore(75f)).isEqualTo(3f);
+        assertThat(thresholds.getScore(75f)).isEqualTo(5.5f);
         assertThat(thresholds.getScore(50f)).isEqualTo(Health.ERROR);
         assertThat(thresholds.getScore(500f)).isEqualTo(Health.MAX);
         assertThat(thresholds.getScore(-100f)).isEqualTo(Health.MIN);
@@ -60,7 +60,7 @@ class ThresholdsTest {
 
         assertThat(thresholds.getScore(100f)).isEqualTo(Health.MIN);
         assertThat(thresholds.getScore(80f)).isEqualTo(Health.ERROR);
-        assertThat(thresholds.getScore(75f)).isEqualTo(2.33f, Offset.offset(0.1f));
+        assertThat(thresholds.getScore(75f)).isEqualTo(4.5f, Offset.offset(0.1f));
         assertThat(thresholds.getScore(50f)).isEqualTo(Health.WARNING);
         assertThat(thresholds.getScore(500f)).isEqualTo(Health.MIN);
         assertThat(thresholds.getScore(-100f)).isEqualTo(Health.MAX);
@@ -72,7 +72,7 @@ class ThresholdsTest {
 
         assertThat(thresholds.getScore(100f)).isEqualTo(Health.MAX);
         assertThat(thresholds.getScore(80f)).isEqualTo(Health.WARNING);
-        assertThat(thresholds.getScore(75f)).isEqualTo(3.66f, Offset.offset(0.1f));
+        assertThat(thresholds.getScore(75f)).isEqualTo(6.5f, Offset.offset(0.1f));
         assertThat(thresholds.getScore(50f)).isEqualTo(Health.ERROR);
         assertThat(thresholds.getScore(500f)).isEqualTo(Health.MAX);
         assertThat(thresholds.getScore(-100f)).isEqualTo(Health.MIN);
@@ -82,8 +82,8 @@ class ThresholdsTest {
     void getScoreReturnsWithIssuesWhenThresholdsAreEqual() {
         Thresholds thresholds = Thresholds.create("Test", 20f, 20f);
 
-        assertThat(thresholds.getScore(20f)).isEqualTo(Health.WITH_ISSUES);
-        assertThat(thresholds.getScore(200f)).isEqualTo(Health.WITH_ISSUES);
+        assertThat(thresholds.getScore(20f)).isEqualTo(Health.NA);
+        assertThat(thresholds.getScore(200f)).isEqualTo(Health.NA);
     }
 
     @Test
@@ -187,5 +187,12 @@ class ThresholdsTest {
     void getMaximumForCounterReverseReturnsTwiceError() {
         Thresholds thresholds = Thresholds.create("Test", 50f, 100f).withReverse(true);
         assertThat(thresholds.getMaximum()).isEqualTo(200f);
+    }
+
+    @Test
+    void getWithPercentAtMaximum() {
+        Thresholds thresholds = Thresholds.create("Test", 100f, 100f, Unit.PERCENT);
+        Health.Item item = Health.Item.create(thresholds, 98, 100, Unit.BYTE);
+        assertThat(item.getScore()).isEqualTo(0);
     }
 }

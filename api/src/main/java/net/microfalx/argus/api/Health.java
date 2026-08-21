@@ -46,12 +46,13 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
 
     @Serial private static final long serialVersionUID = 8458921058638887336L;
 
+    public static final float NA = 0;
     public static final float MIN = 1;
-    public static final float MAX = 5;
-    public static final float WARNING = 4;
-    public static final float ERROR = 2;
-    public static final float BAD = 1.5f;
-    public static final float WITH_ISSUES = 2.5f;
+    public static final float MAX = 10;
+    public static final float WARNING = 7;
+    public static final float ERROR = 4;
+    public static final float BAD = 2f;
+    public static final float WITH_ISSUES = 6.5f;
 
     /**
      * Holds the timestamp when this health score was created. The timestamp is set when the instance
@@ -160,7 +161,7 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
      * @return a value between 1 and 5
      */
     public float getScore() {
-        return getLowest().map(Item::getScore).orElse(5f);
+        return getLowest().map(Item::getScore).orElse(MAX);
     }
 
     /**
@@ -178,7 +179,8 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
      * @return an optional item
      */
     public Optional<Item> getLowest() {
-        return groups.values().stream().flatMap(group -> group.getItems(true).stream())
+        return groups.values().stream()
+                .flatMap(group -> group.getItems(true).stream().filter(item -> item.getScore() != NA))
                 .min(Comparator.comparing(Item::getScore));
     }
 
@@ -278,6 +280,7 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
      * @return the normalized value
      */
     public static float normalize(float value) {
+        if (value == NA) return NA;
         return Math.max(Health.MIN, Math.min(Health.MAX, value));
     }
 
@@ -288,8 +291,9 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
      * @return a non-null instance
      */
     public static Severity toSeverity(float score) {
+        if (score == NA) return Severity.NA;
         if (score >= WARNING) {
-            return Severity.NONE;
+            return Severity.OK;
         } else if (score >= WITH_ISSUES) {
             return Severity.LOW;
         } else if (score >= ERROR) {
@@ -312,7 +316,15 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
      */
     public enum Severity {
 
-        NONE,
+        /**
+         * No severity can be determined - no impact
+         */
+        NA,
+
+        /**
+         * No severity issue - no impact
+         */
+        OK,
 
         /**
          * Low severity issue - minor impact
@@ -478,7 +490,7 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
          */
         public Optional<Item> getLowest() {
             Optional<Group> minGroup = groups.values().stream().min(Comparator.comparing(Group::getScore));
-            Optional<Item> minItem = items.stream().min(Comparator.comparing(Item::getScore));
+            Optional<Item> minItem = items.stream().filter(item -> item.getScore() != NA).min(Comparator.comparing(Item::getScore));
             return Stream.of(minGroup.flatMap(Group::getLowest), minItem)
                     .filter(Optional::isPresent)
                     .map(Optional::get)
