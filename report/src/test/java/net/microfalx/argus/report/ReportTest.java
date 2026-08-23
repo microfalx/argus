@@ -15,7 +15,7 @@ class ReportTest extends AbstractReportServiceTestCase {
         report.render(resource);
         Assertions.assertThat(resource.loadAsString()).contains("btn-back-to-top")
                 .contains("class=\"page\"").contains("Average CPU");
-        openInBrowser(resource);
+        ReportTestUtils.openInBrowser(resource);
     }
 
     @Test
@@ -25,7 +25,7 @@ class ReportTest extends AbstractReportServiceTestCase {
         report.render(resource);
         Assertions.assertThat(resource.loadAsString()).contains("btn-back-to-top")
                 .contains("class=\"page\"").contains("Average CPU");
-        openInBrowser(resource);
+        ReportTestUtils.openInBrowser(resource);
     }
 
 }

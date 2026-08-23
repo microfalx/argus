@@ -114,6 +114,7 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
 
     @Override
     public void start() {
+        startScraping();
         registerTasks();
     }
 
@@ -256,6 +257,15 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
         // second, store the server info
         Resource serverResource = createServerResource();
         registry.set(getRegistryPath(serverResource), serverResource);
+    }
+
+    private void startScraping() {
+        VirtualMachineMetrics virtualMachineMetrics = VirtualMachineMetrics.get();
+        virtualMachineMetrics.setExecutor(getThreadPool());
+        virtualMachineMetrics.start();
+        ServerMetrics serverMetrics = ServerMetrics.get();
+        serverMetrics.setExecutor(getThreadPool());
+        serverMetrics.start();
     }
 
     private String getRegistryPath(Resource.Type type) {

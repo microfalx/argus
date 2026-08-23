@@ -172,8 +172,8 @@ public class ReportService extends AbstractService implements Initializable {
      *
      * @param interval the reporting interval
      */
-    public void send(Duration interval) {
-        send(interval, null);
+    public Report send(Duration interval) {
+        return send(interval, null);
     }
 
     /**
@@ -182,7 +182,7 @@ public class ReportService extends AbstractService implements Initializable {
      * @param interval the reporting interval
      * @param suffix   a suffix added to the title, to signal a special case
      */
-    public void send(Duration interval, String suffix) {
+    public Report send(Duration interval, String suffix) {
         requireNonNull(interval);
         Report report = createReport();
         updateReportName(report, suffix);
@@ -207,6 +207,7 @@ public class ReportService extends AbstractService implements Initializable {
         } catch (Exception e) {
             throw new ReportException("Failed to send the report for interval " + interval, e);
         }
+        return report;
     }
 
     @Override

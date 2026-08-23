@@ -50,7 +50,7 @@
             <groupId>net.microfalx.webjar</groupId>
             <artifactId>webjar-bootstrap-base</artifactId>
         </dependency>
-        
+
         <dependency>
             <groupId>net.microfalx.webjar</groupId>
             <artifactId>webjar-bootstrap-theme-tabler</artifactId>
@@ -76,6 +76,12 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>net.datafaker</groupId>
+            <artifactId>datafaker</artifactId>
+            <scope>test</scope>
         </dependency>
 
     </dependencies>
