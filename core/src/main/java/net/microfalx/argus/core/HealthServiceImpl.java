@@ -202,8 +202,10 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
             Health nextHealth = new Health();
             for (HealthContributor contributor : contributors) {
                 if (!contributor.supports(type)) continue;
-                METRICS_METRICS.time("Scrape Health " + contributor.getName(), (t) -> contributor.update(nextHealth));
+                METRICS_METRICS.time("Scrape Health " + contributor.getName(),
+                        (t) -> contributor.update(nextHealth));
             }
+            updateTrend(nextHealth, type);
             this.healths.put(type, nextHealth);
         }
     }
@@ -212,6 +214,17 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
         Batch batch = Batch.create(currentTimeMillis());
         METRICS_METRICS.time("Scrape Health", t -> updateMetrics(batch));
         METRICS_METRICS.time("Store Health", t -> seriesStore.add(batch));
+    }
+
+    private synchronized void updateTrend(Health nextHealth, Resource.Type type) {
+        float score = nextHealth.getScore();
+        if (type == Resource.Type.SERVICE) {
+            serviceHealthTrend.add(score);
+            nextHealth.setTrend(serviceHealthTrend);
+        } else if (type == Resource.Type.SERVER) {
+            serverHealthTrend.add(score);
+            nextHealth.setTrend(serverHealthTrend);
+        }
     }
 
     private void updateMetrics(Batch batch) {
@@ -298,22 +311,20 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
         return defaultIfNull(System.getenv().get("ARGUS_HOSTNAME"), JvmUtils.getLocalHost().getHostName());
     }
 
-    private Resource createServiceResource() {
+    private synchronized Resource createServiceResource() {
         Health health = getHealth(Resource.Type.SERVICE);
         Resource resource = (Resource) Resource.create(Resource.Type.SERVICE, getSlotId())
                 .withGroup(getService().getName()).withHealth(health)
                 .withName(getService().getName() + " " + service.getSlotId());
-        serverHealthTrend.add(health.getScore());
-        return resource.withHealthTrend(serverHealthTrend);
+        return resource.withHealth(health);
     }
 
-    private Resource createServerResource() {
+    private synchronized Resource createServerResource() {
         Health health = getHealth(Resource.Type.SERVER);
         Resource resource = (Resource) Resource.create(Resource.Type.SERVER, getHostname())
                 .withGroup(getClusterName()).withHealth(health)
                 .withName(getHostname());
-        serverHealthTrend.add(health.getScore());
-        return resource.withHealthTrend(serverHealthTrend);
+        return resource.withHealth(health);
     }
 
     private class MaintenanceTask implements Runnable {

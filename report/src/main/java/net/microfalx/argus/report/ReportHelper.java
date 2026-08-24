@@ -3,6 +3,7 @@ package net.microfalx.argus.report;
 import net.microfalx.argus.api.Health;
 import net.microfalx.argus.api.Resource;
 import net.microfalx.lang.*;
+import net.microfalx.metrics.statistics.Trend;
 import net.microfalx.metrics.statistics.TrendStatisticalSummary;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -10,6 +11,8 @@ import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.StringJoiner;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import static net.microfalx.lang.StringUtils.EMPTY_STRING;
@@ -19,8 +22,10 @@ import static net.microfalx.lang.StringUtils.EMPTY_STRING;
  */
 public class ReportHelper {
 
+    private static final boolean DEMO_TRENDS = Boolean.parseBoolean(System.getProperty("argus.report.trends.demo", "false"));
     private static final ZonedDateTime startupTime = ZonedDateTime.now();
     private static final int SECURE_WORD_COUNT = 5;
+    private static final int MAX_TREND_POINTS = 50;
     private static final String EXPANDER_ICON = "fa-solid fa-caret-right";
     static final ZonedDateTime currentTime = ZonedDateTime.now();
 
@@ -59,6 +64,7 @@ public class ReportHelper {
     }
 
     public String formatScore(float score) {
+        if (DEMO_TRENDS) score = getDemoScore();
         if (score == Health.MAX) {
             return formatNumber(10);
         } else {
@@ -68,6 +74,7 @@ public class ReportHelper {
 
     public String getRibbonCls(Health.Severity severity) {
         if (severity == null) return "";
+        if (DEMO_TRENDS) severity = Health.toSeverity(getDemoScore());
         return switch (severity) {
             case NA -> "bg-gray";
             case OK -> "bg-green";
@@ -79,11 +86,13 @@ public class ReportHelper {
     }
 
     public String getBadgeFromScoreCls(float score) {
+        if (DEMO_TRENDS) score = getDemoScore();
         return getBadgeCls(Health.toSeverity(score));
     }
 
     public String getBadgeFromScoreCls(Float score) {
         if (score == null) return "";
+        if (DEMO_TRENDS) score = getDemoScore();
         return getBadgeFromScoreCls(score.floatValue());
     }
 
@@ -126,16 +135,17 @@ public class ReportHelper {
     }
 
     public String getTrend(Health.Group group) {
-        return "1,2,4,5,6,8,7,9,10,9,3,8.1,7.3,7,5,3.5,4.5,5.8,3.7,1.2,1.3,1.8";
+        return getDemoTrendValues();
     }
 
     public String getTrend(Resource resource) {
-        return getTrend(resource.getTrend());
+        return getTrend(resource.getHealth().getTrend());
     }
 
     public String getTrend(TrendStatisticalSummary summary) {
         if (summary == null) return EMPTY_STRING;
-        return Arrays.stream(summary.getValues())
+        if (DEMO_TRENDS) return getDemoTrendValues();
+        return Arrays.stream(summary.getValues(MAX_TREND_POINTS))
                 .mapToObj(FormatterUtils::formatNumber)
                 .collect(Collectors.joining(","));
     }
@@ -145,11 +155,12 @@ public class ReportHelper {
     }
 
     public String getTrendGlyph(Resource resource) {
-        return getTrendGlyph(resource.getTrend());
+        return getTrendGlyph(resource.getHealth().getTrend());
     }
 
     public String getTrendGlyph(TrendStatisticalSummary summary) {
         if (summary == null) return EMPTY_STRING;
+        if (DEMO_TRENDS) return getDemoTrend().toHtml();
         return summary.getTrend().toHtml();
     }
 
@@ -207,6 +218,24 @@ public class ReportHelper {
     public String toHtmlId(Object value) {
         if (value == null) return null;
         return "#" + ObjectUtils.toString(value);
+    }
+
+    private Trend getDemoTrend() {
+        return Trend.values()[(int) (Math.random() * Trend.values().length)];
+    }
+
+    private static float getDemoScore() {
+        return 1 + ThreadLocalRandom.current().nextFloat(9);
+    }
+
+    private String getDemoTrendValues() {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        StringJoiner joiner = new StringJoiner(",");
+        for (int i = 0; i < MAX_TREND_POINTS; i++) {
+            float value = 1 + random.nextFloat(9);
+            joiner.add(FormatterUtils.formatNumber(value));
+        }
+        return joiner.toString();
     }
 
     static final long[] DURATION_BUCKETS = new long[]{

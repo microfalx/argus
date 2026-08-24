@@ -43,6 +43,10 @@
             padding: 5px !important;
         }
 
+        .fa-variance {
+            animation: fa-pulse 2s infinite linear;
+        }
+
         #btn-back-to-top {
             position: fixed !important;
             bottom: 1rem;
@@ -133,13 +137,19 @@
         // converts elements with this class in sparklines, using bar chart type and no zero axis
         $('.sparkline-bar').sparkline('html',{
             type: 'bar',
+            chartRangeMin: 1,
+            chartRangeMax: 10,
             barColor: '#4099ff', // Default color for unmapped values
             colorMap: {
                 '1:4': '#d63939',
                 '4:7': '#f59f00',
                 '7:10': '#2fb344'
             },
-            zeroAxis: false});
+            zeroAxis: true});
+
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip()
+        })
     </script>
 </div>
 
