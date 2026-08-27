@@ -1,5 +1,7 @@
 package net.microfalx.argus.api;
 
+import net.microfalx.lang.CollectionUtils;
+import net.microfalx.lang.Nameable;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -8,6 +10,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class HealthTest {
 
@@ -214,7 +217,7 @@ class HealthTest {
         health.getGroup("JVM").getGroup("Memory").update("Heap", 2.5f);
 
         String report = health.getReport();
-        Assertions.assertThat(report).contains("Broker: 1.8 (*)").contains("Heap: 2.5");
+        assertThat(report).contains("Broker: 1.8 (*)").contains("Heap: 2.5");
     }
 
 
@@ -250,5 +253,34 @@ class HealthTest {
         int itemLeadingSpaces = itemLine.length() - itemLine.stripLeading().length();
         assertThat(itemLeadingSpaces).isGreaterThan(groupLeadingSpaces);
     }
+
+    @Test
+    void getScored() {
+        Health health = new Health("test");
+        Health.Group group1 = health.getGroup("Database");
+        Health.Group group2 = group1.getGroup("Node");
+        group2.update("Connections", 2.5f);
+
+        health.update("Messaging", "Broker", 1.75f);
+        health.update("Database", "Latency", 3f);
+        assertThat(health.getScored().stream().map(Nameable::getName).toList())
+                .containsExactly("Database", "Node", "Connections",
+                        "Latency", "Messaging", "Broker");
+    }
+
+    @Test
+    void ids() {
+        Health health = new Health("test");
+        Health.Group group1 = health.getGroup("Database");
+        Health.Group group2 = group1.getGroup("Node");
+
+        Health.Item item1 = health.update("Messaging", "Broker", 1.75f);
+        health.update("Database", "Latency", 3f);
+        assertEquals("test", health.getId());
+        assertEquals("test.database", group1.getId());
+        assertEquals("test.database.node", group2.getId());
+        assertEquals("test.messaging.broker", item1.getId());
+    }
+
 }
 

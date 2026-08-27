@@ -5,6 +5,7 @@ import net.microfalx.argus.api.HealthService;
 import net.microfalx.argus.api.HealthSettings;
 import net.microfalx.jvm.VirtualMachineMetrics;
 import net.microfalx.jvm.model.VirtualMachine;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -14,11 +15,11 @@ import static net.microfalx.lang.FormatterUtils.formatPercent;
 import static net.microfalx.lang.ThreadUtils.sleepSeconds;
 
 @Slf4j
-class HealthServiceImplIntegrationTest {
+@Disabled
+class HealthServiceImplPerformanceTest {
 
     @Test
     void collectEvery10seconds() {
-        HealthService healthService = HealthService.getInstance();
         updateScrapeInteger(10);
         while (true) {
             printStats();

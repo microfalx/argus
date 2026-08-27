@@ -7,7 +7,6 @@ import net.microfalx.metrics.statistics.MutableStatisticalSummary;
 import net.microfalx.metrics.statistics.TrendStatisticalSummary;
 
 import java.io.Serial;
-import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Stream;
@@ -42,7 +41,7 @@ import static net.microfalx.lang.StringUtils.toIdentifier;
 @Getter
 @ToString(callSuper = true)
 @net.microfalx.lang.annotation.Version
-public final class Health extends IdentityAware<Long> implements Timestampable<ZonedDateTime>, Serializable {
+public final class Health extends IdentityAware<String> implements Timestampable<ZonedDateTime> {
 
     @Serial private static final long serialVersionUID = 8458921058638887336L;
 
@@ -84,7 +83,11 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
     private final Map<String, Group> groups = new LinkedHashMap<>();
 
     public Health() {
-        setId(IdGenerator.get().next());
+        setId(IdGenerator.get().nextAsString());
+    }
+
+    public Health(String id) {
+        setId(id);
     }
 
     /**
@@ -108,6 +111,19 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
     public void setTrend(TrendStatisticalSummary trend) {
         requireNonNull(trend);
         this.trend = trend;
+    }
+
+    /**
+     * Returns all scored objects, which includes all groups and items.
+     *
+     * @return a non-null instance
+     */
+    public Collection<Scored> getScored() {
+        Collection<Scored> scored = new ArrayList<>();
+        for (Group value : groups.values()) {
+            updateScored(scored, value);
+        }
+        return scored;
     }
 
     /**
@@ -149,6 +165,7 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
         return groups.computeIfAbsent(toIdentifier(name), s -> {
             checkReadOnly();
             Group group = new Group(name);
+            group.setParent(this);
             group.order = groups.size() * 10;
             group.readOnly = readOnly;
             return group;
@@ -191,12 +208,12 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
      * @param item  the name of the item
      * @param score the score of the item
      */
-    public void update(String group, String item, float score) {
+    public Item update(String group, String item, float score) {
         requireNotEmpty(group);
         requireNotEmpty(item);
         checkReadOnly();
         modifiedAt = ZonedDateTime.now();
-        getGroup(group).update(item, score);
+        return getGroup(group).update(item, score);
     }
 
     /**
@@ -207,12 +224,12 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
      * @param group the name of the group which owns the item
      * @param item  the item
      */
-    public void update(String group, Item item) {
+    public Item update(String group, Item item) {
         requireNotEmpty(group);
         requireNotEmpty(item);
         checkReadOnly();
         modifiedAt = ZonedDateTime.now();
-        getGroup(group).update(item);
+        return getGroup(group).update(item);
     }
 
     /**
@@ -222,12 +239,12 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
      *
      * @param item the item
      */
-    public void update(Item item) {
+    public Item update(Item item) {
         requireNotEmpty(item);
         checkReadOnly();
         modifiedAt = ZonedDateTime.now();
         String group = item.getGroup().orElse("General");
-        getGroup(group).update(item);
+        return getGroup(group).update(item);
     }
 
     /**
@@ -305,10 +322,31 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
         }
     }
 
+    private void updateScored(Collection<Scored> scored, Group group) {
+        scored.add(group);
+        for (Group childGroup : group.getGroups()) {
+            updateScored(scored, childGroup);
+        }
+        scored.addAll(group.getItems());
+    }
+
     private void checkReadOnly() {
         if (readOnly) {
             throw new IllegalStateException("Health is read-only");
         }
+    }
+
+    /**
+     * An interface for an object which provides a score.
+     */
+    public interface Scored extends Identifiable<String>, Nameable {
+
+        /**
+         * Returns the score of the object.
+         *
+         * @return the score
+         */
+        float getScore();
     }
 
     /**
@@ -374,13 +412,11 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
     @Getter
     @ToString
     @net.microfalx.lang.annotation.Version
-    public static class Group implements Identifiable<String>, Nameable, Serializable {
+    public static class Group extends NamedIdentityAware<String> implements Scored {
 
         @Serial
         private static final long serialVersionUID = 5737407091915538304L;
 
-        private String id;
-        private final String name;
         private final Collection<Item> items = new ArrayList<>();
         private final Map<String, Group> groups = new LinkedHashMap<>();
 
@@ -414,8 +450,8 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
 
         private Group(String name) {
             requireNotEmpty(name);
-            this.id = toIdentifier(name);
-            this.name = name;
+            this.setId(toIdentifier(name));
+            this.setName(name);
         }
 
         /**
@@ -438,6 +474,7 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
             return groups.computeIfAbsent(toIdentifier(name), s -> {
                 checkReadOnly();
                 Group group = new Group(name);
+                group.setParent(this);
                 group.order = groups.size() * 10;
                 group.readOnly = readOnly;
                 group.depth = depth + 1;
@@ -503,10 +540,12 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
          * @param name  the name of the item
          * @param score the score of the item
          */
-        public void update(String name, float score) {
+        public Item update(String name, float score) {
             Item item = new Item(name, score);
+            item.setParent(this);
             checkReadOnly();
             items.add(item);
+            return item;
         }
 
         /**
@@ -514,10 +553,12 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
          *
          * @param item the item
          */
-        public void update(Item item) {
+        public Item update(Item item) {
             requireNonNull(item);
             checkReadOnly();
+            item.setParent(this);
             items.add(item);
+            return item;
         }
 
         /**
@@ -555,7 +596,7 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
          */
         void report(Logger logger, Item lowestItem, boolean isLowest, int depth) {
             String lowestSuffix = isLowest ? " (*)" : EMPTY_STRING;
-            String finalName = name + lowestSuffix;
+            String finalName = getName() + lowestSuffix;
             if (depth > 1) {
                 logger.atInfo().bullet().append(finalName).log();
             } else {
@@ -595,8 +636,8 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
             }
         }
 
-        private void setParent(Group parent) {
-            this.id = parent.getId() + "." + toIdentifier(name);
+        private void setParent(Identifiable<?> parent) {
+            this.setId(parent.getId() + "." + toIdentifier(getName()));
         }
 
         private void readOnly() {
@@ -616,7 +657,7 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
     @Getter
     @ToString
     @net.microfalx.lang.annotation.Version
-    public static class Item extends NamedIdentityAware<String> implements Serializable {
+    public static class Item extends NamedIdentityAware<String> implements Scored {
 
         @Serial
         private static final long serialVersionUID = 3745495489398322801L;
@@ -820,6 +861,10 @@ public final class Health extends IdentityAware<Long> implements Timestampable<Z
             super.copyProperties(source, target);
             ((Item) target).thresholds = thresholds;
             ((Item) target).policies = EnumSet.copyOf(policies);
+        }
+
+        private void setParent(Group parent) {
+            this.setId(parent.getId() + "." + toIdentifier(getName()));
         }
     }
 

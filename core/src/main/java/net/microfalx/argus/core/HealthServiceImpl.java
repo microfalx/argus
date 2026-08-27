@@ -10,6 +10,7 @@ import net.microfalx.lang.IdGenerator;
 import net.microfalx.lang.Initializable;
 import net.microfalx.lang.JvmUtils;
 import net.microfalx.metrics.Batch;
+import net.microfalx.metrics.Metric;
 import net.microfalx.metrics.SeriesStore;
 import net.microfalx.metrics.statistics.TimeWindowStatisticalSummary;
 import net.microfalx.registry.Data;
@@ -213,7 +214,7 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
 
     void updateHealth() {
         for (Resource.Type type : Resource.Type.values()) {
-            Health nextHealth = new Health();
+            Health nextHealth = new Health(type.name().toLowerCase());
             for (HealthContributor contributor : contributors) {
                 if (!contributor.supports(type)) continue;
                 METRICS_METRICS.time("Scrape Health " + contributor.getName(),
@@ -242,6 +243,12 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
     }
 
     private void updateMetrics(Batch batch) {
+        for (Health health : healths.values()) {
+            batch.add(Metric.get("health." + health.getId()), health.getScore());
+            for (Health.Scored scored : health.getScored()) {
+                batch.add(Metric.get("health." + scored.getId()), scored.getScore());
+            }
+        }
         for (HealthContributor contributor : contributors) {
             contributor.update(batch);
         }
