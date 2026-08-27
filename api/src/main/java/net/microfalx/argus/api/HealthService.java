@@ -16,6 +16,20 @@ public interface HealthService extends Service, HealthProvider {
     }
 
     /**
+     * Returns the health settings.
+     *
+     * @return a non-null instance
+     */
+    HealthSettings getSettings();
+
+    /**
+     * Changes the health settings.
+     *
+     * @param settings the new settings
+     */
+    void setSettings(HealthSettings settings);
+
+    /**
      * Returns the service metadata.
      *
      * @return a non-null instance

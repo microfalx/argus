@@ -29,7 +29,7 @@
         <div class="card-body">
             <h3 class="card-title">
                 <span th:text="${title}"></span>
-                <span class="sparkline-bar" style="height: 20px" th:text="${helper.getTrend(resource)}"></span>
+                <span class="d-none sparkline-bar" style="height: 20px" th:text="${helper.getTrend(resource)}"></span>
                 <span class="ms-2" th:utext="${helper.getTrendGlyph(resource)}"></span>
             </h3>
             <table class="table table-hover">
@@ -48,7 +48,7 @@
                     </td>
                     <td>
                         <div>
-                            <span class="sparkline-bar" th:text="${helper.getTrend(group)}"></span>
+                            <span class="d-none sparkline-bar" th:text="${helper.getTrend(group)}"></span>
                             <span class="ms-1" th:utext="${helper.getTrendGlyph(group)}"></span>
                         </div>
                         <th:block th:if="${all}">

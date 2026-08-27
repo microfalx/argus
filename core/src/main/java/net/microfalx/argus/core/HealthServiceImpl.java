@@ -43,10 +43,24 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
     private volatile SeriesStore seriesStore;
     private volatile net.microfalx.argus.api.Service service;
 
+    private volatile HealthSettings settings = new HealthSettings();
     private volatile TimeWindowStatisticalSummary serviceHealthTrend = new TimeWindowStatisticalSummary();
     private volatile TimeWindowStatisticalSummary serverHealthTrend = new TimeWindowStatisticalSummary();
 
     @Getter private final Map<Resource.Type, Health> healths = new ConcurrentHashMap<>();
+
+    @Override
+    public HealthSettings getSettings() {
+        return settings;
+    }
+
+    @Override
+    public void setSettings(HealthSettings settings) {
+        requireNonNull(settings);
+        LOGGER.info("Change health settings: {}", settings);
+        this.settings = settings;
+        startScraping();
+    }
 
     @Override
     public net.microfalx.argus.api.Service getService() {
@@ -275,9 +289,13 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
     private void startScraping() {
         VirtualMachineMetrics virtualMachineMetrics = VirtualMachineMetrics.get();
         virtualMachineMetrics.setExecutor(getThreadPool());
+        virtualMachineMetrics.setScrapeInterval(settings.getScrapeInterval());
+        virtualMachineMetrics.setAverageInterval(settings.getHealthInterval());
         virtualMachineMetrics.start();
         ServerMetrics serverMetrics = ServerMetrics.get();
         serverMetrics.setExecutor(getThreadPool());
+        serverMetrics.setScrapeInterval(settings.getScrapeInterval());
+        serverMetrics.setAverageInterval(settings.getHealthInterval());
         serverMetrics.start();
     }
 
