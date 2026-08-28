@@ -1,6 +1,7 @@
 package net.microfalx.argus.core.contributor;
 
 import net.microfalx.argus.api.*;
+import net.microfalx.lang.EnumUtils;
 import net.microfalx.lang.annotation.Provider;
 import net.microfalx.lang.annotation.Tag;
 
@@ -33,6 +34,7 @@ public class IssueHealthContributor extends AbstractHealthContributor {
             Thresholds thresholds = getThresholds(type);
             group.update(asCounterItem(thresholds, (int) issueService.getTrend(type).getMean()));
         }
+        System.out.println("Stop");
     }
 
     @Override
@@ -49,7 +51,7 @@ public class IssueHealthContributor extends AbstractHealthContributor {
         return switch (type) {
             case SECURITY -> SECURITY;
             case DOS -> DOS;
-            default -> OTHER;
+            default -> OTHER.withNameAndId(EnumUtils.toLabel(type));
         };
     }
 

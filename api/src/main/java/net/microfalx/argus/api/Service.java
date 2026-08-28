@@ -51,9 +51,7 @@ public final class Service extends NamedIdentityAware<String> {
      * @return a non-null instance
      */
     public Service withDescription(String description) {
-        Service copy = (Service) copy();
-        copy.setDescription(description);
-        return copy;
+        return (Service) super.withDescription(description);
     }
 
     /**

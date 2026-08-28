@@ -794,30 +794,6 @@ public final class Health extends IdentityAware<String> implements Timestampable
         }
 
         /**
-         * Creates a new item with a different name.
-         *
-         * @param name the name
-         * @return a new instance
-         */
-        public Item withName(String name) {
-            Item copy = (Item) copy();
-            copy.setName(name);
-            return copy;
-        }
-
-        /**
-         * Creates a new item with a different description.
-         *
-         * @param description the description
-         * @return a new instance
-         */
-        public Item withDescription(String description) {
-            Item copy = (Item) copy();
-            copy.setDescription(description);
-            return copy;
-        }
-
-        /**
          * Creates a new item with a different policy.
          *
          * @param policy the policy
@@ -841,6 +817,16 @@ public final class Health extends IdentityAware<String> implements Timestampable
             Item copy = (Item) copy();
             copy.thresholds = thresholds;
             return copy;
+        }
+
+        @Override
+        public Item withName(String name) {
+            return (Item) super.withName(name);
+        }
+
+        @Override
+        public Item withDescription(String description) {
+            return (Item) super.withDescription(description);
         }
 
         /**

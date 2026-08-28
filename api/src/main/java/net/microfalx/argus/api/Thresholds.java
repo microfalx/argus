@@ -143,9 +143,20 @@ public final class Thresholds extends NamedIdentityAware<String> {
      * @return a new instance of {@link Thresholds} with the specified reverse setting
      */
     public Thresholds withId(String id) {
-        requireNonNull(id);
+        return (Thresholds) super.withId(id);
+    }
+
+    /**
+     * Returns a new named instance with a different name and generated identifier.
+     *
+     * @param name the new name
+     * @return a new instance
+     */
+    public Thresholds withNameAndId(String name) {
+        requireNotEmpty(name);
         Thresholds copy = (Thresholds) copy();
-        copy.setId(id);
+        copy.setName(name);
+        copy.setId(toIdentifier(name));
         return copy;
     }
 

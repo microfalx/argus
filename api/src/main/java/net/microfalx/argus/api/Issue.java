@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import net.microfalx.lang.*;
+import net.microfalx.lang.annotation.Name;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -344,76 +345,91 @@ public class Issue implements Identifiable<String>, Nameable, Descriptable, Clon
         /**
          * Vulnerabilities, auth issues, data leaks, misconfigurations
          */
+        @Name("Security")
         SECURITY,
 
         /**
          * Denial of Service, excessive requests, abuse
          */
+        @Name("Denial of Service")
         DOS,
 
         /**
          * Slow responses, high latency, excessive resource usage
          */
+        @Name("Performance")
         PERFORMANCE,
 
         /**
          * Downtime, service interruptions, network issues
          */
+        @Name("Availability")
         AVAILABILITY,
 
         /**
          * DNS issues, firewall blocks, routing problems, service availability
          */
+        @Name("Connectivity")
         CONNECTIVITY,
 
         /**
          * Crashes, deadlocks, unhandled exceptions, memory leaks
          */
+        @Name("Stability")
         STABILITY,
 
         /**
          * Bad configuration/variables, secrets, feature flags, misconfigured limits
          */
+        @Name("Configuration")
         CONFIGURATION,
 
         /**
          * Missing metrics, logs, traces, poor visibility
          */
+        @Name("Observability")
         OBSERVABILITY,
 
         /**
          * Corrupted data, duplicates, missing records
          */
+        @Name("Data Integrity")
         DATA_INTEGRITY,
 
         /**
          * Recurring incidents, flaky behavior, intermittent service instability
          */
+        @Name("Reliability")
         RELIABILITY,
 
         /**
          * Capacity pressure in compute/memory/queues/connections before hard failures
          */
+        @Name("Capacity")
         CAPACITY,
 
         /**
          * Upstream/downstream or third-party dependency degradation impacting service behavior
          */
+        @Name("Dependency")
         DEPENDENCY,
 
         /**
          * Circuit-breaker/fallback/retry pressure and other resilience-mechanism related issues
          */
+        @Name("Resilience")
         RESILIENCE,
 
         /**
          * Sustained latency/SLO degradation observed at service level
          */
+        @Name("Latency")
         LATENCY,
 
         /**
          * Throughput drops, processing slowdowns, queue/backlog growth
          */
+        @Name("Throughput")
         THROUGHPUT
     }
 
@@ -425,26 +441,31 @@ public class Issue implements Identifiable<String>, Nameable, Descriptable, Clon
         /**
          * Notice level issue - informational only
          */
+        @Name("Notice")
         NOTICE,
 
         /**
          * Low severity issue - minor impact
          */
+        @Name("Low")
         LOW,
 
         /**
          * Medium severity issue - moderate impact
          */
+        @Name("Medium")
         MEDIUM,
 
         /**
          * High severity issue - significant impact
          */
+        @Name("High")
         HIGH,
 
         /**
          * Critical severity issue - severe impact
          */
+        @Name("Critical")
         CRITICAL
     }
 }
