@@ -134,8 +134,11 @@
             }
         }
 
+        let sparklineBars = $('.sparkline-bar');
+        // first remove the hidden flag
+        sparklineBars.removeClass('d-none');
         // converts elements with this class in sparklines, using bar chart type and no zero axis
-        $('.sparkline-bar').sparkline('html',{
+        sparklineBars.sparkline('html',{
             type: 'bar',
             chartRangeMin: 1,
             chartRangeMax: 10,

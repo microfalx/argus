@@ -135,10 +135,12 @@ public class ReportHelper {
     }
 
     public String getTrend(Health.Group group) {
-        return getDemoTrendValues();
+        if (group == null) return EMPTY_STRING;
+        return getTrend(group.getTrend());
     }
 
     public String getTrend(Resource resource) {
+        if (resource == null) return EMPTY_STRING;
         return getTrend(resource.getHealth().getTrend());
     }
 
