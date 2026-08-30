@@ -34,7 +34,6 @@ public class IssueHealthContributor extends AbstractHealthContributor {
             Thresholds thresholds = getThresholds(type);
             group.update(asCounterItem(thresholds, (int) issueService.getTrend(type).getMean()));
         }
-        System.out.println("Stop");
     }
 
     @Override
