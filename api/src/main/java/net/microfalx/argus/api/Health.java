@@ -785,7 +785,7 @@ public final class Health extends IdentityAware<String> implements Timestampable
          * @return {@code true} if the item has issues, {@code false} otherwise
          */
         public boolean hasIssues() {
-            return getScore() != Health.NA && getScore() < Health.MAX;
+            return getScore() != Health.NA && getScore() < Health.WARNING;
         }
 
         /**
