@@ -45,8 +45,9 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
     private volatile net.microfalx.argus.api.Service service;
 
     private volatile HealthSettings settings = new HealthSettings();
-    private volatile TimeWindowStatisticalSummary serviceHealthTrend = new TimeWindowStatisticalSummary();
-    private volatile TimeWindowStatisticalSummary serverHealthTrend = new TimeWindowStatisticalSummary();
+    private final Map<Resource.Type, TimeWindowStatisticalSummary> resourceTrends = new ConcurrentHashMap<>();
+    private final Map<String, TimeWindowStatisticalSummary> groupTrends = new ConcurrentHashMap<>();
+    private final Map<String, TimeWindowStatisticalSummary> itemTrends = new ConcurrentHashMap<>();
 
     @Getter private final Map<Resource.Type, Health> healths = new ConcurrentHashMap<>();
 
@@ -233,13 +234,30 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
 
     private synchronized void updateTrend(Health nextHealth, Resource.Type type) {
         float score = nextHealth.getScore();
-        if (type == Resource.Type.SERVICE) {
-            serviceHealthTrend.add(score);
-            nextHealth.setTrend(serviceHealthTrend);
-        } else if (type == Resource.Type.SERVER) {
-            serverHealthTrend.add(score);
-            nextHealth.setTrend(serverHealthTrend);
+        TimeWindowStatisticalSummary resourceTrend = getTrend(type);
+        resourceTrend.add(score);
+        nextHealth.setTrend(resourceTrend);
+        for (Health.Group group : nextHealth.getGroups()) {
+            updateTrendForGroup(group);
         }
+    }
+
+    private void updateTrendForGroup(Health.Group group) {
+        TimeWindowStatisticalSummary trend = getTrend(group);
+        trend.add(group.getScore());
+        group.setTrend(trend);
+        for (Health.Group childGroup : group.getGroups()) {
+            updateTrendForGroup(childGroup);
+        }
+        for (Health.Item item : group.getItems()) {
+            updateTrendForItem(item);
+        }
+    }
+
+    private void updateTrendForItem(Health.Item item) {
+        TimeWindowStatisticalSummary trend = getTrend(item);
+        trend.add(item.getScore());
+        item.setTrend(trend);
     }
 
     private void updateMetrics(Batch batch) {
@@ -350,6 +368,18 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
                 .withGroup(getClusterName()).withHealth(health)
                 .withName(getHostname());
         return resource.withHealth(health);
+    }
+
+    private TimeWindowStatisticalSummary getTrend(Resource.Type type) {
+        return resourceTrends.computeIfAbsent(type, t -> new TimeWindowStatisticalSummary(settings.getHealthInterval()));
+    }
+
+    private TimeWindowStatisticalSummary getTrend(Health.Group group) {
+        return groupTrends.computeIfAbsent(group.getId(), t -> new TimeWindowStatisticalSummary(settings.getHealthInterval()));
+    }
+
+    private TimeWindowStatisticalSummary getTrend(Health.Item item) {
+        return groupTrends.computeIfAbsent(item.getId(), t -> new TimeWindowStatisticalSummary(settings.getHealthInterval()));
     }
 
     private class MaintenanceTask implements Runnable {

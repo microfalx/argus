@@ -1,6 +1,7 @@
 package net.microfalx.argus.core.contributor;
 
 import net.microfalx.argus.api.*;
+import net.microfalx.lang.annotation.Order;
 import net.microfalx.lang.annotation.Provider;
 import net.microfalx.lang.annotation.Tag;
 
@@ -8,6 +9,7 @@ import java.util.Collection;
 import java.util.List;
 
 @Provider
+@Order(30)
 @Tag("alert")
 public class AlertHealthContributor extends AbstractHealthContributor {
 

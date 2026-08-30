@@ -420,6 +420,9 @@ public final class Health extends IdentityAware<String> implements Timestampable
         private final Collection<Item> items = new ArrayList<>();
         private final Map<String, Group> groups = new LinkedHashMap<>();
 
+        /**
+         * Holds the trend of the scores for this group and its subgroups.
+         */
         private TrendStatisticalSummary trend;
 
         /**
@@ -608,7 +611,8 @@ public final class Health extends IdentityAware<String> implements Timestampable
                     .forEach(group -> {
                         group.report(logger, lowestItem, isLowest, depth + 1);
                     });
-            items.forEach(item -> {
+            for (Item item : items) {
+                if (!item.shouldReport()) continue;
                 boolean isLowestItem = item == lowestItem;
                 String description = item.getDescription();
                 String line;
@@ -624,8 +628,10 @@ public final class Health extends IdentityAware<String> implements Timestampable
                 } else {
                     bullet = logger.atInfo().bullet();
                 }
-                bullet.append(line).append(isLowestItem ? lowestSuffix : EMPTY_STRING).log();
-            });
+                if (item.shouldReport()) {
+                    bullet.append(line).append(isLowestItem ? lowestSuffix : EMPTY_STRING).log();
+                }
+            }
             logger.decreaseIndent();
         }
 
@@ -673,6 +679,16 @@ public final class Health extends IdentityAware<String> implements Timestampable
         private final float score;
 
         /**
+         * The value used to calculate the score. This value is used to determine the score based on thresholds.
+         */
+        private final float value;
+
+        /**
+         * Holds the trend of the scores for this group and its subgroups.
+         */
+        private TrendStatisticalSummary trend;
+
+        /**
          * The policy associated with the item, which determines how it is reported in the score.
          */
         private Set<Policy> policies = EMPTY_POLICIES;
@@ -705,7 +721,7 @@ public final class Health extends IdentityAware<String> implements Timestampable
         public static Item create(Thresholds thresholds, float value) {
             requireNonNull(thresholds);
             float score = thresholds.getScore(value);
-            return new Item(thresholds.getName(), score).withThresholds(thresholds);
+            return new Item(thresholds.getName(), score, value).withThresholds(thresholds);
         }
 
         /**
@@ -723,7 +739,7 @@ public final class Health extends IdentityAware<String> implements Timestampable
             requireNonNull(unit);
             float score = thresholds.getScore(value);
             String description = String.format("%s", unit.format(value));
-            return new Item(thresholds.getName(), score).withDescription(description)
+            return new Item(thresholds.getName(), score, value).withDescription(description)
                     .withThresholds(thresholds);
         }
 
@@ -747,15 +763,29 @@ public final class Health extends IdentityAware<String> implements Timestampable
             float score = thresholds.getScore(percent);
             String description = String.format("%s [%s of %s]", Unit.PERCENT.format(percent),
                     unit.format(value), unit.format(maximum));
-            return new Item(thresholds.getName(), score).withDescription(description)
+            return new Item(thresholds.getName(), score, value).withDescription(description)
                     .withThresholds(thresholds);
         }
 
         private Item(String name, float score) {
+            this(name, score, Float.MIN_VALUE);
+        }
+
+        private Item(String name, float score, float value) {
             requireNotEmpty(name);
             this.setId(toIdentifier(name));
             this.setName(name);
             this.score = Health.normalize(score);
+            this.value = value;
+        }
+
+        /**
+         * Returns whether the item has issues, which is determined by its score being below the maximum threshold.
+         *
+         * @return {@code true} if the item has issues, {@code false} otherwise
+         */
+        public boolean hasIssues() {
+            return getScore() != Health.NA && getScore() < Health.MAX;
         }
 
         /**
@@ -842,6 +872,44 @@ public final class Health extends IdentityAware<String> implements Timestampable
             return copy;
         }
 
+        /**
+         * Returns the summary of the scores for this item.
+         *
+         * @return a non-null instance
+         */
+        public TrendStatisticalSummary getTrend() {
+            if (trend == null) {
+                trend = TrendStatisticalSummary.create();
+                ((MutableStatisticalSummary) trend).add(getScore());
+            }
+            return trend;
+        }
+
+        /**
+         * Attaches a new summary to this item.
+         *
+         * @param trend the trend to attach
+         */
+        public void setTrend(TrendStatisticalSummary trend) {
+            requireNonNull(trend);
+            this.trend = trend;
+        }
+
+        /**
+         * Returns whether the item should be reported based on its score and the registered policies.
+         *
+         * @return {@code true} if the item should be reported, {@code false} otherwise
+         */
+        public boolean shouldReport() {
+            if (policies.isEmpty()) return true;
+            float score = getScore();
+            if (policies.contains(Policy.REPORT_IF_WARNING) && score < Health.WARNING) return true;
+            if (policies.contains(Policy.REPORT_IF_ERROR) && score < Health.ERROR) return true;
+            if (policies.contains(Policy.REPORT_IF_NEEDED) && score < Health.WARNING) return true;
+            if (policies.contains(Policy.REPORT_IF_HAS_VALUE) && value != 0) return true;
+            return false;
+        }
+
         @Override
         protected void copyProperties(IdentityAware<String> source, IdentityAware<String> target) {
             super.copyProperties(source, target);
@@ -850,6 +918,7 @@ public final class Health extends IdentityAware<String> implements Timestampable
         }
 
         private void setParent(Group parent) {
+            this.group = parent.getName();
             this.setId(parent.getId() + "." + toIdentifier(getName()));
         }
     }
@@ -861,6 +930,8 @@ public final class Health extends IdentityAware<String> implements Timestampable
         REPORT_IF_DOWNGRADE,
         REPORT_IF_WARNING,
         REPORT_IF_ERROR,
+        REPORT_IF_NEEDED,
+        REPORT_IF_HAS_VALUE,
         RESTART_IF_NEEDED
     }
 

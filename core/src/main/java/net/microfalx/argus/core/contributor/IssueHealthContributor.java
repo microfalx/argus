@@ -2,6 +2,7 @@ package net.microfalx.argus.core.contributor;
 
 import net.microfalx.argus.api.*;
 import net.microfalx.lang.EnumUtils;
+import net.microfalx.lang.annotation.Order;
 import net.microfalx.lang.annotation.Provider;
 import net.microfalx.lang.annotation.Tag;
 
@@ -11,6 +12,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Provider
+@Order(50)
 @Tag("issue")
 public class IssueHealthContributor extends AbstractHealthContributor {
 
@@ -32,7 +34,8 @@ public class IssueHealthContributor extends AbstractHealthContributor {
         IssueService issueService = IssueService.getInstance();
         for (Issue.Type type : getTypes()) {
             Thresholds thresholds = getThresholds(type);
-            group.update(asCounterItem(thresholds, (int) issueService.getTrend(type).getMean()));
+            group.update(asCounterItem(thresholds, (int) issueService.getTrend(type).getMean())
+                    .withPolicy(Health.Policy.REPORT_IF_NEEDED));
         }
     }
 

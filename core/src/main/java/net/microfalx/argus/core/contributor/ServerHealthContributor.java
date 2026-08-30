@@ -6,6 +6,7 @@ import net.microfalx.argus.api.Thresholds;
 import net.microfalx.argus.api.Unit;
 import net.microfalx.jvm.ServerMetrics;
 import net.microfalx.lang.NumberUtils;
+import net.microfalx.lang.annotation.Order;
 import net.microfalx.lang.annotation.Provider;
 import net.microfalx.lang.annotation.Tag;
 import net.microfalx.metrics.Batch;
@@ -19,6 +20,7 @@ import java.util.List;
 
 @SuppressWarnings("FieldMayBeFinal")
 @Provider
+@Order(20)
 @Tag("server")
 public class ServerHealthContributor extends AbstractHealthContributor {
 

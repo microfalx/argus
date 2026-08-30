@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.StringJoiner;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
@@ -26,6 +27,7 @@ public class ReportHelper {
     private static final ZonedDateTime startupTime = ZonedDateTime.now();
     private static final int SECURE_WORD_COUNT = 5;
     private static final int MAX_TREND_POINTS = 50;
+    private static final int MAX_WORSE_ITEMS = 3;
     private static final String EXPANDER_ICON = "fa-solid fa-caret-right";
     static final ZonedDateTime currentTime = ZonedDateTime.now();
 
@@ -134,6 +136,15 @@ public class ReportHelper {
         return result + " me-2";
     }
 
+    public String getTrend(Health.Item item) {
+        return getTrend(item, MAX_TREND_POINTS);
+    }
+
+    public String getTrend(Health.Item item, int maxPoints) {
+        if (item == null) return EMPTY_STRING;
+        return getTrend(item.getTrend(), maxPoints);
+    }
+
     public String getTrend(Health.Group group) {
         if (group == null) return EMPTY_STRING;
         return getTrend(group.getTrend());
@@ -145,12 +156,21 @@ public class ReportHelper {
     }
 
     public String getTrend(TrendStatisticalSummary summary) {
+        return getTrend(summary, MAX_TREND_POINTS);
+    }
+
+    public String getTrend(TrendStatisticalSummary summary, int maxPoints) {
         if (summary == null) return EMPTY_STRING;
         if (DEMO_TRENDS) return getDemoTrendValues();
-        return Arrays.stream(summary.getValues(MAX_TREND_POINTS))
+        return Arrays.stream(summary.getValues(maxPoints))
                 .mapToObj(FormatterUtils::formatNumber)
                 .collect(Collectors.joining(","));
     }
+
+    public String getTrendGlyph(Health.Item item) {
+        return getTrendGlyph(item.getTrend());
+    }
+
 
     public String getTrendGlyph(Health.Group group) {
         return getTrendGlyph(group.getTrend());
@@ -164,6 +184,26 @@ public class ReportHelper {
         if (summary == null) return EMPTY_STRING;
         if (DEMO_TRENDS) return getDemoTrend().toHtml();
         return summary.getTrend().toHtml();
+    }
+
+    public Collection<Health.Item> getReportItems(Health.Group group) {
+        return getReportItems(group.getItems());
+    }
+
+    public Collection<Health.Item> getReportItems(Collection<Health.Item> items) {
+        return items.stream().filter(Health.Item::shouldReport).toList();
+    }
+
+    public Collection<Health.Item> getWorseItems(Health health) {
+        return health.getGroups().stream().flatMap(group -> group.getItems(true).stream())
+                .filter(Health.Item::hasIssues)
+                .sorted(Comparator.comparing(Health.Item::getScore))
+                .limit(MAX_WORSE_ITEMS)
+                .toList();
+    }
+
+    public boolean hasWorseItems(Health health) {
+        return !getWorseItems(health).isEmpty();
     }
 
     public String toString(Object value) {

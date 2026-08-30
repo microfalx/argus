@@ -10,6 +10,7 @@ import net.microfalx.jvm.model.MemoryPool;
 import net.microfalx.jvm.model.VirtualMachine;
 import net.microfalx.lang.Initializable;
 import net.microfalx.lang.JvmUtils;
+import net.microfalx.lang.annotation.Order;
 import net.microfalx.lang.annotation.Provider;
 import net.microfalx.lang.annotation.Tag;
 import net.microfalx.metrics.Batch;
@@ -23,6 +24,7 @@ import java.util.List;
 
 @SuppressWarnings("FieldMayBeFinal")
 @Provider
+@Order(10)
 @Tag("jvm")
 public class VirtualMachineHealthContributor extends AbstractHealthContributor implements Initializable {
 

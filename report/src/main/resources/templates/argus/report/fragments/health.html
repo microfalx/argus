@@ -2,19 +2,33 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 
-<div th:fragment="items(group)" class="collapse" th:id="'group-items-' + ${group.id}">
+<div th:fragment="items(items, id, show, trend)" th:class="${show ? '' : 'collapse'}" th:id="${id}">
     <table class="table table-hover">
         <thead class="table-light">
         <tr>
-            <th scope="col" style="width:70%">Item</th>
-            <th scope="col" style="width:10%">Score</th>
-            <th scope="col" style="width:20%">Description</th>
+            <th:block th:unless="${trend}">
+                <th scope="col" style="width:70%">Item</th>
+                <th scope="col" style="width:10%">Score</th>
+                <th scope="col" style="width:20%">Description</th>
+            </th:block>
+            <th:block th:if="${trend}">
+                <th scope="col" style="width:8%">Group</th>
+                <th scope="col" style="width:17%">Item</th>
+                <th scope="col" style="width:10%">Score</th>
+                <th scope="col" style="width:25%" th:if="${trend}">Trend</th>
+                <th scope="col" style="width:25%">Description</th>
+            </th:block>
         </tr>
         </thead>
         <tbody>
-        <tr th:each="item : ${group.getItems()}">
-            <td class="text-nowrap"><span th:text="${item.name}" ></span></td>
+        <tr th:each="item : ${helper.getReportItems(items)}">
+            <td th:if="${trend}" class="text-nowrap"><span th:text="${item.group.get()}" ></span></td>
+            <td><span th:text="${item.name}" ></span></td>
             <td class="text-nowrap"><span th:text="${helper.formatScore(item.score)}" th:classappend="${helper.getBadgeFromScoreCls(item.score)}"></span></td>
+            <td th:if="${trend}" class="text-nowrap">
+                <span class="d-none sparkline-bar" th:text="${helper.getTrend(item, 15)}"></span>
+                <span class="ms-1" th:utext="${helper.getTrendGlyph(item)}"></span>
+            </td>
             <td><span th:text="${item.description}"></span></td>
         </tr>
         </tbody>
@@ -52,13 +66,18 @@
                             <span class="ms-1" th:utext="${helper.getTrendGlyph(group)}"></span>
                         </div>
                         <th:block th:if="${all}">
-                            <div th:replace="~{fragments/health :: items(${group})}"></div>
+                            <div th:replace="~{fragments/health :: items(${group.items}, 'group-items-' + ${group.id}, false, false)}"></div>
                         </th:block>
 
                     </td>
                 </tr>
                 </tbody>
             </table>
+            <th:block th:if="${helper.hasWorseItems(resource.health)}">
+                <div class="mt-3">
+                    <h5>Worst Items</h5>
+                    <div th:replace="~{fragments/health :: items(${helper.getWorseItems(resource.health)}, 'worse-items-' + ${resource.id}, true, true)}"></div>
+                </div>
         </div>
     </div>
 </div>
