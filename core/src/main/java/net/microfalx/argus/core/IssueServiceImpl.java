@@ -107,7 +107,6 @@ public class IssueServiceImpl extends AbstractService implements IssueService, I
 
     @Override
     public void start() {
-        super.start();
         registerTasks();
     }
 

@@ -1,0 +1,13 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="content" class="container-fluid">
+    <h3 th:replace="~{fragments/service :: list(true)}"></h3>
+</div>
+
+<div th:fragment="code" th:remove="tag">
+</div>
+
+</body>
+</html>

@@ -65,6 +65,11 @@ public class NotificationServiceImpl extends AbstractService implements Notifica
         updateListeners();
     }
 
+    @Override
+    public void start() {
+        // nothing to do
+    }
+
     private void discoverListeners() {
         LOGGER.info("Discover listeners");
         for (NotificationListener listener : resolveProviderInstances(NotificationListener.class)) {

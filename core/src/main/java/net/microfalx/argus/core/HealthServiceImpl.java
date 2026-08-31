@@ -9,6 +9,8 @@ import net.microfalx.lang.ClassUtils;
 import net.microfalx.lang.IdGenerator;
 import net.microfalx.lang.Initializable;
 import net.microfalx.lang.JvmUtils;
+import net.microfalx.lang.annotation.SizeOf;
+import net.microfalx.lang.service.Lifecycle;
 import net.microfalx.metrics.Batch;
 import net.microfalx.metrics.Metric;
 import net.microfalx.metrics.SeriesStore;
@@ -31,7 +33,7 @@ import static net.microfalx.lang.CollectionUtils.immutableSet;
 import static net.microfalx.lang.StringUtils.defaultIfNull;
 
 @Slf4j
-public class HealthServiceImpl extends AbstractService implements HealthService {
+public class HealthServiceImpl extends AbstractService implements Lifecycle, HealthService {
 
     private static final String REGISTRY_PATH = "/health";
 
@@ -41,7 +43,7 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
 
     private final Map<String, Thresholds> thresholds = new ConcurrentHashMap<>();
     private volatile boolean memory = true;
-    private volatile SeriesStore seriesStore;
+    @SizeOf private volatile SeriesStore seriesStore;
     private volatile net.microfalx.argus.api.Service service;
 
     private volatile HealthSettings settings = new HealthSettings();
@@ -177,6 +179,7 @@ public class HealthServiceImpl extends AbstractService implements HealthService 
         updateHealth();
         updateMetrics();
         storeResources();
+        getThreadPool().execute(new ServiceStatisticsWorker());
     }
 
     @Override

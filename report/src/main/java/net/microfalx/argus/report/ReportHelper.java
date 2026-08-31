@@ -3,6 +3,7 @@ package net.microfalx.argus.report;
 import net.microfalx.argus.api.Health;
 import net.microfalx.argus.api.Resource;
 import net.microfalx.lang.*;
+import net.microfalx.lang.service.Service;
 import net.microfalx.metrics.statistics.Trend;
 import net.microfalx.metrics.statistics.TrendStatisticalSummary;
 import org.apache.commons.lang3.ArrayUtils;
@@ -85,6 +86,17 @@ public class ReportHelper {
             case HIGH -> "bg-red bg-opacity-75";
             case CRITICAL -> "bg-red";
         };
+    }
+
+    public Collection<Service.Statistics<?>> getServices(Collection<Service.Statistics<?>> statistics) {
+        return statistics;
+    }
+
+    public String getTooltip(Service.Statistics<?> statistics) {
+        return String.format("Class Name: %s" +
+                        "\nDescription: %s",
+                statistics.getClassName(),
+                statistics.getDescription());
     }
 
     public String getBadgeFromScoreCls(float score) {

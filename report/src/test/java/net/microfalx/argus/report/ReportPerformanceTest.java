@@ -17,7 +17,8 @@ import static net.microfalx.lang.ExceptionUtils.getRootCauseDescription;
 import static net.microfalx.lang.FormatterUtils.formatBytes;
 import static net.microfalx.lang.FormatterUtils.formatPercent;
 import static net.microfalx.lang.ThreadUtils.sleepSeconds;
-import static net.microfalx.lang.TimeUtils.*;
+import static net.microfalx.lang.TimeUtils.THIRTY_SECONDS;
+import static net.microfalx.lang.TimeUtils.millisSince;
 
 @Disabled
 @Slf4j
@@ -75,7 +76,7 @@ public class ReportPerformanceTest {
     }
 
     private void checkIfOpen() {
-        if (millisSince(lastOpen) < ONE_MINUTE) return;
+        if (millisSince(lastOpen) < THIRTY_SECONDS) return;
         lastOpen = currentTimeMillis();
         ReportTestUtils.openInBrowser(report);
     }

@@ -1,0 +1,47 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="list(details)">
+    <table class="table table-hover">
+        <thead class="table-light">
+        <tr>
+            <th scope="col" rowspan="2">Name</th>
+            <th scope="col" rowspan="2">Memory</th>
+            <th scope="col" colspan="2">Faults</th>
+            <th scope="col" colspan="2">Operations</th>
+            <th scope="col" colspan="2">Tasks</th>
+            <th scope="col" rowspan="2">Info</th>
+        </tr>
+        <tr>
+            <th scope="col">Warnings</th>
+            <th scope="col">Errors</th>
+            <th scope="col">Successful</th>
+            <th scope="col">Failed</th>
+            <th scope="col">Running</th>
+            <th scope="col">Pending</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="service : ${helper.getServices(services)}">
+            <td><span th:text="${service.name}"></span></td>
+            <td><span th:text="${helper.formatBytes(service.memoryUsage)}"></span></td>
+            <td th:text="${service.warningCount}"></td>
+            <td th:text="${service.errorCount}"></td>
+            <td th:text="${service.successCount}"></td>
+            <td th:text="${service.failedCount}"></td>
+            <td th:text="${service.taskRunningCount}"></td>
+            <td th:text="${service.taskPendingCount}"></td>
+            <td>
+                <span data-toggle="tooltip" th:title="${helper.getTooltip(service)}">
+                    <i class="fa-solid fa-circle-info"></i>
+                </span>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+
+</body>
+</html>

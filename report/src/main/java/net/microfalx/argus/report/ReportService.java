@@ -218,6 +218,11 @@ public class ReportService extends AbstractService implements Initializable {
         initListeners();
     }
 
+    @Override
+    public void start() {
+        // nothing to do
+    }
+
     /**
      * Sends the startup report.
      */
