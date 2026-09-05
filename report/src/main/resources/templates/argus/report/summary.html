@@ -163,6 +163,8 @@
         <h3 th:replace="~{fragments/utils :: h3_count('Failed Tasks', ${failedAggregatedTasks.size()})}"></h3>
         <div th:replace="~{summary :: render-failed-tasks}" ></div>
     </th:block>
+    <h3 th:replace="~{fragments/utils :: h3_count('Services', ${services.size()})}"></h3>
+    <div th:replace="~{fragments/service :: list(false)}"></div>
     <div th:replace="~{summary :: render-environment}" ></div>
 </div>
 

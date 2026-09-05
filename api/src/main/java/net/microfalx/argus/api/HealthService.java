@@ -1,7 +1,7 @@
 package net.microfalx.argus.api;
 
-import net.microfalx.lang.service.Service;
 import net.microfalx.metrics.SeriesStore;
+import net.microfalx.metrics.statistics.TrendStatisticalSummary;
 
 import java.util.Collection;
 import java.util.Set;
@@ -9,10 +9,10 @@ import java.util.Set;
 /**
  * A service responsible to calculate the health of the service.
  */
-public interface HealthService extends Service, HealthProvider {
+public interface HealthService extends net.microfalx.lang.service.Service, HealthProvider {
 
     static HealthService getInstance() {
-        return Service.lookup(HealthService.class);
+        return net.microfalx.lang.service.Service.lookup(HealthService.class);
     }
 
     /**
@@ -34,14 +34,14 @@ public interface HealthService extends Service, HealthProvider {
      *
      * @return a non-null instance
      */
-    net.microfalx.argus.api.Service getService();
+    Service getService();
 
     /**
      * Changes the service metadata.
      *
      * @param service the service metadata
      */
-    void setService(net.microfalx.argus.api.Service service);
+    void setService(Service service);
 
     /**
      * Returns the metrics store for health related metrics.
@@ -78,11 +78,11 @@ public interface HealthService extends Service, HealthProvider {
     Health getHealth(Health.Type type);
 
     /**
-     * Returns the last calculated health for a given service.
+     * Returns the summary tracking a given last calculated metric for a given service.
      *
      * @return a non-null instance
      */
-    Health getHealth(Service service);
+    TrendStatisticalSummary getTrend(net.microfalx.lang.service.Service service, net.microfalx.lang.service.Service.Metric metric);
 
     /**
      * Returns the resources of a given type.

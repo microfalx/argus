@@ -3,7 +3,7 @@
 <body>
 
 <div th:fragment="content" class="container-fluid">
-    <h3 th:replace="~{fragments/service :: list(true)}"></h3>
+    <div th:replace="~{fragments/service :: list(true)}"></div>
 </div>
 
 <div th:fragment="code" th:remove="tag">

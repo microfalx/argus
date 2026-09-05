@@ -21,5 +21,6 @@ public class SummaryProvider extends AbstractFragmentProvider {
     @Override
     public void update(Template template) {
         HealthProvider.doUpdate(template);
+        ServiceProvider.doUpdate(template);
     }
 }

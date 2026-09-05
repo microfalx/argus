@@ -26,7 +26,7 @@
             <td><span th:text="${item.name}" ></span></td>
             <td class="text-nowrap"><span th:text="${helper.formatScore(item.score)}" th:classappend="${helper.getBadgeFromScoreCls(item.score)}"></span></td>
             <td th:if="${trend}" class="text-nowrap">
-                <span class="d-none sparkline-bar" th:text="${helper.getTrend(item, 15)}"></span>
+                <span class="d-none sparkline-bar sparkline-score" th:text="${helper.getTrend(item, 15)}"></span>
                 <span class="ms-1" th:utext="${helper.getTrendGlyph(item)}"></span>
             </td>
             <td><span th:text="${item.description}"></span></td>
@@ -43,7 +43,7 @@
         <div class="card-body">
             <h3 class="card-title">
                 <span th:text="${title}"></span>
-                <span class="d-none sparkline-bar" style="height: 20px" th:text="${helper.getTrend(resource)}"></span>
+                <span class="d-none sparkline-bar sparkline-score" style="height: 20px" th:text="${helper.getTrend(resource)}"></span>
                 <span class="ms-2" th:utext="${helper.getTrendGlyph(resource)}"></span>
             </h3>
             <table class="table table-hover">
@@ -62,7 +62,7 @@
                     </td>
                     <td>
                         <div>
-                            <span class="d-none sparkline-bar" th:text="${helper.getTrend(group)}"></span>
+                            <span class="d-none sparkline-bar sparkline-score" th:text="${helper.getTrend(group)}"></span>
                             <span class="ms-1" th:utext="${helper.getTrendGlyph(group)}"></span>
                         </div>
                         <th:block th:if="${all}">

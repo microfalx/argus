@@ -60,23 +60,26 @@
     </style>
 </head>
 
-<div th:fragment="section(title)" class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+<div th:fragment="section(title)"
+     class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2" th:text="${title}"></h1>
 </div>
 
-<aside th:fragment="navigation" class="navbar navbar-vertical navbar-expand-sm" style="width: 18rem" data-bs-theme="dark">
+<aside th:fragment="navigation" class="navbar navbar-vertical navbar-expand-sm" style="width: 18rem"
+       data-bs-theme="dark">
     <div class="container-fluid">
         <h1 class="navbar-brand navbar-brand-autodark">
             <i class="fa-solid fa-cube fs-8"></i>
             <a th:href="${application.url}">
-                <span class="me-0 px-3 fs-8" th:text="${application.name}" ></span>
+                <span class="me-0 px-3 fs-8" th:text="${application.name}"></span>
             </a>
         </h1>
         <div class="collapse navbar-collapse" id="sidebar-menu">
             <ul class="navbar-nav pt-lg-3">
                 <li class="nav-item" th:each="fragment : ${fragments}">
                     <a class="nav-link" th:href="|#${fragment.id}|">
-                        <span class="nav-link-icon d-md-none d-lg-inline-block"><i th:class="${fragment.icon}"></i></span>
+                        <span class="nav-link-icon d-md-none d-lg-inline-block"><i
+                                th:class="${fragment.icon}"></i></span>
                         <span class="nav-link-title" th:text="${fragment.name}"></span>
                     </a>
                 </li>
@@ -101,12 +104,12 @@
 
 <div th:fragment="code" th:remove="tag">
     <th:block th:if="${report.isDynamic()}">
-    <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-sparklines/2.1.2/jquery.sparkline.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/js/tabler.min.js"></script>
-    <script src="https://cdn.datatables.net/2.2.1/js/dataTables.js"></script>
-    <script src="https://cdn.datatables.net/2.2.1/js/dataTables.bootstrap5.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/4.3.0/apexcharts.min.js"></script>
+        <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-sparklines/2.1.2/jquery.sparkline.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/js/tabler.min.js"></script>
+        <script src="https://cdn.datatables.net/2.2.1/js/dataTables.js"></script>
+        <script src="https://cdn.datatables.net/2.2.1/js/dataTables.bootstrap5.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/4.3.0/apexcharts.min.js"></script>
     </th:block>
 
     <script>
@@ -134,11 +137,13 @@
             }
         }
 
-        let sparklineBars = $('.sparkline-bar');
-        // first remove the hidden flag
-        sparklineBars.removeClass('d-none');
+        // Make sparklines visible
+        $('.sparkline-bar').removeClass('d-none');
+
+        // Sparklines for score
+        let sparklineBarsScore = $('.sparkline-bar.sparkline-score');
         // converts elements with this class in sparklines, using bar chart type and no zero axis
-        sparklineBars.sparkline('html',{
+        sparklineBarsScore.sparkline('html', {
             type: 'bar',
             chartRangeMin: 1,
             chartRangeMax: 10,
@@ -148,7 +153,27 @@
                 '4:7': '#f59f00',
                 '7:10': '#2fb344'
             },
-            zeroAxis: true});
+            zeroAxis: true
+        });
+
+        // Sparklines for memory
+        let sparklineBarsMemory = $('.sparkline-bar.sparkline-memory');
+        // converts elements with this class in sparklines, using bar chart type and no zero axis
+        sparklineBarsMemory.sparkline('html', {
+            type: 'bar',
+            barColor: '#4099ff', // Default color for unmapped values
+            colorMap: {
+                '50000000:1000000000000': '#d63939',
+                '30000000:50000000': '#d55858',
+                '20000000:30000000': '#ef8888',
+                '10000000:20000000': '#f59f00',
+                '5000000:10000000': '#ffb931',
+                '0:5000000': '#2fb344',
+                '0:1000000': '#76c885'
+            },
+            tooltipSuffix : ' bytes',
+            zeroAxis: true
+        });
 
         $(function () {
             $('[data-toggle="tooltip"]').tooltip()

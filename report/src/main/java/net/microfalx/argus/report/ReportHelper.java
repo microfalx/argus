@@ -1,6 +1,7 @@
 package net.microfalx.argus.report;
 
 import net.microfalx.argus.api.Health;
+import net.microfalx.argus.api.HealthService;
 import net.microfalx.argus.api.Resource;
 import net.microfalx.lang.*;
 import net.microfalx.lang.service.Service;
@@ -167,6 +168,12 @@ public class ReportHelper {
         return getTrend(resource.getHealth().getTrend());
     }
 
+    public <S extends Service> String getTrendMemory(Service.Statistics<S> serviceStatistics, int maxPoints) {
+        if (serviceStatistics == null) return EMPTY_STRING;
+        TrendStatisticalSummary trend = HealthService.getInstance().getTrend(serviceStatistics.getService(), Service.Metric.MEMORY_USAGE);
+        return getTrend(trend, maxPoints);
+    }
+
     public String getTrend(TrendStatisticalSummary summary) {
         return getTrend(summary, MAX_TREND_POINTS);
     }
@@ -175,20 +182,27 @@ public class ReportHelper {
         if (summary == null) return EMPTY_STRING;
         if (DEMO_TRENDS) return getDemoTrendValues();
         return Arrays.stream(summary.getValues(maxPoints))
-                .mapToObj(FormatterUtils::formatNumber)
+                .mapToObj(this::formatTrendValue)
                 .collect(Collectors.joining(","));
     }
 
+    public <S extends Service> String getTrendMemoryGlyph(Service.Statistics<S> serviceStatistics) {
+        if (serviceStatistics == null) return EMPTY_STRING;
+        return getTrendGlyph(HealthService.getInstance().getTrend(serviceStatistics.getService(), Service.Metric.MEMORY_USAGE));
+    }
+
     public String getTrendGlyph(Health.Item item) {
+        if (item == null) return EMPTY_STRING;
         return getTrendGlyph(item.getTrend());
     }
 
-
     public String getTrendGlyph(Health.Group group) {
+        if (group == null) return EMPTY_STRING;
         return getTrendGlyph(group.getTrend());
     }
 
     public String getTrendGlyph(Resource resource) {
+        if (resource == null) return EMPTY_STRING;
         return getTrendGlyph(resource.getHealth().getTrend());
     }
 
@@ -272,6 +286,23 @@ public class ReportHelper {
     public String toHtmlId(Object value) {
         if (value == null) return null;
         return "#" + ObjectUtils.toString(value);
+    }
+
+    private String formatTrendValue(Number value) {
+        return formatTrendValue(value, 1);
+    }
+
+    private String formatTrendValue(Number value, int decimalsPlaces) {
+        boolean isFloating = value instanceof Float || value instanceof Double;
+        String text;
+        if (isFloating) {
+            double valueAsDouble = value.doubleValue();
+            text = String.format("%." + decimalsPlaces + "f", valueAsDouble);
+        } else {
+            long valueAsLong = value.longValue();
+            text = String.format("%d", valueAsLong);
+        }
+        return text;
     }
 
     private Trend getDemoTrend() {

@@ -15,6 +15,7 @@ import net.microfalx.metrics.Batch;
 import net.microfalx.metrics.Metric;
 import net.microfalx.metrics.SeriesStore;
 import net.microfalx.metrics.statistics.TimeWindowStatisticalSummary;
+import net.microfalx.metrics.statistics.TrendStatisticalSummary;
 import net.microfalx.registry.Data;
 import net.microfalx.registry.Registry;
 import net.microfalx.threadpool.Trigger;
@@ -50,9 +51,9 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
     private final Map<Resource.Type, TimeWindowStatisticalSummary> resourceTrends = new ConcurrentHashMap<>();
     private final Map<String, TimeWindowStatisticalSummary> groupTrends = new ConcurrentHashMap<>();
     private final Map<String, TimeWindowStatisticalSummary> itemTrends = new ConcurrentHashMap<>();
-    private final Map<Class<?>, TimeWindowStatisticalSummary> serviceMemoryTrends = new ConcurrentHashMap<>();
+    private final Map<String, TimeWindowStatisticalSummary> serviceTrends = new ConcurrentHashMap<>();
 
-    @Getter private final Map<Resource.Type, Health> healths = new ConcurrentHashMap<>();
+    @Getter private final Map<Resource.Type, Health> resourceHealths = new ConcurrentHashMap<>();
 
     @Override
     public HealthSettings getSettings() {
@@ -90,7 +91,7 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
     @Override
     public Health getHealth(Resource.Type type) {
         requireNonNull(type);
-        return healths.computeIfAbsent(type, t -> new Health());
+        return resourceHealths.computeIfAbsent(type, t -> new Health());
     }
 
     @Override
@@ -113,8 +114,11 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
     }
 
     @Override
-    public Health getHealth(Service service) {
-        return null;
+    public TrendStatisticalSummary getTrend(Service service, net.microfalx.lang.service.Service.Metric metric) {
+        requireNonNull(service);
+        requireNonNull(metric);
+        String key = service.getClass().getName() + "." + metric.name();
+        return serviceTrends.computeIfAbsent(key, k -> new TimeWindowStatisticalSummary());
     }
 
     @Override
@@ -232,7 +236,7 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
                         (t) -> contributor.update(nextHealth));
             }
             updateTrend(nextHealth, type);
-            this.healths.put(type, nextHealth);
+            this.resourceHealths.put(type, nextHealth);
         }
     }
 
@@ -271,10 +275,10 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
     }
 
     private void updateMetrics(Batch batch) {
-        for (Health health : healths.values()) {
-            batch.add(Metric.get("health." + health.getId()), health.getScore());
+        for (Health health : resourceHealths.values()) {
+            batch.add(net.microfalx.metrics.Metric.get("health." + health.getId()), health.getScore());
             for (Health.Scored scored : health.getScored()) {
-                batch.add(Metric.get("health." + scored.getId()), scored.getScore());
+                batch.add(net.microfalx.metrics.Metric.get("health." + scored.getId()), scored.getScore());
             }
         }
         for (HealthContributor contributor : contributors) {
@@ -390,10 +394,6 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
 
     private TimeWindowStatisticalSummary getTrend(Health.Item item) {
         return itemTrends.computeIfAbsent(item.getId(), t -> new TimeWindowStatisticalSummary(settings.getHealthInterval()));
-    }
-
-    private TimeWindowStatisticalSummary getMemoryTrend(Service service) {
-        return serviceMemoryTrends.computeIfAbsent(service.getClass(), c -> new TimeWindowStatisticalSummary(settings.getHealthInterval()));
     }
 
     private class MaintenanceTask implements Runnable {

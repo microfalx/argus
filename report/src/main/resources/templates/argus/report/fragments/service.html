@@ -12,36 +12,47 @@
             <th scope="col" colspan="2" class="text-center">Operations</th>
             <th scope="col" colspan="2" class="text-center">Events</th>
             <th scope="col" colspan="2" class="text-center">Tasks</th>
+            <th:block th:if="${details}">
             <th scope="col" rowspan="2">Info</th>
+            </th:block>
         </tr>
         <tr>
-            <th scope="col">Warnings</th>
-            <th scope="col">Errors</th>
-            <th scope="col">Successful</th>
-            <th scope="col">Failed</th>
-            <th scope="col">In</th>
-            <th scope="col">Out</th>
-            <th scope="col">Running</th>
-            <th scope="col">Pending</th>
+            <th scope="col" class="text-end">Warnings</th>
+            <th scope="col" class="text-end">Errors</th>
+            <th scope="col" class="text-end">Successful</th>
+            <th scope="col" class="text-end">Failed</th>
+            <th scope="col" class="text-end">In</th>
+            <th scope="col" class="text-end">Out</th>
+            <th scope="col" class="text-end">Running</th>
+            <th scope="col" class="text-end">Pending</th>
         </tr>
         </thead>
         <tbody>
         <tr th:each="service : ${helper.getServices(services)}">
             <td><span th:text="${service.name}"></span></td>
-            <td><span th:text="${helper.formatBytes(service.memoryUsage)}"></span></td>
-            <td th:text="${service.warningCount}"></td>
-            <td th:text="${service.errorCount}"></td>
-            <td th:text="${service.successCount}"></td>
-            <td th:text="${service.failedCount}"></td>
-            <td th:text="${service.eventInCount}"></td>
-            <td th:text="${service.eventOutCount}"></td>
-            <td th:text="${service.taskRunningCount}"></td>
-            <td th:text="${service.taskPendingCount}"></td>
+            <td class="text-nowrap">
+                <span th:text="${helper.formatBytes(service.memoryUsage)}"></span>
+                <th:block th:if="${details}">
+                <span class="d-none sparkline-bar sparkline-memory"
+                      th:text="${helper.getTrendMemory(service, 25)}"></span>
+                </th:block>
+                <span class="ms-1" th:utext="${helper.getTrendMemoryGlyph(service)}"></span>
+            </td>
+            <td class="text-end" th:text="${helper.formatNumber(service.warningCount)}"></td>
+            <td class="text-end" th:text="${helper.formatNumber(service.errorCount)}"></td>
+            <td class="text-end" th:text="${helper.formatNumber(service.successCount)}"></td>
+            <td class="text-end" th:text="${helper.formatNumber(service.failedCount)}"></td>
+            <td class="text-end" th:text="${helper.formatNumber(service.eventInCount)}"></td>
+            <td class="text-end" th:text="${helper.formatNumber(service.eventOutCount)}"></td>
+            <td class="text-end" th:text="${helper.formatNumber(service.taskRunningCount)}"></td>
+            <td class="text-end" th:text="${helper.formatNumber(service.taskPendingCount)}"></td>
+            <th:block th:if="${details}">
             <td>
                 <span data-toggle="tooltip" th:title="${helper.getTooltip(service)}">
                     <i class="fa-solid fa-circle-info"></i>
                 </span>
             </td>
+            </th:block>
         </tr>
         </tbody>
     </table>
