@@ -3,7 +3,6 @@ package net.microfalx.argus.core;
 import net.microfalx.jvm.VirtualMachineMetrics;
 import net.microfalx.lang.service.Service;
 import net.microfalx.lang.service.ServiceLocator;
-import net.microfalx.lang.service.ServiceStatistics;
 
 public class ServiceStatisticsWorker implements Runnable {
 
@@ -13,14 +12,12 @@ public class ServiceStatisticsWorker implements Runnable {
     }
 
     private void updateStatistics(Service service) {
-        Service.Statistics<?> statistics = ServiceLocator.getStatistics(service);
-        if (!(statistics instanceof ServiceStatistics<?> serviceStatistics)) return;
-        updateMemoryUsage(serviceStatistics);
+        updateMemoryUsage(service);
     }
 
-    private void updateMemoryUsage(ServiceStatistics<?> statistics) {
-        Object realService = ServiceLocator.getRealService(statistics.getService());
+    private void updateMemoryUsage(Service service) {
+        Object realService = ServiceLocator.getRealService(service);
         long memoryUsage = VirtualMachineMetrics.get().getDeepSize(realService);
-        statistics.setMemoryUsage(memoryUsage);
+        ServiceLocator.report(service, Service.Event.MEMORY_USAGE, memoryUsage);
     }
 }

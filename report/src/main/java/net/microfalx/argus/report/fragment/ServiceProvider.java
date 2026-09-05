@@ -94,6 +94,16 @@ public class ServiceProvider extends AbstractFragmentProvider {
         }
 
         @Override
+        public int getEventInCount() {
+            return statistics.getEventInCount();
+        }
+
+        @Override
+        public int getEventOutCount() {
+            return statistics.getEventOutCount();
+        }
+
+        @Override
         public int getTaskRunningCount() {
             return statistics.getTaskRunningCount();
         }

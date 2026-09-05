@@ -8,9 +8,10 @@
         <tr>
             <th scope="col" rowspan="2">Name</th>
             <th scope="col" rowspan="2">Memory</th>
-            <th scope="col" colspan="2">Faults</th>
-            <th scope="col" colspan="2">Operations</th>
-            <th scope="col" colspan="2">Tasks</th>
+            <th scope="col" colspan="2" class="text-center">Faults</th>
+            <th scope="col" colspan="2" class="text-center">Operations</th>
+            <th scope="col" colspan="2" class="text-center">Events</th>
+            <th scope="col" colspan="2" class="text-center">Tasks</th>
             <th scope="col" rowspan="2">Info</th>
         </tr>
         <tr>
@@ -18,6 +19,8 @@
             <th scope="col">Errors</th>
             <th scope="col">Successful</th>
             <th scope="col">Failed</th>
+            <th scope="col">In</th>
+            <th scope="col">Out</th>
             <th scope="col">Running</th>
             <th scope="col">Pending</th>
         </tr>
@@ -30,6 +33,8 @@
             <td th:text="${service.errorCount}"></td>
             <td th:text="${service.successCount}"></td>
             <td th:text="${service.failedCount}"></td>
+            <td th:text="${service.eventInCount}"></td>
+            <td th:text="${service.eventOutCount}"></td>
             <td th:text="${service.taskRunningCount}"></td>
             <td th:text="${service.taskPendingCount}"></td>
             <td>

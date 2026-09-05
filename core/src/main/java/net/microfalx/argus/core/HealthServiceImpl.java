@@ -11,6 +11,7 @@ import net.microfalx.lang.Initializable;
 import net.microfalx.lang.JvmUtils;
 import net.microfalx.lang.annotation.SizeOf;
 import net.microfalx.lang.service.Lifecycle;
+import net.microfalx.lang.service.Service;
 import net.microfalx.metrics.Batch;
 import net.microfalx.metrics.Metric;
 import net.microfalx.metrics.SeriesStore;
@@ -50,6 +51,7 @@ public class HealthServiceImpl extends AbstractService implements Lifecycle, Hea
     private final Map<Resource.Type, TimeWindowStatisticalSummary> resourceTrends = new ConcurrentHashMap<>();
     private final Map<String, TimeWindowStatisticalSummary> groupTrends = new ConcurrentHashMap<>();
     private final Map<String, TimeWindowStatisticalSummary> itemTrends = new ConcurrentHashMap<>();
+    private final Map<Class<?>, TimeWindowStatisticalSummary> serviceMemoryTrends = new ConcurrentHashMap<>();
 
     @Getter private final Map<Resource.Type, Health> healths = new ConcurrentHashMap<>();
 
@@ -109,6 +111,11 @@ public class HealthServiceImpl extends AbstractService implements Lifecycle, Hea
             case RESOURCE -> getServiceHealth();
             case SITE -> getSiteHealth();
         };
+    }
+
+    @Override
+    public Health getHealth(Service service) {
+        return null;
     }
 
     @Override
@@ -209,6 +216,7 @@ public class HealthServiceImpl extends AbstractService implements Lifecycle, Hea
     private void registerTasks() {
         getThreadPool().schedule(new MaintenanceTask(), Trigger.fixedDelay(Duration.ofMinutes(15)));
         getThreadPool().schedule(new ScrapeTask(), Trigger.fixedDelay(Duration.ofSeconds(30)));
+        getThreadPool().schedule(new ServiceStatisticsWorker(), Trigger.fixedDelay(Duration.ofSeconds(60)));
         getThreadPool().schedule(this::updateMetrics, Trigger.fixedDelay(Duration.ofSeconds(10)));
     }
 
@@ -382,7 +390,11 @@ public class HealthServiceImpl extends AbstractService implements Lifecycle, Hea
     }
 
     private TimeWindowStatisticalSummary getTrend(Health.Item item) {
-        return groupTrends.computeIfAbsent(item.getId(), t -> new TimeWindowStatisticalSummary(settings.getHealthInterval()));
+        return itemTrends.computeIfAbsent(item.getId(), t -> new TimeWindowStatisticalSummary(settings.getHealthInterval()));
+    }
+
+    private TimeWindowStatisticalSummary getMemoryTrend(Service service) {
+        return serviceMemoryTrends.computeIfAbsent(service.getClass(), c -> new TimeWindowStatisticalSummary(settings.getHealthInterval()));
     }
 
     private class MaintenanceTask implements Runnable {

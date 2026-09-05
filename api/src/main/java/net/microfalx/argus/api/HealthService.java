@@ -71,11 +71,18 @@ public interface HealthService extends Service, HealthProvider {
     Resource getResource(Resource.Type type);
 
     /**
-     * Returns the last calculated score for a given health type.
+     * Returns the last calculated health for a given health type.
      *
      * @return a non-null instance
      */
     Health getHealth(Health.Type type);
+
+    /**
+     * Returns the last calculated health for a given service.
+     *
+     * @return a non-null instance
+     */
+    Health getHealth(Service service);
 
     /**
      * Returns the resources of a given type.
