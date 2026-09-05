@@ -10,7 +10,6 @@ import net.microfalx.lang.IdGenerator;
 import net.microfalx.lang.Initializable;
 import net.microfalx.lang.JvmUtils;
 import net.microfalx.lang.annotation.SizeOf;
-import net.microfalx.lang.service.Lifecycle;
 import net.microfalx.lang.service.Service;
 import net.microfalx.metrics.Batch;
 import net.microfalx.metrics.Metric;
@@ -34,7 +33,7 @@ import static net.microfalx.lang.CollectionUtils.immutableSet;
 import static net.microfalx.lang.StringUtils.defaultIfNull;
 
 @Slf4j
-public class HealthServiceImpl extends AbstractService implements Lifecycle, HealthService {
+public class HealthServiceImpl extends AbstractService implements Service.Lifecycle, HealthService {
 
     private static final String REGISTRY_PATH = "/health";
 

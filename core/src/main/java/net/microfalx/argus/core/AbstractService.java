@@ -2,7 +2,6 @@ package net.microfalx.argus.core;
 
 import net.microfalx.argus.api.Constants;
 import net.microfalx.lang.Initializable;
-import net.microfalx.lang.service.Lifecycle;
 import net.microfalx.lang.service.Service;
 import net.microfalx.threadpool.ThreadPool;
 
@@ -11,7 +10,7 @@ import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 /**
  * An implementation of a {@link Service} which provides more building blocks for project services.
  */
-public abstract class AbstractService implements Service, Lifecycle, Initializable {
+public abstract class AbstractService implements Service, Service.Lifecycle, Initializable {
 
     private ThreadPool threadPool;
 

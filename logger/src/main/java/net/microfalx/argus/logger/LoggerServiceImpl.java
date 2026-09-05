@@ -8,7 +8,7 @@ import net.microfalx.lang.ClassUtils;
 import net.microfalx.lang.Initializable;
 import net.microfalx.lang.JvmUtils;
 import net.microfalx.lang.annotation.Provider;
-import net.microfalx.lang.service.Lifecycle;
+import net.microfalx.lang.service.Service;
 import net.microfalx.resource.Resource;
 import net.microfalx.store.api.Query;
 import net.microfalx.store.api.Store;
@@ -34,7 +34,8 @@ import static net.microfalx.lang.ExceptionUtils.getRootCauseName;
 
 @Slf4j
 @Provider
-public class LoggerServiceImpl extends AbstractService implements LoggerService, Lifecycle, Initializable, LoggerListener {
+public class LoggerServiceImpl extends AbstractService implements LoggerService, Service.Lifecycle,
+        Initializable, LoggerListener {
 
     private LoggerSettings settings = new LoggerSettings();
 
