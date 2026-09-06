@@ -9,6 +9,7 @@ import net.microfalx.argus.api.*;
 import net.microfalx.argus.core.AbstractService;
 import net.microfalx.lang.*;
 import net.microfalx.lang.annotation.Provider;
+import net.microfalx.lang.annotation.SizeOf;
 import net.microfalx.lang.service.Service;
 import net.microfalx.metrics.Metrics;
 import net.microfalx.resource.Resource;
@@ -60,6 +61,7 @@ public class ReportService extends AbstractService implements Initializable {
     private final Collection<ReportingListener> listeners = new CopyOnWriteArrayList<>();
     private final Object lock = new Object();
     private final AtomicBoolean startReportSent = new AtomicBoolean(false);
+    @SizeOf(shallow = false, deepSize = 5000)
     private volatile TemplateEngine templateEngine;
     private volatile long lastRenderingTime = TimeUtils.oneHourAgo();
     private volatile long lastIssuesUpdate = TimeUtils.oneHourAgo();

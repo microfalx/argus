@@ -98,4 +98,14 @@ public interface LoggerService extends Service {
      * Registers the loggers.
      */
     void register();
+
+    /**
+     * Clears all alerts and logger events.
+     */
+    long clear();
+
+    /**
+     * Acknowledge pending alerts.
+     */
+    long acknowledge();
 }

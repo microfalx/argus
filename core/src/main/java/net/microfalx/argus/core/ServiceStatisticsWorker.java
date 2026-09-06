@@ -1,6 +1,7 @@
 package net.microfalx.argus.core;
 
 import net.microfalx.argus.api.HealthService;
+import net.microfalx.jvm.ObjectSize;
 import net.microfalx.jvm.VirtualMachineMetrics;
 import net.microfalx.lang.service.Service;
 import net.microfalx.lang.service.ServiceLocator;
@@ -21,10 +22,14 @@ public class ServiceStatisticsWorker implements Runnable {
 
     private void updateMemoryUsage(Service service) {
         Object realService = ServiceLocator.getRealService(service);
-        long memoryUsage = VirtualMachineMetrics.get().getDeepSize(realService);
+        ObjectSize memoryUsage = VirtualMachineMetrics.get().getDeepSize(realService);
         MutableStatisticalSummary trend = (MutableStatisticalSummary) getHealthService().getTrend(service, Service.Metric.MEMORY_USAGE);
-        trend.add(memoryUsage);
-        ServiceLocator.report(service, Service.Metric.MEMORY_USAGE, memoryUsage);
+        trend.add(memoryUsage.getSizeOf());
+        ServiceLocator.report(service, Service.Metric.MEMORY_USAGE, memoryUsage.getSizeOf());
+
+        trend = (MutableStatisticalSummary) getHealthService().getTrend(service, Service.Metric.MEMORY_OBJECTS);
+        trend.add(memoryUsage.getCountOf());
+        ServiceLocator.report(service, Service.Metric.MEMORY_OBJECTS, memoryUsage.getCountOf());
     }
 
     private HealthService getHealthService() {

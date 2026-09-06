@@ -4,6 +4,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import net.microfalx.lang.NamedIdentityAware;
+import net.microfalx.lang.annotation.SizeOf;
 
 import java.util.Optional;
 
@@ -22,6 +23,7 @@ import static net.microfalx.lang.StringUtils.toIdentifier;
 @Getter
 @ToString
 @EqualsAndHashCode(callSuper = true)
+@SizeOf(shallow = false, deepSize = 200)
 public final class Thresholds extends NamedIdentityAware<String> {
 
     /**

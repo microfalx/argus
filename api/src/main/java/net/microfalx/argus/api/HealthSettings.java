@@ -1,6 +1,7 @@
 package net.microfalx.argus.api;
 
 import lombok.*;
+import net.microfalx.lang.annotation.SizeOf;
 
 import java.time.Duration;
 
@@ -9,6 +10,7 @@ import java.time.Duration;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
+@SizeOf
 public class HealthSettings {
 
     /**

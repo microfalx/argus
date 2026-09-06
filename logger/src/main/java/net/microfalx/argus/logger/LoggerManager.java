@@ -5,6 +5,7 @@ import net.microfalx.lang.ClassUtils;
 import net.microfalx.lang.FileUtils;
 import net.microfalx.lang.JvmUtils;
 import net.microfalx.lang.ObjectUtils;
+import net.microfalx.lang.annotation.SizeOf;
 import net.microfalx.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,7 @@ import static net.microfalx.lang.StringUtils.isNotEmpty;
 /**
  * A collection of appenders used to log everything to files.
  */
+@SizeOf
 class LoggerManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerManager.class);

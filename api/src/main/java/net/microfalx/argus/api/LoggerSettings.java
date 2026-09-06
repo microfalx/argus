@@ -1,6 +1,7 @@
 package net.microfalx.argus.api;
 
 import lombok.*;
+import net.microfalx.lang.annotation.SizeOf;
 
 import java.io.File;
 import java.net.URI;
@@ -15,6 +16,7 @@ import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
+@SizeOf
 public class LoggerSettings {
 
     /**

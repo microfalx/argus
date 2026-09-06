@@ -8,6 +8,7 @@ import net.microfalx.lang.ClassUtils;
 import net.microfalx.lang.Initializable;
 import net.microfalx.lang.JvmUtils;
 import net.microfalx.lang.annotation.Provider;
+import net.microfalx.lang.annotation.SizeOf;
 import net.microfalx.lang.service.Service;
 import net.microfalx.resource.Resource;
 import net.microfalx.store.api.Query;
@@ -37,7 +38,7 @@ import static net.microfalx.lang.ExceptionUtils.getRootCauseName;
 public class LoggerServiceImpl extends AbstractService implements LoggerService, Service.Lifecycle,
         Initializable, LoggerListener {
 
-    private LoggerSettings settings = new LoggerSettings();
+    @SizeOf private LoggerSettings settings = new LoggerSettings();
 
     private final LoggerManager loggerManager = new LoggerManager(this);
     private final Map<String, Alert> alerts = new ConcurrentHashMap<>();

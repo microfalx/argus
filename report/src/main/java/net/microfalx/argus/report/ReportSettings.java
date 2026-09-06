@@ -1,6 +1,7 @@
 package net.microfalx.argus.report;
 
 import lombok.*;
+import net.microfalx.lang.annotation.SizeOf;
 
 /**
  * The configuration for Mail service.
@@ -10,6 +11,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
+@SizeOf
 public class ReportSettings {
 
     /**

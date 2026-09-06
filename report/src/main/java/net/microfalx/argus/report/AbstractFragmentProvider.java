@@ -1,5 +1,6 @@
 package net.microfalx.argus.report;
 
+import net.microfalx.lang.annotation.SizeOf;
 import net.microfalx.metrics.Metric;
 import net.microfalx.metrics.Series;
 import net.microfalx.metrics.SeriesStore;
@@ -9,6 +10,7 @@ import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 /**
  * Base class for all fragment providers.
  */
+@SizeOf
 public abstract class AbstractFragmentProvider implements Fragment.Provider {
 
     private ReportService reportService;

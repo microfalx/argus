@@ -12,7 +12,6 @@ import net.microfalx.lang.JvmUtils;
 import net.microfalx.lang.annotation.SizeOf;
 import net.microfalx.lang.service.Service;
 import net.microfalx.metrics.Batch;
-import net.microfalx.metrics.Metric;
 import net.microfalx.metrics.SeriesStore;
 import net.microfalx.metrics.statistics.TimeWindowStatisticalSummary;
 import net.microfalx.metrics.statistics.TrendStatisticalSummary;
@@ -47,7 +46,7 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
     @SizeOf private volatile SeriesStore seriesStore;
     private volatile net.microfalx.argus.api.Service service;
 
-    private volatile HealthSettings settings = new HealthSettings();
+    @SizeOf private volatile HealthSettings settings = new HealthSettings();
     private final Map<Resource.Type, TimeWindowStatisticalSummary> resourceTrends = new ConcurrentHashMap<>();
     private final Map<String, TimeWindowStatisticalSummary> groupTrends = new ConcurrentHashMap<>();
     private final Map<String, TimeWindowStatisticalSummary> itemTrends = new ConcurrentHashMap<>();
@@ -189,7 +188,6 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
         updateHealth();
         updateMetrics();
         storeResources();
-        getThreadPool().execute(new ServiceStatisticsWorker());
     }
 
     @Override
@@ -219,7 +217,7 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
     private void registerTasks() {
         getThreadPool().schedule(new MaintenanceTask(), Trigger.fixedDelay(Duration.ofMinutes(15)));
         getThreadPool().schedule(new ScrapeTask(), Trigger.fixedDelay(Duration.ofSeconds(30)));
-        getThreadPool().schedule(new ServiceStatisticsWorker(), Trigger.fixedDelay(Duration.ofSeconds(60)));
+        getThreadPool().schedule(new ServiceStatisticsWorker(), Trigger.fixedDelay(Duration.ofSeconds(10)));
         getThreadPool().schedule(this::updateMetrics, Trigger.fixedDelay(Duration.ofSeconds(10)));
     }
 
