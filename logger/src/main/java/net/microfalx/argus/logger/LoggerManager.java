@@ -1,5 +1,6 @@
 package net.microfalx.argus.logger;
 
+import net.microfalx.argus.api.LoggerSettings;
 import net.microfalx.configuration.Configuration;
 import net.microfalx.lang.ClassUtils;
 import net.microfalx.lang.FileUtils;
@@ -123,7 +124,7 @@ class LoggerManager {
 
     private File getConfiguredLogsDirectory() {
         String path = loggerService.getSettings().getDirectory();
-        if (isEmpty(path)) path = configuration.get("argus.logger.directory");
+        if (isEmpty(path)) path = configuration.get(LoggerSettings.DIRECTORY_PROP);
         if (isEmpty(path)) {
             File logs = new File(JvmUtils.getWorkingDirectory(false), "logs");
             if (logs.exists() && isDirectoryWritable(logs)) path = logs.getAbsolutePath();

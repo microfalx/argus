@@ -20,6 +20,12 @@ import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 public class LoggerSettings {
 
     /**
+     * The name of the system property (or configuration) which can be used as
+     * a default logging directory.
+     */
+    public static final String DIRECTORY_PROP = "argus.logger.directory";
+
+    /**
      * Indicates whether the DEBUG statements are logged across all appenders.
      */
     private boolean debug;

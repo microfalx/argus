@@ -1,11 +1,8 @@
 package net.microfalx.argus.api;
 
-import net.microfalx.lang.annotation.Provider;
-
 /**
  * An interface used to store logger events.
  */
-@Provider
 public interface LoggerListener {
 
     /**
