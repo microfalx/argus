@@ -171,7 +171,7 @@ public class ReportHelper {
     public <S extends Service> String getTrendMemory(Service.Statistics<S> serviceStatistics, int maxPoints) {
         if (serviceStatistics == null) return EMPTY_STRING;
         TrendStatisticalSummary trend = HealthService.getInstance().getTrend(serviceStatistics.getService(), Service.Metric.MEMORY_USAGE);
-        return getTrend(trend, maxPoints);
+        return getTrend(trend, maxPoints, TrendType.MEMORY);
     }
 
     public String getTrend(TrendStatisticalSummary summary) {
@@ -179,8 +179,17 @@ public class ReportHelper {
     }
 
     public String getTrend(TrendStatisticalSummary summary, int maxPoints) {
+        return getTrend(summary, maxPoints, TrendType.SCORE);
+    }
+
+    public String getTrend(TrendStatisticalSummary summary, int maxPoints, TrendType type) {
         if (summary == null) return EMPTY_STRING;
-        if (DEMO_TRENDS) return getDemoTrendValues();
+        if (DEMO_TRENDS) {
+            return switch (type) {
+                case SCORE -> getScoreDemoTrendValues();
+                case MEMORY -> getMemoryDemoTrendValues();
+            };
+        }
         return Arrays.stream(summary.getValues(maxPoints))
                 .mapToObj(this::formatTrendValue)
                 .collect(Collectors.joining(","));
@@ -313,7 +322,7 @@ public class ReportHelper {
         return 1 + ThreadLocalRandom.current().nextFloat(9);
     }
 
-    private String getDemoTrendValues() {
+    private String getScoreDemoTrendValues() {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         StringJoiner joiner = new StringJoiner(",");
         for (int i = 0; i < MAX_TREND_POINTS; i++) {
@@ -321,6 +330,20 @@ public class ReportHelper {
             joiner.add(FormatterUtils.formatNumber(value));
         }
         return joiner.toString();
+    }
+
+    private String getMemoryDemoTrendValues() {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        StringJoiner joiner = new StringJoiner(",");
+        for (int i = 0; i < MAX_TREND_POINTS; i++) {
+            float value = 500 * FormatterUtils.M + 20000 * FormatterUtils.M * random.nextFloat();
+            joiner.add(FormatterUtils.formatNumber(value));
+        }
+        return joiner.toString();
+    }
+
+    enum TrendType {
+        SCORE, MEMORY
     }
 
     static final long[] DURATION_BUCKETS = new long[]{

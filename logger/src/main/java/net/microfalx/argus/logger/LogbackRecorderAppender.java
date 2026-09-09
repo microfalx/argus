@@ -8,8 +8,7 @@ import ch.qos.logback.classic.spi.ThrowableProxy;
 import net.microfalx.argus.api.LoggerEvent;
 import net.microfalx.argus.api.LoggerListener;
 import net.microfalx.lang.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.microfalx.lang.service.Logger;
 
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -19,7 +18,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 class LogbackRecorderAppender extends ch.qos.logback.core.AppenderBase<ILoggingEvent> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(LogbackRecorderAppender.class);
+    private static final Logger LOGGER = Logger.get(LogbackRecorderAppender.class);
 
     static final String INSTALLED_FLAG = "ARGUS_APPENDER";
 

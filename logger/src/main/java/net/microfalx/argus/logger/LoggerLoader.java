@@ -1,12 +1,10 @@
 package net.microfalx.argus.logger;
 
-import net.microfalx.lang.CollectionUtils;
+import net.microfalx.lang.service.Logger;
 import net.microfalx.resource.Resource;
 import net.microfalx.resource.ResourceException;
 import org.dom4j.Document;
 import org.dom4j.Element;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URL;
@@ -24,7 +22,7 @@ import static net.microfalx.lang.XmlUtils.*;
  */
 public class LoggerLoader {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(LoggerLoader.class);
+    private static final Logger LOGGER = Logger.get(LoggerLoader.class);
     private final Collection<Appender> appenders = new ArrayList<>();
 
     Collection<Appender> getAppenders() {

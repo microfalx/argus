@@ -1,7 +1,6 @@
 package net.microfalx.argus.logger;
 
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import net.microfalx.argus.api.*;
 import net.microfalx.argus.core.AbstractService;
 import net.microfalx.lang.ClassUtils;
@@ -9,6 +8,7 @@ import net.microfalx.lang.Initializable;
 import net.microfalx.lang.JvmUtils;
 import net.microfalx.lang.annotation.Provider;
 import net.microfalx.lang.annotation.SizeOf;
+import net.microfalx.lang.service.Logger;
 import net.microfalx.lang.service.Service;
 import net.microfalx.resource.Resource;
 import net.microfalx.store.api.Query;
@@ -33,10 +33,11 @@ import static net.microfalx.lang.ClassUtils.resolveProviderInstances;
 import static net.microfalx.lang.CollectionUtils.immutableCollection;
 import static net.microfalx.lang.ExceptionUtils.getRootCauseName;
 
-@Slf4j
 @Provider
 public class LoggerServiceImpl extends AbstractService implements LoggerService, Service.Lifecycle,
         Initializable, LoggerListener {
+
+    private static final Logger LOGGER = Logger.get(LoggerServiceImpl.class);
 
     @SizeOf private LoggerSettings settings = new LoggerSettings();
 
@@ -285,14 +286,14 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
     }
 
     private void discoverListeners() {
-        LOGGER.info("Discover listeners");
+        LOGGER.debug("Discover listeners");
         for (LoggerListener listener : resolveProviderInstances(LoggerListener.class)) {
             if (listener instanceof LoggerServiceImpl) continue;
             LOGGER.debug(" - {}", ClassUtils.getName(listener));
             initializeListener(listener);
             classPathListeners.add(listener);
         }
-        LOGGER.info("Discovered {} listeners", classPathListeners.size());
+        LOGGER.debug("Discovered {} listeners", classPathListeners.size());
     }
 
     private void updateListeners() {

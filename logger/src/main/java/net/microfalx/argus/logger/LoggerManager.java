@@ -7,9 +7,8 @@ import net.microfalx.lang.FileUtils;
 import net.microfalx.lang.JvmUtils;
 import net.microfalx.lang.ObjectUtils;
 import net.microfalx.lang.annotation.SizeOf;
+import net.microfalx.lang.service.Logger;
 import net.microfalx.resource.Resource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,7 +32,7 @@ import static net.microfalx.lang.StringUtils.isNotEmpty;
 @SizeOf
 class LoggerManager {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(LoggerManager.class);
+    private static final Logger LOGGER = Logger.get(LoggerManager.class);
 
     private final LoggerServiceImpl loggerService;
     private final Configuration configuration = Configuration.get();
