@@ -26,6 +26,12 @@ public class LoggerSettings {
     public static final String DIRECTORY_PROP = "argus.logger.directory";
 
     /**
+     * The name of the system property (or configuration) which can be used to enable lazy initialization
+     * for logging. When enabled, nothing is stored/processed until the new settings are passes to the service.
+     */
+    public static final String LAZY_PROP = "argus.logger.lazy";
+
+    /**
      * Indicates whether the DEBUG statements are logged across all appenders.
      */
     private boolean debug;

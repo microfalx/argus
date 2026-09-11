@@ -3,6 +3,7 @@ package net.microfalx.argus.logger;
 import lombok.Getter;
 import net.microfalx.argus.api.*;
 import net.microfalx.argus.core.AbstractService;
+import net.microfalx.configuration.Configuration;
 import net.microfalx.lang.ClassUtils;
 import net.microfalx.lang.Initializable;
 import net.microfalx.lang.JvmUtils;
@@ -14,16 +15,15 @@ import net.microfalx.resource.Resource;
 import net.microfalx.store.api.Query;
 import net.microfalx.store.api.Store;
 import net.microfalx.store.api.StoreService;
+import net.microfalx.threadpool.ThreadPool;
 
 import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static net.microfalx.argus.logger.LoggerUtils.METRICS_COUNTS_EXCEPTION;
@@ -52,6 +52,9 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
     private volatile Collection<LoggerListener> listeners = Collections.emptyList();
     private final Collection<LoggerListener> registeredListeners = new CopyOnWriteArraySet<>();
     private final Collection<LoggerListener> classPathListeners = new CopyOnWriteArraySet<>();
+    private final AtomicBoolean lazyResumed = new AtomicBoolean();
+
+    private volatile boolean lazy;
 
     /**
      * The hostname of the server where the process runs.
@@ -68,6 +71,7 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
     public void setSettings(LoggerSettings settings) {
         requireNonNull(settings);
         this.settings = settings;
+        resumeLazy();
     }
 
     /**
@@ -136,14 +140,17 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
     @Override
     public void initialize(Object... context) {
         initHostInformation();
-        discoverListeners();
-        initializeStores();
-        initializeTasks();
+        initConfiguration();
+        if (!lazy) {
+            resumeLazy();
+        }
     }
 
     @Override
     public void start() {
-        // nothing to do
+        if (lazy) {
+            ThreadPool.get().schedule(new ResumeLazyTask(), 5, TimeUnit.MINUTES);
+        }
     }
 
     /**
@@ -210,6 +217,16 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
             hostname = InetAddress.getLocalHost().getCanonicalHostName();
         } catch (UnknownHostException e) {
             hostname = "localhost";
+        }
+    }
+
+    private void resumeLazy() {
+        if (!lazy) return;
+        if (lazyResumed.compareAndSet(false, true)) {
+            LOGGER.debug("Resuming lazy mode");
+            discoverListeners();
+            initializeStores();
+            initializeTasks();
         }
     }
 
@@ -285,6 +302,11 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
         });
     }
 
+    private void initConfiguration() {
+        this.lazy = Configuration.get().get(LoggerSettings.LAZY_PROP, false);
+        LOGGER.debug("Lazy mode: {}", lazy);
+    }
+
     private void discoverListeners() {
         LOGGER.debug("Discover listeners");
         for (LoggerListener listener : resolveProviderInstances(LoggerListener.class)) {
@@ -305,6 +327,14 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
     private void initializeListener(LoggerListener listener) {
         if (listener instanceof Initializable) {
             ((Initializable) listener).initialize();
+        }
+    }
+
+    class ResumeLazyTask implements Runnable {
+
+        @Override
+        public void run() {
+            resumeLazy();
         }
     }
 
