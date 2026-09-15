@@ -55,6 +55,10 @@ public class ReportHelper {
         return FormatterUtils.formatBytes(value);
     }
 
+    public String formatCount(Number value) {
+        return FormatterUtils.formatCount(value);
+    }
+
     public String formatPercent(Number value) {
         return FormatterUtils.formatPercent(value);
     }

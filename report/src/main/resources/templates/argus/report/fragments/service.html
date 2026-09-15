@@ -7,7 +7,7 @@
         <thead class="table-light">
         <tr>
             <th scope="col" rowspan="2">Name</th>
-            <th scope="col" rowspan="2">Memory</th>
+            <th scope="col" colspan="4" class="text-center">Memory</th>
             <th scope="col" colspan="2" class="text-center">Faults</th>
             <th scope="col" colspan="2" class="text-center">Operations</th>
             <th scope="col" colspan="2" class="text-center">Events</th>
@@ -17,6 +17,10 @@
             </th:block>
         </tr>
         <tr>
+            <th scope="col" class="text-end">Total</th>
+            <th scope="col" class="text-end">Objects</th>
+            <th scope="col" class="text-end">Arrays</th>
+            <th scope="col" class="text-end">Elements</th>
             <th scope="col" class="text-end">Warnings</th>
             <th scope="col" class="text-end">Errors</th>
             <th scope="col" class="text-end">Successful</th>
@@ -38,6 +42,18 @@
                 </th:block>
                 <span class="ms-1" th:utext="${helper.getTrendMemoryGlyph(service)}"></span>
             </td>
+            <td class="text-end text-nowrap">
+                <span th:text="${helper.formatCount(service.memoryObjects)}"></span>
+            </td>
+            <td class="text-end text-nowrap">
+                <span th:text="${helper.formatBytes(service.memoryArrayUsage)}"></span>
+            </td>
+            <td class="text-end text-nowrap">
+                <span th:text="${helper.formatCount(service.memoryArrayObjects)}"></span>
+            </td>
+            <td class="text-nowrap"></td>
+            <td class="text-nowrap"></td>
+            <td class="text-nowrap"></td>
             <td class="text-end" th:text="${helper.formatNumber(service.warningCount)}"></td>
             <td class="text-end" th:text="${helper.formatNumber(service.errorCount)}"></td>
             <td class="text-end" th:text="${helper.formatNumber(service.successCount)}"></td>

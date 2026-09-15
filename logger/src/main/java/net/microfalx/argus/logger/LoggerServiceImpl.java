@@ -41,7 +41,7 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
 
     @SizeOf private LoggerSettings settings = new LoggerSettings();
 
-    private final LoggerManager loggerManager = new LoggerManager(this);
+    @SizeOf private final LoggerManager loggerManager = new LoggerManager(this);
     private final Map<String, Alert> alerts = new ConcurrentHashMap<>();
     private final Queue<LoggerEvent> lastLoggerEvents = new ArrayBlockingQueue<>(100);
     private final Collection<Appender> appenders = new CopyOnWriteArrayList<>();

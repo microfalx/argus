@@ -74,6 +74,21 @@ public class ServiceProvider extends AbstractFragmentProvider {
         }
 
         @Override
+        public int getMemoryObjects() {
+            return statistics.getMemoryObjects();
+        }
+
+        @Override
+        public long getMemoryArrayUsage() {
+            return statistics.getMemoryArrayUsage();
+        }
+
+        @Override
+        public int getMemoryArrayObjects() {
+            return statistics.getMemoryArrayObjects();
+        }
+
+        @Override
         public int getWarningCount() {
             return statistics.getWarningCount();
         }
