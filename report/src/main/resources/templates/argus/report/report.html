@@ -19,8 +19,8 @@
 <button type="button" class="btn btn-secondary btn-floating" id="btn-back-to-top"><i class="fas fa-arrow-up"></i></button>
 <th:block th:if="${report.isDynamic()}">
     <div th:replace="~{fragments/page :: code}"></div>
-    <div th:replace="~{fragments/chart :: code}"></div>
     <div th:replace="~{fragments/table :: code}"></div>
+    <div th:replace="~{fragments/chart :: code}"></div>
     <th:block th:each="fragmentTemplate : ${fragmentTemplates}">
         <div th:replace="~{${fragmentTemplate} :: code}"></div>
     </th:block>

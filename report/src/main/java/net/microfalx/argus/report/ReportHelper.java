@@ -8,8 +8,10 @@ import net.microfalx.lang.service.Service;
 import net.microfalx.metrics.Metrics;
 import net.microfalx.metrics.statistics.Trend;
 import net.microfalx.metrics.statistics.TrendStatisticalSummary;
+import net.microfalx.resource.ClassPathResource;
 import org.apache.commons.lang3.ArrayUtils;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
@@ -19,6 +21,7 @@ import java.util.StringJoiner;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
+import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 import static net.microfalx.lang.StringUtils.EMPTY_STRING;
 
 /**
@@ -73,6 +76,28 @@ public class ReportHelper {
 
     public String formatNumber(Number number) {
         return FormatterUtils.formatNumber(number);
+    }
+
+    public String loadJs() {
+        return loadJs("utils.js", "chart.js", "init.js");
+    }
+
+    public String loadJs(String... fileName) {
+        StringBuilder builder = new StringBuilder();
+        for (String file : fileName) {
+            String content = loadJs(file);
+            builder.append(content).append("\n");
+        }
+        return builder.toString();
+    }
+
+    public String loadJs(String fileName) {
+        requireNonNull(fileName);
+        try {
+            return ClassPathResource.file("js/argus/report/" + fileName).loadAsString();
+        } catch (IOException e) {
+            return ExceptionUtils.rethrowExceptionAndReturn(e);
+        }
     }
 
     public String formatScore(float score) {
@@ -242,7 +267,7 @@ public class ReportHelper {
                 .filter(Health.Item::hasIssues)
                 .sorted(Comparator.comparing(Health.Item::getScore))
                 .limit(MAX_WORSE_ITEMS)
-                .toList();
+                .collect(Collectors.toSet());
     }
 
     public boolean hasWorseItems(Health health) {

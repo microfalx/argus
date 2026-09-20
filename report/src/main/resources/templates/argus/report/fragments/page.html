@@ -112,72 +112,12 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/4.3.0/apexcharts.min.js"></script>
     </th:block>
 
+    <script th:inline="javascript">
+        /*[( ${helper.loadJs()} )]*/
+    </script>
+
     <script>
-
-        /**
-         * Scroll to the top button
-         */
-        let backToTopButton = document.getElementById("btn-back-to-top");
-        if (backToTopButton) {
-            backToTopButton.addEventListener("click", function () {
-                document.body.scrollTop = 0;
-                document.documentElement.scrollTop = 0;
-            });
-        }
-
-        window.onscroll = function () {
-            scrollFunction();
-        };
-
-        function scrollFunction() {
-            if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
-                backToTopButton.style.display = "block";
-            } else {
-                backToTopButton.style.display = "none";
-            }
-        }
-
-        // Make sparklines visible
-        $('.sparkline-bar').removeClass('d-none');
-
-        // Sparklines for score
-        let sparklineBarsScore = $('.sparkline-bar.sparkline-score');
-        // converts elements with this class in sparklines, using bar chart type and no zero axis
-        sparklineBarsScore.sparkline('html', {
-            type: 'bar',
-            chartRangeMin: 1,
-            chartRangeMax: 10,
-            barColor: '#4099ff', // Default color for unmapped values
-            colorMap: {
-                '1:4': '#d63939',
-                '4:7': '#f59f00',
-                '7:10': '#2fb344'
-            },
-            zeroAxis: true
-        });
-
-        // Sparklines for memory
-        let sparklineBarsMemory = $('.sparkline-bar.sparkline-memory');
-        // converts elements with this class in sparklines, using bar chart type and no zero axis
-        sparklineBarsMemory.sparkline('html', {
-            type: 'bar',
-            barColor: '#4099ff', // Default color for unmapped values
-            colorMap: {
-                '50000000:1000000000000': '#d63939',
-                '30000000:50000000': '#d55858',
-                '20000000:30000000': '#ef8888',
-                '10000000:20000000': '#f59f00',
-                '5000000:10000000': '#ffb931',
-                '0:5000000': '#2fb344',
-                '0:1000000': '#76c885'
-            },
-            tooltipSuffix : ' bytes',
-            zeroAxis: true
-        });
-
-        $(function () {
-            $('[data-toggle="tooltip"]').tooltip()
-        })
+        initReport();
     </script>
 </div>
 
