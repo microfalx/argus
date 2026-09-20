@@ -182,6 +182,14 @@
                 <scope>import</scope>
             </dependency>
 
+            <dependency>
+                <groupId>net.microfalx.bom</groupId>
+                <artifactId>bom-spring</artifactId>
+                <version>${bom.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
