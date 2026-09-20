@@ -11,7 +11,6 @@ import net.microfalx.lang.*;
 import net.microfalx.lang.annotation.Provider;
 import net.microfalx.lang.annotation.SizeOf;
 import net.microfalx.lang.service.Service;
-import net.microfalx.metrics.Metrics;
 import net.microfalx.resource.Resource;
 import net.microfalx.threadpool.CronTrigger;
 import net.microfalx.threadpool.IdentifiableTask;
@@ -36,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static java.lang.System.currentTimeMillis;
 import static java.time.Duration.ofHours;
@@ -43,6 +43,7 @@ import static java.util.Collections.unmodifiableCollection;
 import static net.lingala.zip4j.model.enums.CompressionLevel.MAXIMUM;
 import static net.lingala.zip4j.model.enums.CompressionMethod.DEFLATE;
 import static net.lingala.zip4j.model.enums.EncryptionMethod.ZIP_STANDARD;
+import static net.microfalx.argus.report.ReportHelper.METRICS;
 import static net.microfalx.argus.report.Template.APPLICATION_VARIABLE;
 import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 import static net.microfalx.lang.EnumUtils.toLabel;
@@ -190,25 +191,33 @@ public class ReportService extends AbstractService implements Initializable {
         updateReportName(report, suffix);
         report.setEndTime(ZonedDateTime.now());
         report.setStartTime(report.getEndTime().minus(interval));
-        Resource fullReport = Resource.temporary("report_", ".html");
-        try {
-            report.render(fullReport);
-            fullReport = encryptReport(fullReport);
-        } catch (Exception e) {
-            throw new ReportException("Failed to render the report for interval " + interval, e);
-        }
-        report.setDynamic(false).setOffline(false).setSecure(true).setFragment("summary");
-        Resource summaryReport = Resource.temporary("report_summary_", ".html");
-        try {
-            report.render(summaryReport);
-        } catch (Exception e) {
-            throw new ReportException("Failed to render the report for interval " + interval, e);
-        }
-        try {
-            send(report, summaryReport, fullReport);
-        } catch (Exception e) {
-            throw new ReportException("Failed to send the report for interval " + interval, e);
-        }
+        AtomicReference<Resource> fullReportRef = new AtomicReference<>(null);
+        AtomicReference<Resource> summaryReportRef = new AtomicReference<>(null);
+        METRICS.time("Generate", (t) -> {
+            Resource fullReport = Resource.temporary("report_", ".html");
+            try {
+                report.render(fullReport);
+                fullReport = encryptReport(fullReport);
+            } catch (Exception e) {
+                throw new ReportException("Failed to render the report for interval " + interval, e);
+            }
+            fullReportRef.set(fullReport);
+            report.setDynamic(false).setOffline(false).setSecure(true).setFragment("summary");
+            Resource summaryReport = Resource.temporary("report_summary_", ".html");
+            try {
+                report.render(summaryReport);
+            } catch (Exception e) {
+                throw new ReportException("Failed to render the report for interval " + interval, e);
+            }
+            summaryReportRef.set(summaryReport);
+        });
+        METRICS.time("Send", (t) -> {
+            try {
+                send(report, summaryReportRef.get(), fullReportRef.get());
+            } catch (Exception e) {
+                throw new ReportException("Failed to send the report for interval " + interval, e);
+            }
+        });
         return report;
     }
 
@@ -430,7 +439,7 @@ public class ReportService extends AbstractService implements Initializable {
     }
 
     private void extractAndSendIssues(Issue.Severity severity) {
-        REPORT.count("Check Issues: " + severity.name());
+        METRICS.count("Check Issues: " + severity.name());
         updateIssuesCache();
         if (cachedIssues.isEmpty()) {
             LOGGER.info("No issues found with severity {}", severity);
@@ -453,7 +462,7 @@ public class ReportService extends AbstractService implements Initializable {
                 suffix = hasCritical ? "Critical Issues" : "Important Issues";
             }
             if (shouldSend) {
-                REPORT.count("Sent: " + severity.name());
+                METRICS.count("Sent: " + severity.name());
                 send(Duration.ofHours(1), suffix);
             }
         }
@@ -461,7 +470,7 @@ public class ReportService extends AbstractService implements Initializable {
 
     private synchronized void updateIssuesCache() {
         if (millisSince(lastIssuesUpdate) < FIVE_MINUTE) return;
-        REPORT.count("Update Issues");
+        METRICS.count("Update Issues");
         Map<String, Issue> issues = new HashMap<>();
         for (ReportingListener listener : listeners) {
             Collection<Issue> listenerIssues = listener.getIssues();
@@ -606,7 +615,7 @@ public class ReportService extends AbstractService implements Initializable {
         public void run() {
             DAILY_REPORT.set(interval.toHours() >= 24);
             try {
-                REPORT.count("Send Report: " + formatDuration(interval));
+                METRICS.count("Send Report: " + formatDuration(interval));
                 send(interval, suffix);
             } finally {
                 cleanup();
@@ -643,8 +652,6 @@ public class ReportService extends AbstractService implements Initializable {
             buildTime = System.getProperty("application.build.time", NA_STRING);
         }
     }
-
-    private static final Metrics REPORT = Metrics.of("Support").withGroup("Report");
 
 
 }

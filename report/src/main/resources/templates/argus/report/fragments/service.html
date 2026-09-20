@@ -7,7 +7,8 @@
         <thead class="table-light">
         <tr>
             <th scope="col" rowspan="2">Name</th>
-            <th scope="col" colspan="4" class="text-center">Memory</th>
+            <th scope="col" colspan="2" class="text-center">Memory Service</th>
+            <th scope="col" colspan="2" class="text-center">Memory Arrays</th>
             <th scope="col" colspan="2" class="text-center">Faults</th>
             <th scope="col" colspan="2" class="text-center">Operations</th>
             <th scope="col" colspan="2" class="text-center">Events</th>
@@ -17,18 +18,18 @@
             </th:block>
         </tr>
         <tr>
-            <th scope="col" class="text-end">Total</th>
-            <th scope="col" class="text-end">Objects</th>
-            <th scope="col" class="text-end">Arrays</th>
-            <th scope="col" class="text-end">Elements</th>
-            <th scope="col" class="text-end">Warnings</th>
-            <th scope="col" class="text-end">Errors</th>
-            <th scope="col" class="text-end">Successful</th>
-            <th scope="col" class="text-end">Failed</th>
-            <th scope="col" class="text-end">In</th>
-            <th scope="col" class="text-end">Out</th>
-            <th scope="col" class="text-end">Running</th>
-            <th scope="col" class="text-end">Pending</th>
+            <th scope="col" class="text-end" data-toggle="tooltip" title="Total memory usage of the service">Total</th>
+            <th scope="col" class="text-end" data-toggle="tooltip" title="Total number of objects in the service">Objects</th>
+            <th scope="col" class="text-end" data-toggle="tooltip" title="Total memory usage of the arrays (included in total memory usage of the service)">Total</th>
+            <th scope="col" class="text-end" data-toggle="tooltip" title="Total number of elements in the arrays">Elements</th>
+            <th scope="col" class="text-end" data-toggle="tooltip" title="Total number of warnings received from the logger for the service">Warnings</th>
+            <th scope="col" class="text-end" data-toggle="tooltip" title="Total number of errors received from the logger for the service">Errors</th>
+            <th scope="col" class="text-end" data-toggle="tooltip" title="Total number of successful operations (internal tasks) executed by the service">Successful</th>
+            <th scope="col" class="text-end" data-toggle="tooltip" title="Total number of failed operations (internal tasks) executed by the service">Failed</th>
+            <th scope="col" class="text-end" data-toggle="tooltip" title="Total number of incoming events (any data received by the service)">In</th>
+            <th scope="col" class="text-end" data-toggle="tooltip" title="Total number of outgoing events (any data sent by the service)">Out</th>
+            <th scope="col" class="text-end" data-toggle="tooltip" title="Total number of running tasks (task processing events/data for the service)">Running</th>
+            <th scope="col" class="text-end" data-toggle="tooltip" title="Total number of pending tasks (task waiting to be processed for the service)">Pending</th>
         </tr>
         </thead>
         <tbody>
@@ -51,9 +52,6 @@
             <td class="text-end text-nowrap">
                 <span th:text="${helper.formatCount(service.memoryArrayObjects)}"></span>
             </td>
-            <td class="text-nowrap"></td>
-            <td class="text-nowrap"></td>
-            <td class="text-nowrap"></td>
             <td class="text-end" th:text="${helper.formatNumber(service.warningCount)}"></td>
             <td class="text-end" th:text="${helper.formatNumber(service.errorCount)}"></td>
             <td class="text-end" th:text="${helper.formatNumber(service.successCount)}"></td>

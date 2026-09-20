@@ -13,6 +13,7 @@ import java.util.*;
 import java.util.function.Supplier;
 
 import static java.util.Collections.unmodifiableCollection;
+import static net.microfalx.argus.report.ReportHelper.METRICS_RENDER;
 import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 import static net.microfalx.lang.ArgumentUtils.requireNotEmpty;
 import static net.microfalx.lang.ExceptionUtils.getRootCauseDescription;
@@ -291,15 +292,19 @@ public class Report implements Nameable {
     public void render(Resource resource) throws IOException {
         requireNonNull(resource);
         CURRENT_REPORT.set(this);
-        try {
+        METRICS_RENDER.time("Report Fragments", (t) -> {
             buildFragments();
-            Template template = reportService.createTemplate("report", this);
-            updateTemplate(template);
-            template.render(resource);
-        } finally {
-            CURRENT_REPORT.remove();
-            cleanup();
-        }
+        });
+        METRICS_RENDER.time("Report", (t) -> {
+            try {
+                Template template = reportService.createTemplate("report", this);
+                updateTemplate(template);
+                template.render(resource);
+            } catch (IOException e) {
+                rethrowException(e);
+            }
+        });
+
     }
 
     /**
@@ -325,7 +330,7 @@ public class Report implements Nameable {
             if (this.fragment != null && !this.fragment.equals(fragment.getId())) continue;
             Resource temporary = Resource.temporary("support_report_" + fragment.getId() + "_", ".html");
             try {
-                fragment.render(this, temporary);
+                METRICS_RENDER.time(fragment.getName(), (t) -> fragment.render(this, temporary));
             } catch (Exception e) {
                 if (failOnError) rethrowException(e);
             }

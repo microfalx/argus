@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
  */
 public class LoggerUtils {
 
-    static Metrics METRICS = Metrics.of("Logger");
+    static Metrics METRICS = Metrics.of("Support").withGroup("Logger");
     static Metrics METRICS_COUNTS = METRICS.withGroup("Counts");
     static Metrics METRICS_COUNTS_SEVERITY = METRICS_COUNTS.withGroup("Severity");
     static Metrics METRICS_COUNTS_EXCEPTION = METRICS_COUNTS.withGroup("Exception Class");

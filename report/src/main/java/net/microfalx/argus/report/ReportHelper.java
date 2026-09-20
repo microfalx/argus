@@ -5,6 +5,7 @@ import net.microfalx.argus.api.HealthService;
 import net.microfalx.argus.api.Resource;
 import net.microfalx.lang.*;
 import net.microfalx.lang.service.Service;
+import net.microfalx.metrics.Metrics;
 import net.microfalx.metrics.statistics.Trend;
 import net.microfalx.metrics.statistics.TrendStatisticalSummary;
 import org.apache.commons.lang3.ArrayUtils;
@@ -24,6 +25,9 @@ import static net.microfalx.lang.StringUtils.EMPTY_STRING;
  * Various helper methods for reports.
  */
 public class ReportHelper {
+
+    static final Metrics METRICS = Metrics.of("Support").withGroup("Report");
+    static final Metrics METRICS_RENDER = METRICS.withGroup("Render");
 
     private static final boolean DEMO_TRENDS = Boolean.parseBoolean(System.getProperty("argus.report.trends.demo", "false"));
     private static final ZonedDateTime startupTime = ZonedDateTime.now();
