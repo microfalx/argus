@@ -141,9 +141,7 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
     public void initialize(Object... context) {
         initHostInformation();
         initConfiguration();
-        if (!lazy) {
-            resumeLazy();
-        }
+        if (!lazy) resumeLazy();
     }
 
     @Override
@@ -221,7 +219,6 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
     }
 
     private void resumeLazy() {
-        if (!lazy) return;
         if (lazyResumed.compareAndSet(false, true)) {
             LOGGER.debug("Resuming lazy mode");
             discoverListeners();
@@ -334,7 +331,7 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
 
         @Override
         public void run() {
-            resumeLazy();
+            if (!lazy) resumeLazy();
         }
     }
 
