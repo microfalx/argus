@@ -11,7 +11,9 @@ import net.microfalx.lang.Initializable;
 import net.microfalx.lang.JvmUtils;
 import net.microfalx.lang.annotation.SizeOf;
 import net.microfalx.lang.service.Service;
+import net.microfalx.lang.service.ServiceLocator;
 import net.microfalx.metrics.Batch;
+import net.microfalx.metrics.Metrics;
 import net.microfalx.metrics.SeriesStore;
 import net.microfalx.metrics.statistics.TimeWindowStatisticalSummary;
 import net.microfalx.metrics.statistics.TrendStatisticalSummary;
@@ -36,6 +38,7 @@ import static net.microfalx.lang.StringUtils.defaultIfNull;
 public class HealthServiceImpl extends AbstractService implements Service.Lifecycle, HealthService {
 
     private static final String REGISTRY_PATH = "/health";
+    final static Metrics METRICS = Metrics.of("Support").withGroup("Health");
 
     private volatile Collection<HealthContributor> contributors = Collections.emptyList();
     private final Collection<HealthContributor> registeredContributors = new CopyOnWriteArraySet<>();
@@ -185,9 +188,10 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
 
     @Override
     public void update() {
-        updateHealth();
-        updateMetrics();
-        storeResources();
+        METRICS.time("Update Health", t -> updateHealth());
+        METRICS.time("Update Metrics", t -> updateMetrics());
+        METRICS.time("Store Resources", t -> storeResources());
+        ServiceLocator.report(this, Metric.SUCCESS);
     }
 
     @Override
@@ -222,7 +226,7 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
     }
 
     void maintenance() {
-        updateContributorsStats();
+        METRICS.time("Update Contributors Stats", t -> updateContributorsStats());
     }
 
     void updateHealth() {
@@ -395,6 +399,7 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
     }
 
     private class MaintenanceTask implements Runnable {
+
         @Override
         public void run() {
             maintenance();

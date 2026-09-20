@@ -15,8 +15,13 @@ public class ServiceStatisticsWorker implements Runnable {
 
     @Override
     public void run() {
-        ServiceLocator.getServices().forEach(this::updateStatistics);
+        HealthServiceImpl.METRICS.time("Service Memory", (t) -> {
+            updateStatistics();
+        });
+    }
 
+    private void updateStatistics() {
+        ServiceLocator.getServices().forEach(this::updateStatistics);
     }
 
     private void updateStatistics(Service service) {
