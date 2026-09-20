@@ -6,7 +6,10 @@ import net.microfalx.jvm.ObjectSize;
 import net.microfalx.jvm.VirtualMachineMetrics;
 import net.microfalx.lang.service.Service;
 import net.microfalx.lang.service.ServiceLocator;
+import net.microfalx.metrics.Timer;
 import net.microfalx.metrics.statistics.MutableStatisticalSummary;
+
+import java.util.Collection;
 
 @Slf4j
 public class ServiceStatisticsWorker implements Runnable {
@@ -21,7 +24,15 @@ public class ServiceStatisticsWorker implements Runnable {
     }
 
     private void updateStatistics() {
-        ServiceLocator.getServices().forEach(this::updateStatistics);
+        Collection<Service> services = ServiceLocator.getServices();
+        Collection<Service> serviceProxies = ServiceLocator.getServiceProxies();
+        LOGGER.info("Update statistics for {} services", services.size() + serviceProxies.size());
+        LOGGER.debug("Update statistics for {} internal services", services.size());
+        services.forEach(this::updateStatistics);
+        LOGGER.debug("Update statistics for {} external services", serviceProxies.size());
+        serviceProxies.forEach(this::updateStatistics);
+        LOGGER.info("Completed update statistics for {} services in {}",
+                services.size() + serviceProxies.size(), Timer.currentDuration());
     }
 
     private void updateStatistics(Service service) {
@@ -33,6 +44,7 @@ public class ServiceStatisticsWorker implements Runnable {
     }
 
     private void updateMemoryUsage(Service service) {
+        LOGGER.debug("Update memory usage for service {}", service.getName());
         Object realService = ServiceLocator.getRealService(service);
         ObjectSize memoryUsage = VirtualMachineMetrics.get().getDeepSize(realService);
         MutableStatisticalSummary trend = (MutableStatisticalSummary) getHealthService().getTrend(service, Service.Metric.MEMORY_USAGE);

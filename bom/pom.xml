@@ -86,7 +86,19 @@
 
             <dependency>
                 <groupId>net.microfalx.argus</groupId>
-                <artifactId>argus-spring</artifactId>
+                <artifactId>argus-spring-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.microfalx.argus</groupId>
+                <artifactId>argus-spring-actuator</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.microfalx.argus</groupId>
+                <artifactId>argus-spring-sba</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
