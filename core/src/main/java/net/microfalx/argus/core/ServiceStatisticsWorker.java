@@ -4,10 +4,10 @@ import lombok.extern.slf4j.Slf4j;
 import net.microfalx.argus.api.HealthService;
 import net.microfalx.jvm.ObjectSize;
 import net.microfalx.jvm.VirtualMachineMetrics;
-import net.microfalx.service.api.Service;
-import net.microfalx.service.api.ServiceLocator;
 import net.microfalx.metrics.Timer;
 import net.microfalx.metrics.statistics.MutableStatisticalSummary;
+import net.microfalx.service.api.Service;
+import net.microfalx.service.api.ServiceLocator;
 
 import java.util.Collection;
 
@@ -26,12 +26,12 @@ public class ServiceStatisticsWorker implements Runnable {
     private void updateStatistics() {
         Collection<Service> services = ServiceLocator.current().getServices();
         Collection<Service> serviceProxies = ServiceLocator.current().getServiceProxies();
-        LOGGER.info("Update statistics for {} services", services.size() + serviceProxies.size());
-        LOGGER.debug("Update statistics for {} internal services", services.size());
+        LOGGER.debug("Update statistics for {} services", services.size() + serviceProxies.size());
+        LOGGER.trace("Update statistics for {} internal services", services.size());
         services.forEach(this::updateStatistics);
-        LOGGER.debug("Update statistics for {} external services", serviceProxies.size());
+        LOGGER.trace("Update statistics for {} external services", serviceProxies.size());
         serviceProxies.forEach(this::updateStatistics);
-        LOGGER.info("Completed update statistics for {} services in {}",
+        LOGGER.debug("Completed update statistics for {} services in {}",
                 services.size() + serviceProxies.size(), Timer.currentDuration());
     }
 
@@ -44,7 +44,7 @@ public class ServiceStatisticsWorker implements Runnable {
     }
 
     private void updateMemoryUsage(Service service) {
-        LOGGER.debug("Update memory usage for service {}", service.getName());
+        LOGGER.trace("Update memory usage for service {}", service.getName());
         ServiceLocator serviceLocator = ServiceLocator.current();
         Object realService = serviceLocator.getRealService(service);
         ObjectSize memoryUsage = VirtualMachineMetrics.get().getDeepSize(realService);
