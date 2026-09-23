@@ -9,10 +9,10 @@ import java.util.Set;
 /**
  * A service responsible to calculate the health of the service.
  */
-public interface HealthService extends net.microfalx.lang.service.Service, HealthProvider {
+public interface HealthService extends net.microfalx.service.api.Service, HealthProvider {
 
     static HealthService getInstance() {
-        return net.microfalx.lang.service.Service.lookup(HealthService.class);
+        return net.microfalx.service.api.Service.lookup(HealthService.class);
     }
 
     /**
@@ -82,7 +82,7 @@ public interface HealthService extends net.microfalx.lang.service.Service, Healt
      *
      * @return a non-null instance
      */
-    TrendStatisticalSummary getTrend(net.microfalx.lang.service.Service service, net.microfalx.lang.service.Service.Metric metric);
+    TrendStatisticalSummary getTrend(net.microfalx.service.api.Service service, net.microfalx.service.api.Service.Metric metric);
 
     /**
      * Returns the resources of a given type.

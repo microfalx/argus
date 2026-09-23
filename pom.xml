@@ -85,6 +85,7 @@
         <metrics.version>1.0.3-SNAPSHOT</metrics.version>
         <tracing.version>1.0.2-SNAPSHOT</tracing.version>
         <jvm.version>1.0.3-SNAPSHOT</jvm.version>
+        <service.version>1.0.0-SNAPSHOT</service.version>
         <registry.version>1.0.0-SNAPSHOT</registry.version>
         <configuration.version>1.0.0-SNAPSHOT</configuration.version>
         <store.version>1.0.0-SNAPSHOT</store.version>
@@ -148,6 +149,14 @@
                 <groupId>net.microfalx</groupId>
                 <artifactId>configuration</artifactId>
                 <version>${configuration.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.microfalx.service</groupId>
+                <artifactId>service-bom</artifactId>
+                <version>${service.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
 
             <dependency>

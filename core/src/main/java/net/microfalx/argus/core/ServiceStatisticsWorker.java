@@ -4,8 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.microfalx.argus.api.HealthService;
 import net.microfalx.jvm.ObjectSize;
 import net.microfalx.jvm.VirtualMachineMetrics;
-import net.microfalx.lang.service.Service;
-import net.microfalx.lang.service.ServiceLocator;
+import net.microfalx.service.api.Service;
+import net.microfalx.service.api.ServiceLocator;
 import net.microfalx.metrics.Timer;
 import net.microfalx.metrics.statistics.MutableStatisticalSummary;
 
@@ -24,8 +24,8 @@ public class ServiceStatisticsWorker implements Runnable {
     }
 
     private void updateStatistics() {
-        Collection<Service> services = ServiceLocator.getServices();
-        Collection<Service> serviceProxies = ServiceLocator.getServiceProxies();
+        Collection<Service> services = ServiceLocator.current().getServices();
+        Collection<Service> serviceProxies = ServiceLocator.current().getServiceProxies();
         LOGGER.info("Update statistics for {} services", services.size() + serviceProxies.size());
         LOGGER.debug("Update statistics for {} internal services", services.size());
         services.forEach(this::updateStatistics);
@@ -45,23 +45,24 @@ public class ServiceStatisticsWorker implements Runnable {
 
     private void updateMemoryUsage(Service service) {
         LOGGER.debug("Update memory usage for service {}", service.getName());
-        Object realService = ServiceLocator.getRealService(service);
+        ServiceLocator serviceLocator = ServiceLocator.current();
+        Object realService = serviceLocator.getRealService(service);
         ObjectSize memoryUsage = VirtualMachineMetrics.get().getDeepSize(realService);
         MutableStatisticalSummary trend = (MutableStatisticalSummary) getHealthService().getTrend(service, Service.Metric.MEMORY_USAGE);
         trend.add(memoryUsage.getSizeOf());
-        ServiceLocator.report(service, Service.Metric.MEMORY_USAGE, memoryUsage.getSizeOf());
+        serviceLocator.report(service, Service.Metric.MEMORY_USAGE, memoryUsage.getSizeOf());
 
         trend = (MutableStatisticalSummary) getHealthService().getTrend(service, Service.Metric.MEMORY_OBJECTS);
         trend.add(memoryUsage.getCountOf());
-        ServiceLocator.report(service, Service.Metric.MEMORY_OBJECTS, memoryUsage.getCountOf());
+        serviceLocator.report(service, Service.Metric.MEMORY_OBJECTS, memoryUsage.getCountOf());
 
         trend = (MutableStatisticalSummary) getHealthService().getTrend(service, Service.Metric.MEMORY_ARRAY_USAGE);
         trend.add(memoryUsage.getArraySizeOf());
-        ServiceLocator.report(service, Service.Metric.MEMORY_ARRAY_USAGE, memoryUsage.getArraySizeOf());
+        serviceLocator.report(service, Service.Metric.MEMORY_ARRAY_USAGE, memoryUsage.getArraySizeOf());
 
         trend = (MutableStatisticalSummary) getHealthService().getTrend(service, Service.Metric.MEMORY_ARRAY_OBJECTS);
         trend.add(memoryUsage.getArrayCountOf());
-        ServiceLocator.report(service, Service.Metric.MEMORY_ARRAY_OBJECTS, memoryUsage.getArrayCountOf());
+        serviceLocator.report(service, Service.Metric.MEMORY_ARRAY_OBJECTS, memoryUsage.getArrayCountOf());
     }
 
     private HealthService getHealthService() {

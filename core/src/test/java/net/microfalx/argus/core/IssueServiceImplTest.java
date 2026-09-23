@@ -2,7 +2,7 @@ package net.microfalx.argus.core;
 
 import net.microfalx.argus.api.Issue;
 import net.microfalx.argus.api.IssueService;
-import net.microfalx.lang.service.ServiceLocator;
+import net.microfalx.service.api.ServiceLocator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -15,7 +15,7 @@ class IssueServiceImplTest {
 
     @BeforeEach
     void setup() {
-        ServiceLocator.shutdown(IssueService.class);
+        ServiceLocator.getInstance().shutdown();
         issueService = IssueService.getInstance();
     }
 

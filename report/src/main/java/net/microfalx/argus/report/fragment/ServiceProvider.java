@@ -6,8 +6,8 @@ import net.microfalx.argus.report.AbstractFragmentProvider;
 import net.microfalx.argus.report.Fragment;
 import net.microfalx.argus.report.Template;
 import net.microfalx.lang.annotation.Provider;
-import net.microfalx.lang.service.Service;
-import net.microfalx.lang.service.ServiceLocator;
+import net.microfalx.service.api.Service;
+import net.microfalx.service.api.ServiceLocator;
 
 import java.util.Comparator;
 import java.util.List;
@@ -30,9 +30,10 @@ public class ServiceProvider extends AbstractFragmentProvider {
     }
 
     static void doUpdate(Template template) {
-        Iterable<Service> services = Iterables.concat(ServiceLocator.getServices(), ServiceLocator.getServiceProxies());
+        ServiceLocator serviceLocator = ServiceLocator.current();
+        Iterable<Service> services = Iterables.concat(serviceLocator.getServices(), serviceLocator.getServiceProxies());
         List<ServiceStatistics<Service>> statistics = StreamSupport.stream(services.spliterator(), false)
-                .map(service -> new ServiceStatistics<>(ServiceLocator.getStatistics(service)))
+                .map(service -> new ServiceStatistics<>(serviceLocator.getStatistics(service)))
                 .sorted(Comparator.comparing(ServiceStatistics::getName))
                 .toList();
         template.addVariable("services", statistics);

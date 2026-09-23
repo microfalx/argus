@@ -8,9 +8,8 @@ import ch.qos.logback.classic.spi.ThrowableProxy;
 import net.microfalx.argus.api.LoggerEvent;
 import net.microfalx.argus.api.LoggerListener;
 import net.microfalx.lang.*;
-import net.microfalx.lang.service.Logger;
-import net.microfalx.lang.service.Service;
-import net.microfalx.lang.service.ServiceLocator;
+import net.microfalx.service.api.Logger;
+import net.microfalx.service.api.Service;
 
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -74,7 +73,7 @@ class LogbackRecorderAppender extends ch.qos.logback.core.AppenderBase<ILoggingE
         }
         LoggerEvent loggerEvent = builder.build();
         if (storage != null) {
-            ServiceLocator.report((Service) storage, Service.Metric.EVENT_IN);
+            ((Service) storage).report(Service.Metric.EVENT_IN);
             storage.onEvent(loggerEvent);
         } else {
             pendingEvents.add(loggerEvent);

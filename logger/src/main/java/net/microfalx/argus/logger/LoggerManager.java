@@ -7,8 +7,8 @@ import net.microfalx.lang.FileUtils;
 import net.microfalx.lang.JvmUtils;
 import net.microfalx.lang.ObjectUtils;
 import net.microfalx.lang.annotation.SizeOf;
-import net.microfalx.lang.service.Logger;
 import net.microfalx.resource.Resource;
+import net.microfalx.service.api.Logger;
 
 import java.io.File;
 import java.io.IOException;

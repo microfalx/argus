@@ -6,11 +6,11 @@ import net.microfalx.argus.api.IssueListener;
 import net.microfalx.argus.api.IssueService;
 import net.microfalx.lang.ClassUtils;
 import net.microfalx.lang.Initializable;
-import net.microfalx.lang.service.Logger;
-import net.microfalx.lang.service.Service;
-import net.microfalx.lang.service.ServiceLocator;
 import net.microfalx.metrics.statistics.MutableStatisticalSummary;
 import net.microfalx.metrics.statistics.TrendStatisticalSummary;
+import net.microfalx.service.api.Logger;
+import net.microfalx.service.api.Service;
+import net.microfalx.service.api.ServiceLocator;
 import net.microfalx.threadpool.Trigger;
 
 import java.time.Duration;
@@ -89,7 +89,7 @@ public class IssueServiceImpl extends AbstractService implements IssueService, I
     public void register(Issue issue) {
         requireNonNull(issue);
         issues.offer(issue);
-        ServiceLocator.report(this, Service.Metric.EVENT_IN);
+        report(Service.Metric.EVENT_IN);
         TrendStatisticalSummary summary = doGetTrend(issue.getType());
         ((MutableStatisticalSummary) summary).add(1);
     }
@@ -98,7 +98,7 @@ public class IssueServiceImpl extends AbstractService implements IssueService, I
     public void register(Alert alert) {
         requireNonNull(alert);
         alerts.offer(alert);
-        ServiceLocator.report(this, Service.Metric.EVENT_IN);
+        report(Service.Metric.EVENT_IN);
         TrendStatisticalSummary summary = doGetTrend(alert.getSeverity());
         ((MutableStatisticalSummary) summary).add(1);
     }
@@ -115,14 +115,14 @@ public class IssueServiceImpl extends AbstractService implements IssueService, I
     }
 
     private void fireIssue(Issue issue) {
-        ServiceLocator.report(this, Metric.EVENT_OUT);
+        report(Metric.EVENT_OUT);
         for (IssueListener listener : listeners) {
             listener.onIssue(issue);
         }
     }
 
     private void fireAlert(Alert alert) {
-        ServiceLocator.report(this, Metric.EVENT_OUT);
+        report(Metric.EVENT_OUT);
         for (IssueListener listener : listeners) {
             listener.onAlert(alert);
         }

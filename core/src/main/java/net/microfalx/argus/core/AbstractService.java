@@ -2,7 +2,7 @@ package net.microfalx.argus.core;
 
 import net.microfalx.argus.api.Constants;
 import net.microfalx.lang.Initializable;
-import net.microfalx.lang.service.Service;
+import net.microfalx.service.api.Service;
 import net.microfalx.threadpool.ThreadPool;
 
 import static net.microfalx.lang.ArgumentUtils.requireNonNull;

@@ -3,7 +3,7 @@ package net.microfalx.argus.logger;
 import net.microfalx.argus.api.LoggerSettings;
 import net.microfalx.configuration.Configuration;
 import net.microfalx.configuration.ConfigurationService;
-import net.microfalx.lang.service.ServiceLocator;
+import net.microfalx.service.api.ServiceLocator;
 import net.microfalx.resource.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,7 +40,7 @@ class LoggerManagerTest {
 
     @BeforeEach
     void setup() {
-        ServiceLocator.register(configurationService);
+        ServiceLocator.getInstance().register(configurationService);
         when(configurationService.getConfiguration()).thenReturn(configuration);
     }
 

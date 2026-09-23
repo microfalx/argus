@@ -4,7 +4,7 @@ import net.microfalx.argus.api.Health;
 import net.microfalx.argus.api.HealthService;
 import net.microfalx.argus.api.Resource;
 import net.microfalx.lang.*;
-import net.microfalx.lang.service.Service;
+import net.microfalx.service.api.Service;
 import net.microfalx.metrics.Metrics;
 import net.microfalx.metrics.statistics.Trend;
 import net.microfalx.metrics.statistics.TrendStatisticalSummary;

@@ -1,7 +1,7 @@
 package net.microfalx.argus.api;
 
-import net.microfalx.lang.service.Service;
 import net.microfalx.metrics.statistics.TrendStatisticalSummary;
+import net.microfalx.service.api.Service;
 
 import java.util.Collection;
 

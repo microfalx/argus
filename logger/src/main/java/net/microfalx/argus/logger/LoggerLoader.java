@@ -1,6 +1,6 @@
 package net.microfalx.argus.logger;
 
-import net.microfalx.lang.service.Logger;
+import net.microfalx.service.api.Logger;
 import net.microfalx.resource.Resource;
 import net.microfalx.resource.ResourceException;
 import org.dom4j.Document;

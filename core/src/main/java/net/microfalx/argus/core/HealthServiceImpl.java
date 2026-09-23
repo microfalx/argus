@@ -10,8 +10,6 @@ import net.microfalx.lang.IdGenerator;
 import net.microfalx.lang.Initializable;
 import net.microfalx.lang.JvmUtils;
 import net.microfalx.lang.annotation.SizeOf;
-import net.microfalx.lang.service.Service;
-import net.microfalx.lang.service.ServiceLocator;
 import net.microfalx.metrics.Batch;
 import net.microfalx.metrics.Metrics;
 import net.microfalx.metrics.SeriesStore;
@@ -19,6 +17,7 @@ import net.microfalx.metrics.statistics.TimeWindowStatisticalSummary;
 import net.microfalx.metrics.statistics.TrendStatisticalSummary;
 import net.microfalx.registry.Data;
 import net.microfalx.registry.Registry;
+import net.microfalx.service.api.Service;
 import net.microfalx.threadpool.Trigger;
 
 import java.time.Duration;
@@ -116,7 +115,7 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
     }
 
     @Override
-    public TrendStatisticalSummary getTrend(Service service, net.microfalx.lang.service.Service.Metric metric) {
+    public TrendStatisticalSummary getTrend(Service service, net.microfalx.service.api.Service.Metric metric) {
         requireNonNull(service);
         requireNonNull(metric);
         String key = service.getClass().getName() + "." + metric.name();
@@ -191,7 +190,7 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
         METRICS.time("Update Health", t -> updateHealth());
         METRICS.time("Update Metrics", t -> updateMetrics());
         METRICS.time("Store Resources", t -> storeResources());
-        ServiceLocator.report(this, Metric.SUCCESS);
+        report(Metric.SUCCESS);
     }
 
     @Override

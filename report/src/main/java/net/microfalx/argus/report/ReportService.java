@@ -10,7 +10,7 @@ import net.microfalx.argus.core.AbstractService;
 import net.microfalx.lang.*;
 import net.microfalx.lang.annotation.Provider;
 import net.microfalx.lang.annotation.SizeOf;
-import net.microfalx.lang.service.Service;
+import net.microfalx.service.api.Service;
 import net.microfalx.resource.Resource;
 import net.microfalx.threadpool.CronTrigger;
 import net.microfalx.threadpool.IdentifiableTask;

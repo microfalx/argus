@@ -1,6 +1,6 @@
 package net.microfalx.argus.api;
 
-import net.microfalx.lang.service.Service;
+import net.microfalx.service.api.Service;
 
 import java.io.File;
 import java.time.LocalDateTime;
