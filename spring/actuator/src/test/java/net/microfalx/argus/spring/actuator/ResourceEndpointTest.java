@@ -29,20 +29,20 @@ class ResourceEndpointTest {
 
         ResourceEndpoint endpoint = new ResourceEndpoint(() -> healthService);
 
-        Map<String, Collection<Resource>> allResources = endpoint.resources();
+        Map<String, Collection<Resource>> allResources = endpoint.getResources();
 
         assertThat(allResources).containsKey("service");
         assertThat(allResources.get("service")).hasSize(1);
         assertThat(allResources.get("service").iterator().next().getHealth()).isNotNull();
-        assertThat(endpoint.resources("service")).hasSize(1);
+        assertThat(endpoint.getResources("service")).hasSize(1);
     }
 
     @Test
     void resourcesAreEmptyWhenServiceUnavailable() {
         ResourceEndpoint endpoint = new ResourceEndpoint(() -> null);
 
-        assertThat(endpoint.resources()).isEmpty();
-        assertThat(endpoint.resources("service")).isEmpty();
+        assertThat(endpoint.getResources()).isEmpty();
+        assertThat(endpoint.getResources("service")).isEmpty();
     }
 }
 

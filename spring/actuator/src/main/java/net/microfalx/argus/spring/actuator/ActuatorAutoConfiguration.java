@@ -14,13 +14,14 @@ public class ActuatorAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(HealthHealthIndicator.class)
     @ConditionalOnEnabledHealthIndicator("health")
-    public HealthHealthIndicator argusHealthIndicator() {
+    public HealthHealthIndicator healthHealthIndicator() {
         return new HealthHealthIndicator();
     }
 
     @Bean
     @ConditionalOnMissingBean(ResourceEndpoint.class)
-    public ResourceEndpoint argusResourceEndpoint() {
+    //@ConditionalOnAvailableEndpoint(endpoint = ResourceEndpoint.class)
+    public ResourceEndpoint resourceEndpoint() {
         return new ResourceEndpoint();
     }
 }

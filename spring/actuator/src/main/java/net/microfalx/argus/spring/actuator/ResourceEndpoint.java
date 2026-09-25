@@ -4,7 +4,6 @@ import net.microfalx.argus.api.HealthService;
 import net.microfalx.argus.api.Resource;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
-import org.springframework.boot.actuate.endpoint.annotation.Selector;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -26,7 +25,7 @@ public class ResourceEndpoint {
     }
 
     @ReadOperation
-    public Map<String, Collection<Resource>> resources() {
+    public Map<String, Collection<Resource>> getResources() {
         HealthService healthService = resolveHealthService();
         Map<String, Collection<Resource>> resources = new LinkedHashMap<>();
         if (healthService == null) return resources;
@@ -37,15 +36,6 @@ public class ResourceEndpoint {
             }
         }
         return resources;
-    }
-
-    @ReadOperation
-    public Collection<Resource> resources(@Selector String type) {
-        HealthService healthService = resolveHealthService();
-        if (healthService == null) {
-            return java.util.List.of();
-        }
-        return new ArrayList<>(healthService.getResources(parseType(type)));
     }
 
     private HealthService resolveHealthService() {
