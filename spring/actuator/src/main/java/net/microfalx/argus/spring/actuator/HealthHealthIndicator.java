@@ -5,7 +5,9 @@ import net.microfalx.argus.api.HealthService;
 import org.springframework.boot.actuate.health.AbstractHealthIndicator;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.Status;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -17,6 +19,7 @@ import java.util.function.Supplier;
 public class HealthHealthIndicator extends AbstractHealthIndicator {
 
     public static final Status IMPACTED = new Status("IMPACTED");
+    private static final String REPORT_PATH = "/support/report";
 
     private final Supplier<HealthService> healthServiceSupplier;
 
@@ -58,8 +61,9 @@ public class HealthHealthIndicator extends AbstractHealthIndicator {
         };
     }
 
-    static Map<String, Object> toDetails(net.microfalx.argus.api.Health health) {
+    private Map<String, Object> toDetails(net.microfalx.argus.api.Health health) {
         Map<String, Object> details = new LinkedHashMap<>();
+        URI reportUri = resolveReportPath();
         details.put("id", health.getId());
         details.put("type", health.getType().name());
         details.put("severity", health.getSeverity().name());
@@ -69,7 +73,13 @@ public class HealthHealthIndicator extends AbstractHealthIndicator {
         details.put("groups", health.getGroups().size());
         details.put("scored", health.getScored().size());
         details.put("report", health.getReport());
+        details.put("reportPath", reportUri.getPath());
+        details.put("reportUrl", reportUri.toASCIIString());
         return details;
+    }
+
+    private URI resolveReportPath() {
+        return ServletUriComponentsBuilder.fromCurrentContextPath().path(REPORT_PATH).build().toUri();
     }
 }
 
