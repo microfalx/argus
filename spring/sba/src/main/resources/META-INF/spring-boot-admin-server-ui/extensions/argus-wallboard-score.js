@@ -1,14 +1,23 @@
 /*
- * Spring Boot Admin UI extension: overlays a Health pill onto the Wallboard hexagons.
- * Loaded automatically by SBA because it lives under
+ * Spring Boot Admin UI extension: overlays a Health pill onto the Wallboard hexagons and
+ * onto the Applications list (service-level aggregate in the group title, per-instance value
+ * next to each instance row). Loaded automatically by SBA because it lives under
  * META-INF/spring-boot-admin-server-ui/extensions/ (see UiExtensionsScanner).
  *
- * The built-in Wallboard hexagon is a Vue-rendered component that we do not own, so
- * instead of replacing it we overlay a badge and keep it in sync with two update
- * sources: the application store's "changed" event (real data updates) and a
- * MutationObserver (catches the DOM being replaced on re-render/resize). Re-applying
- * is idempotent - a badge is only rebuilt when its computed values actually change, so
- * the observer loop settles on its own instead of fighting Vue's own re-renders.
+ * Both views are Vue-rendered components we do not own, so instead of replacing them we
+ * overlay badges and keep them in sync with two update sources: the application store's
+ * "changed" event (real data updates) and a MutationObserver (catches the DOM being
+ * replaced on re-render/resize/expand-collapse). Re-applying is idempotent - a badge is
+ * only rebuilt when its computed values actually change, so the observer loop settles on
+ * its own instead of fighting Vue's own re-renders.
+ *
+ * Applications list note: sba-panel (used for each service's group row) has
+ * inheritAttrs: false and only forwards `id` to its outer wrapper div and `class` to an
+ * *inner* content div that (a) only exists while the group is expanded and (b) is a
+ * sibling of <header>, not an ancestor of it. So the service row can't be found via the
+ * "application-group" class passed to <sba-panel> - instead we anchor on the always-present
+ * `header h3 button` title element and walk up to the nearest ancestor with an `id`
+ * (which sba-panel sets to the application name when grouped by application).
  */
 (function () {
   'use strict';
@@ -56,15 +65,14 @@
     return 'argus-health-red';
   }
 
-  function signature(stats) {
-    return stats.count > 1
-      ? format(stats.min) + '|' + format(stats.avg) + '|' + format(stats.max)
-      : format(stats.min);
+  function signature(stats, variant) {
+    var base = stats.count > 1 ? format(stats.min) + '|' + format(stats.avg) + '|' + format(stats.max) : format(stats.min);
+    return variant + '|' + base;
   }
 
-  function buildBadge(stats) {
+  function buildBadge(stats, variant) {
     var badge = document.createElement('p');
-    badge.className = 'argus-health-badge is-muted';
+    badge.className = 'argus-health-badge argus-health-badge--' + variant + ' is-muted';
 
     var label = document.createElement('span');
     label.className = 'argus-health-label';
@@ -86,44 +94,94 @@
     return badge;
   }
 
-  function applyBadges(applications) {
-    var wallboard = document.querySelector('.wallboard');
-    if (!wallboard) return;
+  function upsertBadge(existing, stats, variant, insertNew) {
+    if (!stats) {
+      if (existing) existing.remove();
+      return;
+    }
 
+    var sig = signature(stats, variant);
+    if (existing && existing.dataset.sig === sig) return;
+
+    var replacement = buildBadge(stats, variant);
+    replacement.dataset.sig = sig;
+
+    if (existing) {
+      existing.replaceWith(replacement);
+    } else {
+      insertNew(replacement);
+    }
+  }
+
+  function collectStats(applications) {
     var statsByName = {};
     applications.forEach(function (application) {
       var stats = computeStats(application);
       if (stats) statsByName[application.name] = stats;
     });
+    return statsByName;
+  }
+
+  function applyWallboardBadges(applications) {
+    var wallboard = document.querySelector('.wallboard');
+    if (!wallboard) return;
+
+    var statsByName = collectStats(applications);
 
     wallboard.querySelectorAll('.application__name').forEach(function (nameEl) {
       var body = nameEl.closest('.hex__body');
       if (!body) return;
 
-      var stats = statsByName[nameEl.textContent];
-      var badge = body.querySelector('.argus-health-badge');
-
-      if (!stats) {
-        if (badge) badge.remove();
-        return;
-      }
-
-      var sig = signature(stats);
-      if (badge && badge.dataset.sig === sig) return;
-
-      var replacement = buildBadge(stats);
-      replacement.dataset.sig = sig;
-
-      if (badge) {
-        badge.replaceWith(replacement);
-      } else {
+      upsertBadge(body.querySelector('.argus-health-badge'), statsByName[nameEl.textContent], 'wallboard', function (badge) {
         var instancesEl = body.querySelector('.application__instances');
         if (instancesEl && instancesEl.parentNode) {
-          instancesEl.parentNode.insertBefore(replacement, instancesEl.nextSibling);
+          instancesEl.parentNode.insertBefore(badge, instancesEl.nextSibling);
         } else {
-          body.appendChild(replacement);
+          body.appendChild(badge);
         }
-      }
+      });
+    });
+  }
+
+  function applyApplicationsBadges(applications) {
+    if (location.pathname.indexOf('applications') === -1) return;
+
+    var statsByName = collectStats(applications);
+    var scoreByInstanceId = {};
+    applications.forEach(function (application) {
+      (application.instances || []).forEach(function (instance) {
+        var score = extractScore(instance);
+        if (score !== null) scoreByInstanceId[instance.id] = score;
+      });
+    });
+
+    // Service-level: one badge per group title, found via the title button and matched
+    // back to an application through the nearest ancestor with an id. Only matches (and
+    // only shows a badge) when the list is grouped by application - the default, and the
+    // only case where the aggregate is unambiguous; a custom metadata group can span
+    // several applications and is intentionally left alone.
+    document.querySelectorAll('header h3 button').forEach(function (button) {
+      var panel = button.closest('[id]');
+      if (!panel || !panel.id) return;
+
+      upsertBadge(button.querySelector('.argus-health-badge'), statsByName[panel.id], 'title', function (badge) {
+        button.appendChild(badge);
+      });
+    });
+
+    // Instance-level: the same "Health [pill]" badge, single value, no avg/max.
+    document.querySelectorAll('li[data-testid]').forEach(function (li) {
+      var info = li.querySelector('.instance-item-information');
+      if (!info) return;
+
+      var score = scoreByInstanceId[li.dataset.testid];
+      var stats = typeof score === 'number' ? { min: score, avg: score, max: score, count: 1 } : null;
+      var next = info.nextElementSibling;
+      var existing = next && next.classList.contains('argus-health-badge') ? next : null;
+
+      upsertBadge(existing, stats, 'inline', function (badge) {
+        info.insertAdjacentElement('afterend', badge);
+      });
     });
   }
 
@@ -133,7 +191,7 @@
     try {
       store = applicationStoreFactory();
     } catch (e) {
-      console.warn('[argus] wallboard health extension: application store not ready yet', e);
+      console.warn('[argus] health badge extension: application store not ready yet', e);
       return;
     }
 
@@ -145,7 +203,8 @@
       scheduled = true;
       requestAnimationFrame(function () {
         scheduled = false;
-        applyBadges(latestApplications);
+        applyWallboardBadges(latestApplications);
+        applyApplicationsBadges(latestApplications);
       });
     }
 

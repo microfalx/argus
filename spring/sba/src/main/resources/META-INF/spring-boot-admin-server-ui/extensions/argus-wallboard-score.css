@@ -4,7 +4,34 @@
   --color-red-400: #d9534f;
 }
 
-.wallboard .argus-health-badge {
+.argus-health-pill {
+  display: inline-block;
+  padding: 0.05em 0.65em;
+  border-radius: 999px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.argus-health-pill.argus-health-green {
+  background-color: var(--color-green-400);
+}
+
+.argus-health-pill.argus-health-yellow {
+  background-color: var(--color-yellow-500);
+}
+
+.argus-health-pill.argus-health-red {
+  background-color: var(--color-red-400);
+  color: #fff;
+}
+
+.argus-health-label,
+.argus-health-extra {
+  opacity: 0.7;
+}
+
+/* Wallboard hexagon: "Health [pill] avg / max" centered under the instance count. */
+.argus-health-badge--wallboard {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -16,31 +43,26 @@
   white-space: nowrap;
 }
 
-.wallboard .argus-health-label {
-  opacity: 0.75;
+/* Applications list: service title row and per-instance rows - same badge. */
+.argus-health-badge--inline,
+.argus-health-badge--title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  white-space: nowrap;
+  vertical-align: middle;
 }
 
-.wallboard .argus-health-extra {
-  opacity: 0.75;
+/* Per-instance row: sits right after the instance info block. */
+.argus-health-badge--inline {
+  margin-left: 0.75rem;
 }
 
-.wallboard .argus-health-pill {
-  display: inline-block;
-  padding: 0.05em 0.65em;
-  border-radius: 999px;
-  font-weight: 600;
-  color: #1a1a1a;
-}
-
-.wallboard .argus-health-pill.argus-health-green {
-  background-color: var(--color-green-400);
-}
-
-.wallboard .argus-health-pill.argus-health-yellow {
-  background-color: var(--color-yellow-500);
-}
-
-.wallboard .argus-health-pill.argus-health-red {
-  background-color: var(--color-red-400);
-  color: #fff;
+/* Service title row: pushed flush right within the title button, before the
+   separate actions area (refresh/notifications), matching the instance row. */
+.argus-health-badge--title {
+  margin-left: auto;
+  padding-right: 0.5rem;
 }
