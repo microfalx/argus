@@ -1,0 +1,46 @@
+:root {
+  --color-green-400: #5cb85c;
+  --color-yellow-500: #f0ad4e;
+  --color-red-400: #d9534f;
+}
+
+.wallboard .argus-health-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  width: 90%;
+  margin: 0.35em auto 0;
+  font-size: 0.85em;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.wallboard .argus-health-label {
+  opacity: 0.75;
+}
+
+.wallboard .argus-health-extra {
+  opacity: 0.75;
+}
+
+.wallboard .argus-health-pill {
+  display: inline-block;
+  padding: 0.05em 0.65em;
+  border-radius: 999px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.wallboard .argus-health-pill.argus-health-green {
+  background-color: var(--color-green-400);
+}
+
+.wallboard .argus-health-pill.argus-health-yellow {
+  background-color: var(--color-yellow-500);
+}
+
+.wallboard .argus-health-pill.argus-health-red {
+  background-color: var(--color-red-400);
+  color: #fff;
+}

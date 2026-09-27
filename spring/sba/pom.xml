@@ -34,10 +34,29 @@
     <description>Spring Boot Admin extension</description>
 
     <dependencies>
+
+        <dependency>
+            <groupId>net.microfalx.argus</groupId>
+            <artifactId>argus-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>de.codecentric</groupId>
             <artifactId>spring-boot-admin-starter-server</artifactId>
-            <version>4.1.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>net.microfalx.argus</groupId>
+            <artifactId>argus-core</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>de.codecentric</groupId>
+            <artifactId>spring-boot-admin-starter-client</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

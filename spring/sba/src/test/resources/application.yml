@@ -1,0 +1,27 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: argus-sba
+  boot:
+    admin:
+      client:
+        url: http://localhost:${server.port}
+        instance:
+          service-url: http://localhost:${server.port}/
+
+management:
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  info:
+    build:
+      enabled: true
+    env:
+      enabled: true
