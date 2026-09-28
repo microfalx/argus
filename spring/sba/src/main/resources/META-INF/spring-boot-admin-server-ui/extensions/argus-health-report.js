@@ -1,7 +1,11 @@
 /*
  * Spring Boot Admin UI extension: adds a "Health" tab to the instance details page (in the
  * Insights group, after Scheduled Tasks) that embeds the application-specific dashboard from
- * HealthHealthIndicator's "reportUrl" detail in an iframe.
+ * HealthHealthIndicator's "reportPath" detail in an iframe, resolved against the instance's
+ * own registration.serviceUrl (the base URL SBA's client told SBA to use for this app) rather
+ * than the absolute "reportUrl" the monitored app computed for itself from the inbound health
+ * check request - that can reflect an internal/proxy-side address instead of what a browser
+ * should actually use.
  *
  * Unlike the wallboard/applications badge overlay, this uses SBA's official extension point
  * (viewRegistry.addView) to register a real nested route under "instances", exactly like the
@@ -12,11 +16,18 @@
 (function () {
   'use strict';
 
-  function reportUrl(instance) {
+  function reportPath(instance) {
     var details = instance && instance.statusInfo && instance.statusInfo.details;
     var health = details && details.health;
-    var url = health && health.details && health.details.reportUrl;
-    return typeof url === 'string' && url.length > 0 ? url : null;
+    var path = health && health.details && health.details.reportPath;
+    return typeof path === 'string' && path.length > 0 ? path : null;
+  }
+
+  function buildReportUrl(instance) {
+    var path = reportPath(instance);
+    var base = instance && instance.registration && instance.registration.serviceUrl;
+    if (!path || !base) return null;
+    return base.replace(/\/+$/, '') + '/' + path.replace(/^\/+/, '');
   }
 
   var HealthReportView = {
@@ -29,7 +40,7 @@
     inheritAttrs: false,
     render: function () {
       var h = globalThis.Vue.h;
-      var url = reportUrl(this.instance);
+      var url = buildReportUrl(this.instance);
 
       // Same outer <section><div class="flex-1 px-2 md:px-6 py-6"> every instance tab is
       // wrapped in (see sba-instance-section.vue) - reproduced by hand since it isn't
@@ -49,7 +60,7 @@
             [h('h3', { class: 'text-lg leading-6 font-medium text-gray-900 flex-1' }, 'Health Report')],
           ),
           h('div', { class: 'rounded-b px-4 py-3 bg-white' }, [
-            h('div', { class: 'external-view', style: 'height: 80vh;' }, [h('iframe', { src: url })]),
+            h('div', { class: 'external-view', style: 'height: 75vh;' }, [h('iframe', { src: url })]),
           ]),
         ]);
       }
@@ -69,7 +80,7 @@
         order: 951,
         component: HealthReportView,
         isEnabled: function (context) {
-          return reportUrl(context.instance) !== null;
+          return buildReportUrl(context.instance) !== null;
         },
       });
     },
