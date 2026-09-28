@@ -144,6 +144,9 @@ public final class Resource extends NamedIdentityAware<String> implements Serial
         SERVER,
         DATABASE,
         CACHE,
+        BROKER,
+        STORAGE,
+        SEARCH,
         OTHER
     }
 
