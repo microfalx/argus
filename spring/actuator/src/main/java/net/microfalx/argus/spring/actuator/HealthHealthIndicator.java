@@ -74,7 +74,6 @@ public class HealthHealthIndicator extends AbstractHealthIndicator {
         details.put("scored", health.getScored().size());
         details.put("report", health.getReport());
         details.put("reportPath", reportUri.getPath());
-        details.put("reportUrl", reportUri.toASCIIString());
         return details;
     }
 
