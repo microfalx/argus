@@ -17,10 +17,15 @@ wants to contribute — and reduces that assessment to a single, well-defined **
 detail behind it, and the resources it was computed from are always available in-process, without depending
 on an external system being reachable.
 
-This makes Argus useful in two situations that external monitoring struggles with:
+This makes Argus useful in three situations that external monitoring struggles with:
 
 * **Self-diagnostics** — a service can inspect its own health (and act on it: log, refuse traffic, restart)
   without a round-trip to an external system.
+* **Self-healing** — beyond notifying administrators that a service is struggling, a service in a genuinely
+  unrecoverable state (score below a configurable floor, `1.2` by default — just above `Health.MIN`) can
+  self-terminate rather than keep serving traffic in a broken state, relying on the surrounding orchestration
+  engine (Kubernetes, a process supervisor, ...) to restart the instance. This is the same intent behind the
+  `Health.Policy.RESTART_IF_NEEDED` item policy.
 * **Support/incident response** — a single HTML report, downloadable or emailed on a schedule or on
   degradation, gives a human everything needed to triage an incident, offline, without needing access to a
   monitoring stack.
