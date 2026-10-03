@@ -1,7 +1,7 @@
 package net.microfalx.argus.api;
 
-import net.microfalx.lang.CollectionUtils;
 import net.microfalx.lang.Nameable;
+import net.microfalx.lang.convert.Types;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -280,6 +280,28 @@ class HealthTest {
         assertEquals("test.database", group1.getId());
         assertEquals("test.database.node", group2.getId());
         assertEquals("test.messaging.broker", item1.getId());
+    }
+
+    @Test
+    void serialization() {
+        Health health = new Health("test");
+        Health.Group group1 = health.getGroup("Database");
+        Health.Group group2 = group1.getGroup("Node");
+
+        health.update("Messaging", "Broker", 1.75f);
+        health.update("Database", "Latency", 3f);
+
+        group1.update("Broker", 1.75f);
+        group2.update("Latency", 3f);
+
+        String json = Types.asString(health);
+        Assertions.assertThat(json).isNotBlank();
+
+        Health deserializedHealth = Types.asObject(json, Health.class);
+        Assertions.assertThat(deserializedHealth).isNotNull();
+        Assertions.assertThat(deserializedHealth.getId()).isEqualTo(health.getId());
+        Assertions.assertThat(deserializedHealth.getGroups().size()).isEqualTo(health.getGroups().size());
+        Assertions.assertThat(deserializedHealth.getReport()).isEqualTo(health.getReport());
     }
 
 }
