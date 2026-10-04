@@ -35,7 +35,8 @@ public class Report implements Nameable {
     private boolean dynamic = true;
     private boolean secure;
     private String fragment;
-    private Theme theme = Theme.DARK;
+    private Theme theme = Theme.LIGHT;
+    private Theme navigationTheme = Theme.DARK;
     private final List<Fragment> fragments = new ArrayList<>();
     private final Map<String, Object> attributes = new HashMap<>();
 
@@ -229,6 +230,32 @@ public class Report implements Nameable {
     }
 
     /**
+     * Returns the theme of the (left) navigation (tabs, etc).
+     *
+     * @return a non-null instance
+     */
+    public Theme getNavigationTheme() {
+        if (theme == Theme.DARK) {
+            // if the theme is dark, the navigation theme should be dark as well
+            return Theme.DARK;
+        } else {
+            return navigationTheme;
+        }
+    }
+
+    /**
+     * Changes the theme for the (left) navigation (tabs, etc).
+     *
+     * @param navigationTheme the new theme
+     * @return self
+     */
+    public Report setNavigationTheme(Theme navigationTheme) {
+        requireNonNull(theme);
+        this.navigationTheme = navigationTheme;
+        return this;
+    }
+
+    /**
      * Returns the fragment identifier to be rendered instead of rendering all fragments.
      *
      * @return the fragment identifier, null to render all fragments
@@ -341,6 +368,8 @@ public class Report implements Nameable {
         template.addVariable("report", this);
         template.addVariable("helper", new ReportHelper(this));
         template.addVariable("theme", getTheme().name().toLowerCase());
+        template.addVariable("navTheme", getNavigationTheme().name().toLowerCase());
+        template.addVariable("navWidth", "16rem");
         template.addVariable("fragments", getVisibleFragments());
         updateTemplateResources(template);
         updateCodeFragments(template);

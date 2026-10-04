@@ -5,7 +5,7 @@
 
 <th:block th:if="${report.hasNavigation()}">
     <div class="page">
-        <div class="page-wrapper" style="margin-left: 18rem">
+        <div class="page-wrapper" th:style="|margin-left: ${navWidth}|">
             <div th:replace="~{fragments/page :: navigation}"></div>
             <div th:replace="~{fragments/page :: content}"></div>
         </div>

@@ -40,7 +40,8 @@ public class ReportPerformanceTest {
         while (true) {
             ReportTestUtils.scrape(reportService, true);
             printStats();
-            Report report = reportService.createReport().setTheme(Report.Theme.LIGHT);
+            Report report = reportService.createReport().setTheme(Report.Theme.LIGHT)
+                    .setNavigationTheme(Report.Theme.DARK);
             Resource resource = Resource.memory();
             try {
                 report.render(resource);

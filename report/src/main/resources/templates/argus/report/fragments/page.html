@@ -65,8 +65,8 @@
     <h1 class="h2" th:text="${title}"></h1>
 </div>
 
-<aside th:fragment="navigation" class="navbar navbar-vertical navbar-expand-sm" style="width: 18rem"
-       data-bs-theme="dark">
+<aside th:fragment="navigation" class="navbar navbar-vertical navbar-expand-sm" th:style="|width: ${navWidth}|"
+       th:attr="data-bs-theme=${navTheme}">
     <div class="container-fluid">
         <h1 class="navbar-brand navbar-brand-autodark" style="display:block">
             <i class="fa-solid fa-cube fs-8"></i>
