@@ -5,7 +5,10 @@ import net.microfalx.argus.api.Resource;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -25,14 +28,14 @@ public class ResourceEndpoint {
     }
 
     @ReadOperation
-    public Map<String, Collection<Resource>> getResources() {
+    public Map<String, Collection<ResourceMetadata>> getResources() {
         HealthService healthService = resolveHealthService();
-        Map<String, Collection<Resource>> resources = new LinkedHashMap<>();
+        Map<String, Collection<ResourceMetadata>> resources = new LinkedHashMap<>();
         if (healthService == null) return resources;
         for (Resource.Type type : Resource.Type.values()) {
             Collection<Resource> resourcesByType = healthService.getResources(type);
             if (!resourcesByType.isEmpty()) {
-                resources.put(type.name().toLowerCase(Locale.ROOT), new ArrayList<>(resourcesByType));
+                resources.put(type.name(), resourcesByType.stream().map(ResourceMetadata::of).toList());
             }
         }
         return resources;

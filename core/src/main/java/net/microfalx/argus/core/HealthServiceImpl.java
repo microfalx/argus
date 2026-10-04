@@ -123,6 +123,15 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
     }
 
     @Override
+    public Collection<Resource> getResources() {
+        Collection<Resource> resources = new ArrayList<>();
+        for (Resource.Type type : Resource.Type.values()) {
+            resources.addAll(getResources(type));
+        }
+        return resources;
+    }
+
+    @Override
     public Collection<Resource> getResources(Resource.Type type) {
         requireNonNull(type);
         Collection<Resource> resources = new ArrayList<>();
@@ -328,15 +337,27 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
 
     private void startScraping() {
         VirtualMachineMetrics virtualMachineMetrics = VirtualMachineMetrics.get();
+        if (virtualMachineMetrics.isStarted()) virtualMachineMetrics.stop();
         virtualMachineMetrics.setExecutor(getThreadPool());
         virtualMachineMetrics.setScrapeInterval(settings.getScrapeInterval());
         virtualMachineMetrics.setAverageInterval(settings.getHealthInterval());
-        virtualMachineMetrics.start();
+        virtualMachineMetrics.useDisk("jvm");
+        try {
+            virtualMachineMetrics.start();
+        } catch (Exception e) {
+            LOGGER.atError().setCause(e).log("Failed to start JVM collector");
+        }
         ServerMetrics serverMetrics = ServerMetrics.get();
+        if (serverMetrics.isStarted()) serverMetrics.stop();
         serverMetrics.setExecutor(getThreadPool());
         serverMetrics.setScrapeInterval(settings.getScrapeInterval());
         serverMetrics.setAverageInterval(settings.getHealthInterval());
-        serverMetrics.start();
+        serverMetrics.useDisk("server");
+        try {
+            serverMetrics.start();
+        } catch (Exception e) {
+            LOGGER.atError().setCause(e).log("Failed to start server collector");
+        }
     }
 
     private String getRegistryPath(Resource.Type type) {

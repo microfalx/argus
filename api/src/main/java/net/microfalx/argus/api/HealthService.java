@@ -85,6 +85,12 @@ public interface HealthService extends net.microfalx.service.api.Service, Health
     TrendStatisticalSummary getTrend(net.microfalx.service.api.Service service, net.microfalx.service.api.Service.Metric metric);
 
     /**
+     * Returns the resources of all types.
+     * @return a non-null instance
+     */
+    Collection<Resource> getResources();
+
+    /**
      * Returns the resources of a given type.
      *
      * @return a non-null instance

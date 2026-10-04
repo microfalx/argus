@@ -29,7 +29,7 @@ class ResourceEndpointTest {
 
         ResourceEndpoint endpoint = new ResourceEndpoint(() -> healthService);
 
-        Map<String, Collection<Resource>> allResources = endpoint.getResources();
+        Map<String, Collection<ResourceMetadata>> allResources = endpoint.getResources();
 
         assertThat(allResources).containsKey("service");
         assertThat(allResources.get("service")).hasSize(1);

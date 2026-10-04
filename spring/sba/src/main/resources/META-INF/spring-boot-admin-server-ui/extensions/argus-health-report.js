@@ -23,11 +23,23 @@
     return typeof path === 'string' && path.length > 0 ? path : null;
   }
 
+  function reportToken(instance) {
+    var details = instance && instance.statusInfo && instance.statusInfo.details;
+    var health = details && details.health;
+    var token = health && health.details && health.details.reportToken;
+    return typeof token === 'string' && token.length > 0 ? token : null;
+  }
+
   function buildReportUrl(instance) {
     var path = reportPath(instance);
     var base = instance && instance.registration && instance.registration.serviceUrl;
     if (!path || !base) return null;
-    return base.replace(/\/+$/, '') + '/' + path.replace(/^\/+/, '');
+    var url = base.replace(/\/+$/, '') + '/' + path.replace(/^\/+/, '');
+    var token = reportToken(instance);
+    if (token) {
+      url += (url.indexOf('?') > -1 ? '&' : '?') + 'token=' + encodeURIComponent(token);
+    }
+    return url;
   }
 
   var HealthReportView = {

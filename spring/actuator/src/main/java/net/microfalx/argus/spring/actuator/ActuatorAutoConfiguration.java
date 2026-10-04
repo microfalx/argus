@@ -1,5 +1,6 @@
 package net.microfalx.argus.spring.actuator;
 
+import org.springframework.boot.actuate.autoconfigure.endpoint.condition.ConditionalOnAvailableEndpoint;
 import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -20,7 +21,7 @@ public class ActuatorAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(ResourceEndpoint.class)
-    //@ConditionalOnAvailableEndpoint(endpoint = ResourceEndpoint.class)
+    @ConditionalOnAvailableEndpoint(endpoint = ResourceEndpoint.class)
     public ResourceEndpoint resourceEndpoint() {
         return new ResourceEndpoint();
     }

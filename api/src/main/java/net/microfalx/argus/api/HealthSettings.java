@@ -28,5 +28,11 @@ public class HealthSettings {
      */
     private Duration healthInterval = Duration.ofMinutes(5);
 
+    /**
+     * The secure token used to access the health report. If not set, the report is accessible
+     * without authentication.
+     */
+    private String reportToken;
+
 
 }

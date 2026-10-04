@@ -124,6 +124,7 @@ class HealthServiceImplTest {
     @Test
     void scrapeAndGetResources() {
         update();
+        assertEquals(2, healthService.getResources().size());
         Collection<Resource> resources = healthService.getResources(Resource.Type.SERVICE);
         assertEquals(1, resources.size());
         Resource resource = resources.iterator().next();

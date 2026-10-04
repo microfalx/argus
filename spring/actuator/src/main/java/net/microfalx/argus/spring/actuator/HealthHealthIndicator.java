@@ -1,10 +1,15 @@
 package net.microfalx.argus.spring.actuator;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import net.microfalx.argus.api.HealthService;
+import net.microfalx.argus.api.HealthSettings;
+import net.microfalx.lang.HttpServletUtils;
 import org.springframework.boot.actuate.health.AbstractHealthIndicator;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.Status;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
@@ -53,6 +58,18 @@ public class HealthHealthIndicator extends AbstractHealthIndicator {
         }
     }
 
+    private HealthSettings getSettings() {
+        try {
+            HealthService healthService = healthServiceSupplier.get();
+            if (healthService != null) {
+                return healthService.getSettings();
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Failed to obtain health settings", e);
+        }
+        return new HealthSettings();
+    }
+
     static Status toStatus(net.microfalx.argus.api.Health health) {
         return switch (health.getSeverity()) {
             case HIGH -> IMPACTED;
@@ -64,21 +81,31 @@ public class HealthHealthIndicator extends AbstractHealthIndicator {
     private Map<String, Object> toDetails(net.microfalx.argus.api.Health health) {
         Map<String, Object> details = new LinkedHashMap<>();
         URI reportUri = resolveReportPath();
-        details.put("id", health.getId());
-        details.put("type", health.getType().name());
-        details.put("severity", health.getSeverity().name());
-        details.put("score", health.getScore());
-        details.put("createdAt", health.getCreatedAt());
-        details.put("modifiedAt", health.getModifiedAt());
-        details.put("groups", health.getGroups().size());
-        details.put("scored", health.getScored().size());
-        details.put("report", health.getReport());
+        HealthMetadata healthMetadata = HealthMetadata.of(health);
+        details.put("id", healthMetadata.getId());
+        details.put("type", healthMetadata.getType().name());
+        details.put("severity", healthMetadata.getSeverity().name());
+        details.put("score", healthMetadata.getScore());
+        details.put("createdAt", healthMetadata.getCreatedAt());
+        details.put("modifiedAt", healthMetadata.getModifiedAt());
+        details.put("age", healthMetadata.getAge());
+        details.put("groups", healthMetadata.getGroups());
+        details.put("items", healthMetadata.getItems());
+        details.put("report", healthMetadata.getReport());
         details.put("reportPath", reportUri.getPath());
+        HttpServletRequest request = currentRequest();
+        if (HttpServletUtils.isClientLocal(request)) {
+            details.put("reportToken", getSettings().getReportToken());
+        }
         return details;
     }
 
     private URI resolveReportPath() {
         return ServletUriComponentsBuilder.fromCurrentContextPath().path(REPORT_PATH).build().toUri();
     }
-}
 
+    private static HttpServletRequest currentRequest() {
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        return attributes != null ? attributes.getRequest() : null;
+    }
+}

@@ -1,5 +1,6 @@
 package net.microfalx.argus.api;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.ToString;
 import net.microfalx.lang.*;
@@ -73,6 +74,7 @@ public final class Health extends IdentityAware<String> implements Timestampable
     /**
      * Holds the trend of the scores for this health score and its groups.
      */
+    @JsonIgnore
     private TrendStatisticalSummary trend;
 
     /**
@@ -80,6 +82,7 @@ public final class Health extends IdentityAware<String> implements Timestampable
      * a specific resource, or a specific instance of a resource.
      */
     private Type type = Type.INSTANCE;
+
     private final Map<String, Group> groups = new LinkedHashMap<>();
 
     public Health() {
