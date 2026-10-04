@@ -39,6 +39,7 @@
     if (token) {
       url += (url.indexOf('?') > -1 ? '&' : '?') + 'token=' + encodeURIComponent(token);
     }
+    url += (url.indexOf('?') > -1 ? '&' : '?') + 'navTheme=light';
     return url;
   }
 
@@ -71,7 +72,7 @@
             { class: 'rounded-t flex justify-between px-4 pt-5 pb-5 border-b sm:px-6 items-center bg-white' },
             [h('h3', { class: 'text-lg leading-6 font-medium text-gray-900 flex-1' }, 'Health Report')],
           ),
-          h('div', { class: 'rounded-b px-4 py-3 bg-white' }, [
+          h('div', { class: 'rounded-b bg-white' }, [
             h('div', { class: 'external-view', style: 'height: 75vh;' }, [h('iframe', { src: url })]),
           ]),
         ]);
