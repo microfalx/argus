@@ -30,6 +30,13 @@
     return typeof token === 'string' && token.length > 0 ? token : null;
   }
 
+  function healthReport(instance) {
+    var details = instance && instance.statusInfo && instance.statusInfo.details;
+    var health = details && details.health;
+    var report = health && health.details && health.details.report;
+    return typeof report === 'string' && report.trim().length > 0 ? report : null;
+  }
+
   function buildReportUrl(instance) {
     var path = reportPath(instance);
     var base = instance && instance.registration && instance.registration.serviceUrl;
@@ -70,7 +77,13 @@
           h(
             'header',
             { class: 'rounded-t flex justify-between px-4 pt-5 pb-5 border-b sm:px-6 items-center bg-white' },
-            [h('h3', { class: 'text-lg leading-6 font-medium text-gray-900 flex-1' }, 'Health Report')],
+            [
+              h(
+                'h3',
+                { class: 'text-lg leading-6 font-medium text-gray-900 flex-1', title: healthReport(this.instance) },
+                'Health Report',
+              ),
+            ],
           ),
           h('div', { class: 'rounded-b bg-white' }, [
             h('div', { class: 'external-view', style: 'height: 75vh;' }, [h('iframe', { src: url })]),

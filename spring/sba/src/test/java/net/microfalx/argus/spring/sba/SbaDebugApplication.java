@@ -15,8 +15,8 @@ import java.util.concurrent.ThreadLocalRandom;
  * <p>
  * It registers itself as a monitored client so the Wallboard has at least one hexagon to show,
  * and fakes a "health" indicator producing a random Argus-style score (1-10, see
- * {@link net.microfalx.argus.api.Health#MIN}/{@link net.microfalx.argus.api.Health#MAX}) on
- * every poll - a real {@code HealthService} isn't available here (it lives in the Service
+ * {@link net.microfalx.argus.api.Health#MIN}/{@link net.microfalx.argus.api.Health#MAX}) and a
+ * matching one-line report (shown as the badge tooltip) on every poll - a real {@code HealthService} isn't available here (it lives in the Service
  * Locator repo), so this stands in for {@code argus-actuator}'s HealthHealthIndicator under the
  * same "health" key.
  * <p>
@@ -36,7 +36,8 @@ public class SbaDebugApplication {
     public HealthIndicator health() {
         return () -> {
             float score = 1f + ThreadLocalRandom.current().nextFloat() * 9f;
-            return Health.up().withDetail("score", score).build();
+            String report = String.format("Debug\n   • Random\n      ▪ Score: %.1f", score);
+            return Health.up().withDetail("score", score).withDetail("report", report).build();
         };
     }
 }

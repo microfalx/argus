@@ -35,13 +35,35 @@
     return typeof score === 'number' && isFinite(score) ? score : null;
   }
 
+  function extractReport(instance) {
+    var details = instance && instance.statusInfo && instance.statusInfo.details;
+    var health = details && details.health;
+    var report = health && health.details && health.details.report;
+    return typeof report === 'string' && report.trim().length > 0 ? report : null;
+  }
+
+  // Native title tooltip (a positioned popup would be clipped by the wallboard hexagons).
+  // For an aggregate, names the instance the report comes from.
+  function tooltip(instance, named) {
+    var report = extractReport(instance);
+    if (!report) return null;
+    var name = (instance.registration && instance.registration.serviceUrl) || instance.id;
+    return named ? 'Lowest score: ' + name + '\n\n' + report : report;
+  }
+
   function computeStats(application) {
-    var scores = (application.instances || [])
-      .map(extractScore)
-      .filter(function (score) {
-        return score !== null;
-      });
+    var instances = application.instances || [];
+    var scores = instances.map(extractScore).filter(function (score) {
+      return score !== null;
+    });
     if (scores.length === 0) return null;
+    // The tooltip shows the report of the worst (lowest-scoring) instance - the one that
+    // determines the displayed score.
+    var worst = null;
+    instances.forEach(function (instance) {
+      var score = extractScore(instance);
+      if (score !== null && (worst === null || score < extractScore(worst))) worst = instance;
+    });
     var sum = scores.reduce(function (a, b) {
       return a + b;
     }, 0);
@@ -52,6 +74,7 @@
       min: Math.min.apply(null, scores),
       max: Math.max.apply(null, scores),
       count: scores.length,
+      report: tooltip(worst, scores.length > 1),
     };
   }
 
@@ -67,12 +90,13 @@
 
   function signature(stats, variant) {
     var base = stats.count > 1 ? format(stats.min) + '|' + format(stats.avg) + '|' + format(stats.max) : format(stats.min);
-    return variant + '|' + base;
+    return variant + '|' + base + '|' + (stats.report || '');
   }
 
   function buildBadge(stats, variant) {
     var badge = document.createElement('p');
     badge.className = 'argus-health-badge argus-health-badge--' + variant + ' is-muted';
+    if (stats.report) badge.title = stats.report;
 
     var label = document.createElement('span');
     label.className = 'argus-health-label';
@@ -122,6 +146,27 @@
     return statsByName;
   }
 
+  // Wallboard hexagons are SVG <g class="hex"> elements whose HTML body sits inside a
+  // <foreignObject>; browsers don't show HTML title tooltips there, so the tooltip is an
+  // SVG <title> child of the hexagon instead (which also covers the whole hexagon). It is
+  // appended last so Vue's own insertions, which anchor on its own nodes, leave it alone.
+  function upsertSvgTitle(hex, text) {
+    if (!hex) return;
+    var existing = hex.querySelector(':scope > title.argus-health-title');
+    if (!text) {
+      if (existing) existing.remove();
+      return;
+    }
+    if (existing) {
+      if (existing.textContent !== text) existing.textContent = text;
+      return;
+    }
+    var title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+    title.setAttribute('class', 'argus-health-title');
+    title.textContent = text;
+    hex.appendChild(title);
+  }
+
   function applyWallboardBadges(applications) {
     var wallboard = document.querySelector('.wallboard');
     if (!wallboard) return;
@@ -132,7 +177,10 @@
       var body = nameEl.closest('.hex__body');
       if (!body) return;
 
-      upsertBadge(body.querySelector('.argus-health-badge'), statsByName[nameEl.textContent], 'wallboard', function (badge) {
+      var stats = statsByName[nameEl.textContent];
+      upsertSvgTitle(body.closest('g.hex'), stats && stats.report);
+
+      upsertBadge(body.querySelector('.argus-health-badge'), stats, 'wallboard', function (badge) {
         var instancesEl = body.querySelector('.application__instances');
         if (instancesEl && instancesEl.parentNode) {
           instancesEl.parentNode.insertBefore(badge, instancesEl.nextSibling);
@@ -147,11 +195,13 @@
     if (location.pathname.indexOf('applications') === -1) return;
 
     var statsByName = collectStats(applications);
-    var scoreByInstanceId = {};
+    var statsByInstanceId = {};
     applications.forEach(function (application) {
       (application.instances || []).forEach(function (instance) {
         var score = extractScore(instance);
-        if (score !== null) scoreByInstanceId[instance.id] = score;
+        if (score !== null) {
+          statsByInstanceId[instance.id] = { min: score, avg: score, max: score, count: 1, report: tooltip(instance, false) };
+        }
       });
     });
 
@@ -174,8 +224,7 @@
       var info = li.querySelector('.instance-item-information');
       if (!info) return;
 
-      var score = scoreByInstanceId[li.dataset.testid];
-      var stats = typeof score === 'number' ? { min: score, avg: score, max: score, count: 1 } : null;
+      var stats = statsByInstanceId[li.dataset.testid] || null;
       var next = info.nextElementSibling;
       var existing = next && next.classList.contains('argus-health-badge') ? next : null;
 
