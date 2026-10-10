@@ -16,7 +16,6 @@ import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.StringJoiner;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
@@ -262,16 +261,12 @@ public class ReportHelper {
         return items.stream().filter(Health.Item::shouldReport).toList();
     }
 
-    public Collection<Health.Item> getWorseItems(Health health) {
-        return health.getGroups().stream().flatMap(group -> group.getItems(true).stream())
-                .filter(Health.Item::hasIssues)
-                .sorted(Comparator.comparing(Health.Item::getScore))
-                .limit(MAX_WORSE_ITEMS)
-                .collect(Collectors.toSet());
+    public Collection<Health.Item> getWorstItems(Health health) {
+        return health.getWorstItems(MAX_WORSE_ITEMS);
     }
 
-    public boolean hasWorseItems(Health health) {
-        return !getWorseItems(health).isEmpty();
+    public boolean hasWorstItems(Health health) {
+        return !getWorstItems(health).isEmpty();
     }
 
     public String toString(Object value) {

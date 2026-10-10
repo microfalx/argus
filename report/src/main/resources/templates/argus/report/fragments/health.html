@@ -73,10 +73,10 @@
                 </tr>
                 </tbody>
             </table>
-            <th:block th:if="${helper.hasWorseItems(resource.health)}">
+            <th:block th:if="${helper.hasWorstItems(resource.health)}">
                 <div class="mt-3">
                     <h5>Worst Items</h5>
-                    <div th:replace="~{fragments/health :: items(${helper.getWorseItems(resource.health)}, 'worse-items-' + ${resource.id}, true, true)}"></div>
+                    <div th:replace="~{fragments/health :: items(${helper.getWorstItems(resource.health)}, 'worst-items-' + ${resource.id}, true, true)}"></div>
                 </div>
         </div>
     </div>

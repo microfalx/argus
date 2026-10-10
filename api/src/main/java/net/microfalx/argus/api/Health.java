@@ -10,6 +10,7 @@ import net.microfalx.metrics.statistics.TrendStatisticalSummary;
 import java.io.Serial;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.microfalx.lang.ArgumentUtils.requireNonNull;
@@ -53,6 +54,8 @@ public final class Health extends IdentityAware<String> implements Timestampable
     public static final float ERROR = 4;
     public static final float BAD = 2f;
     public static final float WITH_ISSUES = 6.5f;
+
+    private static final int DEFAULT_WORSE_ITEMS = 3;
 
     /**
      * Holds the timestamp when this health score was created. The timestamp is set when the instance
@@ -202,6 +205,30 @@ public final class Health extends IdentityAware<String> implements Timestampable
         return groups.values().stream()
                 .flatMap(group -> group.getItems(true).stream().filter(item -> item.getScore() != NA))
                 .min(Comparator.comparing(Item::getScore));
+    }
+
+    /**
+     * Returns the items with the lowest scores across all groups, limited to a default maximum number of items.
+     *
+     * @return a non-null instance
+     */
+    public Collection<Health.Item> getWorstItems() {
+        return getWorstItems(DEFAULT_WORSE_ITEMS);
+    }
+
+    /**
+     * Returns the items with the lowest scores across all groups, limited to a maximum number of items.
+     *
+     * @param maxItems the maximum number of items to return
+     * @return a non-null instance
+     * @see Item#hasIssues()
+     */
+    public Collection<Health.Item> getWorstItems(int maxItems) {
+        return groups.values().stream().flatMap(group -> group.getItems(true).stream())
+                .filter(Health.Item::hasIssues)
+                .sorted(Comparator.comparing(Health.Item::getScore))
+                .limit(maxItems)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     /**
