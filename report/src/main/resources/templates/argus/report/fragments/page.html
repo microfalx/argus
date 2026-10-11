@@ -65,16 +65,16 @@
     <h1 class="h2" th:text="${title}"></h1>
 </div>
 
-<aside th:fragment="navigation" class="navbar navbar-vertical navbar-expand-sm" th:style="|width: ${navWidth}|"
-       th:attr="data-bs-theme=${navTheme}">
+<aside th:fragment="navigation" class="navbar navbar-vertical navbar-expand-sm"
+       th:attr="data-bs-theme=${navTheme}" th:classappend="${navCollapsed} ? 'navbar-folded-hover' : ''">
     <div class="container-fluid">
         <h1 class="navbar-brand navbar-brand-autodark" style="display:block">
             <i class="fa-solid fa-cube fs-8"></i>
             <a th:href="${application.url}">
-                <span class="me-0 px-3 fs-8" th:text="${application.name}"></span>
+                <span class="me-0 px-3 ps-4 fs-8" th:text="${application.name}"></span>
             </a>
         </h1>
-        <div class="collapse navbar-collapse" id="sidebar-menu">
+        <div class="collapse navbar-collapse" id="sidebar-menu" th:classappend="${navCollapsed} ? '' : 'show'">
             <ul class="navbar-nav pt-lg-3">
                 <li class="nav-item" th:each="fragment : ${fragments}">
                     <a class="nav-link" th:href="|#${fragment.id}|">
@@ -118,6 +118,11 @@
 
     <script>
         initReport();
+
+        // In folded-hover mode, collapse immediately after clicking a navigation link.
+        (function () {
+
+        })();
     </script>
 </div>
 

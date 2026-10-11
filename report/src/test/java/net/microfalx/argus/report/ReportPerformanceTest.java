@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.microfalx.jvm.VirtualMachineMetrics;
 import net.microfalx.jvm.model.VirtualMachine;
 import net.microfalx.lang.JvmUtils;
+import net.microfalx.lang.TimeUtils;
 import net.microfalx.resource.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -17,14 +18,13 @@ import static net.microfalx.lang.ExceptionUtils.getRootCauseDescription;
 import static net.microfalx.lang.FormatterUtils.formatBytes;
 import static net.microfalx.lang.FormatterUtils.formatPercent;
 import static net.microfalx.lang.ThreadUtils.sleepSeconds;
-import static net.microfalx.lang.TimeUtils.THIRTY_SECONDS;
-import static net.microfalx.lang.TimeUtils.millisSince;
+import static net.microfalx.lang.TimeUtils.*;
 
 @Disabled
 @Slf4j
 public class ReportPerformanceTest {
 
-    private long lastOpen = currentTimeMillis();
+    private long lastOpen = TimeUtils.oneHourAgo();
     private Resource report;
     private ReportService reportService;
 
@@ -40,8 +40,9 @@ public class ReportPerformanceTest {
         while (true) {
             ReportTestUtils.scrape(reportService, true);
             printStats();
+            Report.Navigation navigation = new Report.Navigation(Report.Theme.LIGHT).withCollapsed(true);
             Report report = reportService.createReport().setTheme(Report.Theme.LIGHT)
-                    .setNavigationTheme(Report.Theme.DARK);
+                    .setNavigation(navigation);
             Resource resource = Resource.memory();
             try {
                 report.render(resource);

@@ -4,9 +4,9 @@
 <body>
 
 <th:block th:if="${report.hasNavigation()}">
-    <div class="page">
-        <div class="page-wrapper" th:style="|margin-left: ${navWidth}|">
-            <div th:replace="~{fragments/page :: navigation}"></div>
+    <div class="page" th:style="${!navCollapsed} ? |--tblr-navbar-width: ${navWidth};| : ''">
+        <div th:replace="~{fragments/page :: navigation}"></div>
+        <div class="page-wrapper">
             <div th:replace="~{fragments/page :: content}"></div>
         </div>
     </div>

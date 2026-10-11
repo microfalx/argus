@@ -1,5 +1,6 @@
 package net.microfalx.argus.report;
 
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import net.microfalx.lang.Nameable;
 import net.microfalx.resource.ClassPathResource;
@@ -36,7 +37,7 @@ public class Report implements Nameable {
     private boolean secure;
     private String fragment;
     private Theme theme = Theme.LIGHT;
-    private Theme navigationTheme = Theme.DARK;
+    private Navigation navigation = new Navigation(Theme.DARK);
     private final List<Fragment> fragments = new ArrayList<>();
     private final Map<String, Object> attributes = new HashMap<>();
 
@@ -230,29 +231,42 @@ public class Report implements Nameable {
     }
 
     /**
-     * Returns the theme of the (left) navigation (tabs, etc).
+     * Returns the navigation options.
      *
      * @return a non-null instance
      */
-    public Theme getNavigationTheme() {
+    public Navigation getNavigation() {
+        return navigation;
+    }
+
+    /**
+     * Changes the navigation options.
+     *
+     * @param navigation the new options
+     * @return self
+     */
+    public Report setNavigation(Navigation navigation) {
+        requireNonNull(navigation);
+        requireNonNull(navigation.getTheme());
         if (theme == Theme.DARK) {
             // if the theme is dark, the navigation theme should be dark as well
-            return Theme.DARK;
-        } else {
-            return navigationTheme;
+            navigation = new Navigation(Theme.DARK, navigation.isCollapsed(), navigation.getWidth());
         }
+        this.navigation = navigation;
+        return this;
     }
 
     /**
      * Changes the theme for the (left) navigation (tabs, etc).
      *
-     * @param navigationTheme the new theme
+     * @param theme the new theme
      * @return self
      */
-    public Report setNavigationTheme(Theme navigationTheme) {
+    public Report setNavigationTheme(Theme theme) {
         requireNonNull(theme);
-        this.navigationTheme = navigationTheme;
-        return this;
+        Navigation newNavigation = new Navigation(theme)
+                .withCollapsed(navigation.isCollapsed()).withWidth(navigation.getWidth());
+        return setNavigation(newNavigation);
     }
 
     /**
@@ -368,8 +382,9 @@ public class Report implements Nameable {
         template.addVariable("report", this);
         template.addVariable("helper", new ReportHelper(this));
         template.addVariable("theme", getTheme().name().toLowerCase());
-        template.addVariable("navTheme", getNavigationTheme().name().toLowerCase());
-        template.addVariable("navWidth", "16rem");
+        template.addVariable("navTheme", getNavigation().getTheme().name().toLowerCase());
+        template.addVariable("navCollapsed", getNavigation().isCollapsed());
+        template.addVariable("navWidth", getNavigation().getWidth() + "rem");
         template.addVariable("fragments", getVisibleFragments());
         updateTemplateResources(template);
         updateCodeFragments(template);
@@ -414,6 +429,19 @@ public class Report implements Nameable {
             }
         }
         return builder.toString();
+    }
+
+    @Getter
+    @RequiredArgsConstructor
+    @AllArgsConstructor
+    @ToString
+    public static class Navigation {
+
+        private final Theme theme;
+        @With
+        private boolean collapsed;
+        @With
+        private int width = 12;
     }
 
     public enum Theme {

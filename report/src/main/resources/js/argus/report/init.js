@@ -13,6 +13,7 @@ function initMoveToTopButton() {
     window.onscroll = function () {
         scrollFunction();
     };
+
     function scrollFunction() {
         if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
             backToTopButton.style.display = "block";
@@ -143,12 +144,30 @@ function initializeDataTables() {
     window.setTimeout(processNextTable, 0);
 }
 
+function initializeNavigation() {
+    let nav = document.querySelector("aside.navbar-vertical.navbar-folded-hover");
+    if (!nav) return;
+    nav.addEventListener("click", function (event) {
+        let link = event.target.closest(".nav-link");
+        if (!link) return;
+        nav.classList.remove("navbar-folded-hover");
+        nav.classList.add("navbar-folded");
+        link.blur();
+        let releaseFold = function () {
+            nav.classList.remove("navbar-folded");
+            nav.classList.add("navbar-folded-hover");
+        };
+        nav.addEventListener("mouseleave", releaseFold, {once: true});
+    });
+}
+
 /**
  * Initializes the report by setting up the move to top button, sparklines, and data tables.
  */
 function initReport() {
     console.log("Initializing report...");
     $(document).ready(function () {
+        initializeNavigation();
         initMoveToTopButton();
         initializeSparklines();
         initializeDataTables();
