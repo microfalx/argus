@@ -1,8 +1,9 @@
 /*
  * Spring Boot Admin UI extension: overlays a Health pill onto the Wallboard hexagons and
  * onto the Applications list (service-level aggregate in the group title, per-instance value
- * next to each instance row). Loaded automatically by SBA because it lives under
- * META-INF/spring-boot-admin-server-ui/extensions/ (see UiExtensionsScanner).
+ * next to each instance row), plus a "Health" action on each instance row that opens a dialog
+ * with the instance health report (full report and worst items). Loaded automatically by SBA
+ * because it lives under META-INF/spring-boot-admin-server-ui/extensions/ (see UiExtensionsScanner).
  *
  * Both views are Vue-rendered components we do not own, so instead of replacing them we
  * overlay badges and keep them in sync with two update sources: the application store's
@@ -39,6 +40,20 @@
     var details = instance && instance.statusInfo && instance.statusInfo.details;
     var health = details && details.health;
     var report = health && health.details && health.details.reportSummaryText;
+    return typeof report === 'string' && report.trim().length > 0 ? report : null;
+  }
+
+  function extractReportHtml(instance) {
+    var details = instance && instance.statusInfo && instance.statusInfo.details;
+    var health = details && details.health;
+    var report = health && health.details && health.details.reportHtml;
+    return typeof report === 'string' && report.trim().length > 0 ? report : null;
+  }
+
+  function extractSummaryHtml(instance) {
+    var details = instance && instance.statusInfo && instance.statusInfo.details;
+    var health = details && details.health;
+    var report = health && health.details && health.details.reportSummaryHtml;
     return typeof report === 'string' && report.trim().length > 0 ? report : null;
   }
 
@@ -191,13 +206,191 @@
     });
   }
 
+  // Latest application list from the store; the report dialog reads it when opened so it
+  // always shows current data, not what was known when the button was created.
+  var currentApplications = [];
+
+  function closeReportDialog() {
+    var existing = document.querySelector('.argus-health-modal');
+    if (existing) existing.remove();
+    document.removeEventListener('keydown', onDialogKeyDown, true);
+  }
+
+  function onDialogKeyDown(event) {
+    if (event.key === 'Escape') {
+      event.stopPropagation();
+      closeReportDialog();
+    }
+  }
+
+  function appendReport(section, title, html) {
+    if (!html) return;
+    var heading = document.createElement('h5');
+    heading.textContent = title;
+    section.appendChild(heading);
+    var report = document.createElement('div');
+    report.className = 'argus-health-report';
+    report.innerHTML = html;
+    section.appendChild(report);
+  }
+
+  function findInstance(instanceId) {
+    for (var i = 0; i < currentApplications.length; i++) {
+      var application = currentApplications[i];
+      var instances = application.instances || [];
+      for (var j = 0; j < instances.length; j++) {
+        if (instances[j].id === instanceId) return { application: application, instance: instances[j] };
+      }
+    }
+    return null;
+  }
+
+  // Shows the full health report (reportHtml) of an instance followed by its worst items
+  // (reportSummaryHtml). Plain DOM instead of sba-modal: SBA's components can't be mounted
+  // from a non-Vue extension, so the look of sba-modal is reproduced in the CSS file.
+  function openReportDialog(instanceId) {
+    closeReportDialog();
+
+    var found = findInstance(instanceId);
+    var instance = found && found.instance;
+
+    var overlay = document.createElement('div');
+    overlay.className = 'argus-health-modal';
+    overlay.addEventListener('click', function (event) {
+      if (event.target === overlay) closeReportDialog();
+    });
+
+    var panel = document.createElement('div');
+    panel.className = 'argus-health-modal__panel';
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-modal', 'true');
+    overlay.appendChild(panel);
+
+    var header = document.createElement('div');
+    header.className = 'argus-health-modal__header';
+    var title = document.createElement('h3');
+    title.textContent = 'Health Report' + (found ? ' - ' + found.application.name : '');
+    header.appendChild(title);
+    var close = document.createElement('button');
+    close.type = 'button';
+    close.setAttribute('aria-label', 'Close');
+    close.innerHTML = '<span aria-hidden="true">&times;</span>';
+    close.addEventListener('click', closeReportDialog);
+    header.appendChild(close);
+    panel.appendChild(header);
+
+    var body = document.createElement('div');
+    body.className = 'argus-health-modal__body';
+    if (!instance || extractReportHtml(instance) === null) {
+      body.textContent = 'No health report available for this instance.';
+    } else {
+      var section = document.createElement('section');
+      section.className = 'argus-health-modal__instance';
+
+      var heading = document.createElement('h4');
+      var label = document.createElement('span');
+      label.textContent = (instance.registration && instance.registration.serviceUrl) || instance.id;
+      heading.appendChild(label);
+      var score = extractScore(instance);
+      if (score !== null) {
+        var pill = document.createElement('span');
+        pill.className = 'argus-health-pill ' + severityClass(score);
+        pill.textContent = format(score);
+        heading.appendChild(pill);
+      }
+      section.appendChild(heading);
+
+      // Both rendered as HTML by Health on the monitored application: the full report
+      // (getReport) and the summary of its worst items (getWorstItemsReport).
+      appendReport(section, 'Full Report', extractReportHtml(instance));
+      appendReport(section, 'Worst Items', extractSummaryHtml(instance));
+
+      body.appendChild(section);
+    }
+    panel.appendChild(body);
+
+    document.body.appendChild(overlay);
+    document.addEventListener('keydown', onDialogKeyDown, true);
+    close.focus();
+  }
+
+  // Font Awesome "heart-pulse" (solid), to match the icon-only buttons next to it.
+  var HEALTH_ICON_VIEW_BOX = '0 0 512 512';
+  var HEALTH_ICON_PATH =
+    'M228.3 469.1L47.6 300.4c-4.2-3.9-8.2-8.1-11.9-12.4l87 0c22.6 0 43-13.6 51.7-34.5l10-23.9 49.4 109.5c3.8 8.5 ' +
+    '12.1 14 21.4 14.1s17.8-5 22-13.3L320 253.7l1.7 3.4c9.5 19 28.9 31 50.1 31l104.5 0c-3.7 4.3-7.7 8.5-11.9 ' +
+    '12.4L283.7 469.1c-7.5 7-17.4 10.9-27.7 10.9s-20.2-3.9-27.7-10.9zM503.7 240l-132 0c-3 0-5.8-1.7-7.2-4.4l-23.2' +
+    '-46.3c-4.1-8.1-12.4-13.3-21.5-13.3s-17.4 5.1-21.5 13.3l-41.4 82.8L205.9 158.2c-3.9-8.7-12.7-14.3-22.2-14.1s-18.1 ' +
+    '5.9-21.8 14.8l-31.8 76.3c-1.2 3-4.2 4.9-7.4 4.9L16 240c-2.6 0-5 .4-7.3 1.1C3 225.2 0 208.2 0 190.9l0-5.8c0-69.9 ' +
+    '50.5-129.5 119.4-141C165 36.5 211.4 51.4 244 84l12 12 12-12c32.6-32.6 79-47.5 124.6-39.9C461.5 55.6 512 115.2 ' +
+    '512 185.1l0 5.8c0 16.9-2.8 33.5-8.3 49.1z';
+
+  // Turns a deep clone of an existing button's Font Awesome <svg> into the health icon, so
+  // it keeps the same size/alignment classes; falls back to a standalone <svg>.
+  function healthIcon(templateSvg) {
+    var svg;
+    if (templateSvg) {
+      svg = templateSvg.cloneNode(false);
+      svg.setAttribute('class', (svg.getAttribute('class') || '').replace(/\bfa-(?!fw\b|xs\b|sm\b|lg\b|2xs\b)[\w-]+/g, '').trim() + ' fa-heart-pulse');
+      svg.setAttribute('data-icon', 'heart-pulse');
+    } else {
+      svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('class', 'svg-inline--fa fa-heart-pulse');
+      svg.setAttribute('aria-hidden', 'true');
+    }
+    svg.setAttribute('viewBox', HEALTH_ICON_VIEW_BOX);
+    var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('fill', 'currentColor');
+    path.setAttribute('d', HEALTH_ICON_PATH);
+    svg.appendChild(path);
+    return svg;
+  }
+
+  // Adds a "Health" button next to the instance's own actions (journal, notifications,
+  // unregister, ...). It is a clone of an existing button so it carries the same classes
+  // and Vue scoped-style attributes, and is appended last so Vue's own patching, which
+  // anchors on its own nodes, leaves it alone.
+  function upsertHealthButton(group, instanceId, show) {
+    if (!group) return;
+    var existing = group.querySelector(':scope > .argus-health-button');
+    if (!show) {
+      if (existing) existing.remove();
+      return;
+    }
+    if (existing) {
+      existing.dataset.instance = instanceId;
+      return;
+    }
+    var template = group.querySelector('button');
+    if (!template) return;
+
+    var button = template.cloneNode(false);
+    button.removeAttribute('id');
+    button.classList.remove('is-danger', 'btn-unregister', 'btn-shutdown');
+    button.classList.add('argus-health-button');
+    button.type = 'button';
+    button.title = 'Health report';
+    button.setAttribute('aria-label', 'Health report');
+    button.appendChild(healthIcon(template.querySelector('svg')));
+    button.dataset.instance = instanceId;
+    button.addEventListener('click', function (event) {
+      // The instance row navigates to the instance details on click.
+      event.preventDefault();
+      event.stopPropagation();
+      openReportDialog(button.dataset.instance);
+    });
+    group.appendChild(button);
+  }
+
   function applyApplicationsBadges(applications) {
     if (location.pathname.indexOf('applications') === -1) return;
 
     var statsByName = collectStats(applications);
     var statsByInstanceId = {};
+    var hasReportByInstanceId = {};
     applications.forEach(function (application) {
       (application.instances || []).forEach(function (instance) {
+        if (extractReportHtml(instance) !== null) hasReportByInstanceId[instance.id] = true;
         var score = extractScore(instance);
         if (score !== null) {
           statsByInstanceId[instance.id] = { min: score, avg: score, max: score, count: 1, report: tooltip(instance, false) };
@@ -219,12 +412,17 @@
       });
     });
 
-    // Instance-level: the same "Health [pill]" badge, single value, no avg/max.
+    // Instance-level: the same "Health [pill]" badge, single value, no avg/max, plus the
+    // "Health" report button among the instance's actions.
     document.querySelectorAll('li[data-testid]').forEach(function (li) {
+      var instanceId = li.dataset.testid;
+      var actions = li.querySelector('.application-list-item__header__actions');
+      upsertHealthButton(actions, instanceId, hasReportByInstanceId[instanceId] === true);
+
       var info = li.querySelector('.instance-item-information');
       if (!info) return;
 
-      var stats = statsByInstanceId[li.dataset.testid] || null;
+      var stats = statsByInstanceId[instanceId] || null;
       var next = info.nextElementSibling;
       var existing = next && next.classList.contains('argus-health-badge') ? next : null;
 
@@ -244,7 +442,7 @@
       return;
     }
 
-    var latestApplications = (store.applications && store.applications.value) || [];
+    currentApplications = (store.applications && store.applications.value) || [];
     var scheduled = false;
 
     function schedule() {
@@ -252,15 +450,15 @@
       scheduled = true;
       requestAnimationFrame(function () {
         scheduled = false;
-        applyWallboardBadges(latestApplications);
-        applyApplicationsBadges(latestApplications);
+        applyWallboardBadges(currentApplications);
+        applyApplicationsBadges(currentApplications);
       });
     }
 
     if (store.applicationStore) {
       store.applicationStore.addEventListener('connected', schedule);
       store.applicationStore.addEventListener('changed', function (applications) {
-        latestApplications = applications || [];
+        currentApplications = applications || [];
         schedule();
       });
       store.applicationStore.addEventListener('removed', schedule);

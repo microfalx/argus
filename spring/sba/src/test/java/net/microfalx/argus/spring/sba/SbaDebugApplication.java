@@ -37,7 +37,12 @@ public class SbaDebugApplication {
         return () -> {
             float score = 1f + ThreadLocalRandom.current().nextFloat() * 9f;
             String report = String.format("Debug\n   • Random\n      ▪ Score: %.1f", score);
-            return Health.up().withDetail("score", score).withDetail("report", report).build();
+            String reportHtml = String.format("Debug<br>&nbsp;&nbsp;&bull; Random<br>&nbsp;&nbsp;&nbsp;&nbsp;"
+                    + "&#9642; Score: <b>%.1f</b>", score);
+            return Health.up().withDetail("score", score).withDetail("report", report)
+                    .withDetail("reportHtml", reportHtml)
+                    .withDetail("reportSummaryHtml", String.format("&#9679; Debug / Random / Score: <b>%.1f</b>", score))
+                    .build();
         };
     }
 }
