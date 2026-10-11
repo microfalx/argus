@@ -46,7 +46,7 @@
     if (token) {
       url += (url.indexOf('?') > -1 ? '&' : '?') + 'token=' + encodeURIComponent(token);
     }
-    url += (url.indexOf('?') > -1 ? '&' : '?') + 'navTheme=light';
+    url += (url.indexOf('?') > -1 ? '&' : '?') + 'navTheme=light&navCollapsed=true';
     return url;
   }
 
