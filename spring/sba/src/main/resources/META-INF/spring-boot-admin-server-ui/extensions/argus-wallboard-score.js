@@ -38,7 +38,7 @@
   function extractReport(instance) {
     var details = instance && instance.statusInfo && instance.statusInfo.details;
     var health = details && details.health;
-    var report = health && health.details && health.details.report;
+    var report = health && health.details && health.details.reportSummaryText;
     return typeof report === 'string' && report.trim().length > 0 ? report : null;
   }
 

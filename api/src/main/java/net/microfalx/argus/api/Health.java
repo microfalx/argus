@@ -278,21 +278,86 @@ public final class Health extends IdentityAware<String> implements Timestampable
     }
 
     /**
-     * Generates the health report, highlighting the group with the lowest score and the item which gives the group
+     * Generates the health report, highlighting the group with the lowest score and the item  which gives the group
      * the lowest score out of all groups.
+     * <p>
+     * The report is rendered as plain text.
      *
      * @return a non-null instance
+     * @see #getReport(RichText.Format)
      */
     public String getReport() {
-        Logger logger = Logger.create();
+        return getReport(RichText.Format.TEXT);
+    }
+
+    /**
+     * Generates the health report, highlighting the group with the lowest score and the item  which gives the group
+     * the lowest score out of all groups.
+     * <p>
+     * With {@link RichText.Format#ANSI} or {@link RichText.Format#HTML}, the score of each item  is colored
+     * based on its {@link Severity severity}; with {@link RichText.Format#TEXT}, the report  is plain text.
+     *
+     * @param format the format of the report
+     * @return a non-null instance
+     */
+    public String getReport(RichText.Format format) {
+        requireNonNull(format);
+        Report report = new Report(format);
         Item lowestItem = getLowest().orElse(null);
         Group lowestGroup = lowestItem != null ? groups.values().stream()
                 .filter(g -> g.getItems().contains(lowestItem))
                 .findFirst().orElse(null) : null;
         groups.values().stream()
                 .sorted(Comparator.comparingInt(g -> g.order))
-                .forEach(group -> group.report(logger, lowestItem, group == lowestGroup, 1));
-        return logger.getOutput();
+                .forEach(group -> group.report(report, lowestItem, group == lowestGroup, 1));
+        return report.render();
+    }
+
+    /**
+     * Generates a summary report with the worst items, limited to a default maximum number of items.
+     *
+     * @param format the format of the report
+     * @return a non-null instance
+     * @see #getWorstItemsReport(int, RichText.Format)
+     */
+    public String getWorstItemsReport(RichText.Format format) {
+        return getWorstItemsReport(DEFAULT_WORSE_ITEMS, format);
+    }
+
+    /**
+     * Generates a summary report with the worst items, intended for tooltips or as a summary at the bottom of
+     * the {@link #getReport(RichText.Format) full report}.
+     * <p>
+     * Each item is rendered on its own line, prefixed with a status circle colored based on its
+     * {@link Severity severity}, followed by the item rendered as in the full report, with its name prefixed
+     * by the group hierarchy ({@code Group/Subgroup/Item: score (description)}).
+     *
+     * @param maxItems the maximum number of items to include
+     * @param format   the format of the report
+     * @return a non-null instance, empty if there are no items with issues
+     * @see #getWorstItems(int)
+     */
+    public String getWorstItemsReport(int maxItems, RichText.Format format) {
+        requireNonNull(format);
+        Collection<Item> worstItems = getWorstItems(maxItems);
+        Map<Item, String> paths = new IdentityHashMap<>();
+        for (Group group : groups.values()) {
+            collectPaths(paths, group, group.getName());
+        }
+        Report report = new Report(format);
+        for (Item item : worstItems) {
+            report.line(RichText.create().glyph(toGlyph(item.getSeverity())).a(item.toRichText(paths.get(item))));
+        }
+        return report.render();
+    }
+
+    private static void collectPaths(Map<Item, String> paths, Group group, String path) {
+        for (Item item : group.getItems()) {
+            paths.put(item, path);
+        }
+        for (Group childGroup : group.getGroups()) {
+            collectPaths(paths, childGroup, path + "/" + childGroup.getName());
+        }
     }
 
     /**
@@ -350,6 +415,39 @@ public final class Health extends IdentityAware<String> implements Timestampable
         } else {
             return Severity.CRITICAL;
         }
+    }
+
+    /**
+     * Converts a score to a rich text, with the score colored based on its severity.
+     *
+     * @param score the score
+     * @return a non-null instance
+     */
+    private static RichText scoreToRichText(float score) {
+        Severity severity = toSeverity(score);
+        RichText text = RichText.create().fg(toColor(severity));
+        if (severity == Severity.CRITICAL) text.bold();
+        return text.a(formatNumber(score, 1));
+    }
+
+    private static RichText.Color toColor(Severity severity) {
+        return switch (severity) {
+            case NA -> RichText.Color.GRAY;
+            case OK -> RichText.Color.GREEN;
+            case LOW -> RichText.Color.YELLOW;
+            case MEDIUM -> RichText.Color.BRIGHT_RED;
+            case HIGH, CRITICAL -> RichText.Color.RED;
+        };
+    }
+
+    private static String toGlyph(Severity severity) {
+        return switch (severity) {
+            case NA -> Glyph.WHITE_CIRCLE;
+            case OK -> Glyph.GREEN_CIRCLE;
+            case LOW -> Glyph.YELLOW_CIRCLE;
+            case MEDIUM -> Glyph.ORANGE_CIRCLE;
+            case HIGH, CRITICAL -> Glyph.RED_CIRCLE;
+        };
     }
 
     private void updateScored(Collection<Scored> scored, Group group) {
@@ -618,51 +716,43 @@ public final class Health extends IdentityAware<String> implements Timestampable
         }
 
         /**
-         * Writes a report for this group to the provided logger.
+         * Writes a report for this group to the provided report.
          * <p>
          * The group header is prefixed with {@code *} if {@code isLowest} is {@code true}.
          * Each item is indented and prefixed with {@code *} if it is the globally lowest item.
          *
-         * @param logger     the logger to write to
+         * @param report     the report to write to
          * @param lowestItem the item with the lowest score across all groups (may be {@code null})
          * @param isLowest   {@code true} if this group contains the globally lowest item
          */
-        void report(Logger logger, Item lowestItem, boolean isLowest, int depth) {
+        void report(Report report, Item lowestItem, boolean isLowest, int depth) {
             String lowestSuffix = isLowest ? " (*)" : EMPTY_STRING;
             String finalName = getName() + lowestSuffix;
             if (depth > 1) {
-                logger.atInfo().bullet().append(finalName).log();
+                report.line(RichText.create().bullet().a(finalName));
             } else {
-                logger.info(finalName);
+                report.line(RichText.of(finalName));
             }
-            logger.increaseIndent();
+            report.increaseIndent();
             groups.values().stream()
                     .sorted(Comparator.comparingInt(g -> g.order))
                     .forEach(group -> {
-                        group.report(logger, lowestItem, isLowest, depth + 1);
+                        group.report(report, lowestItem, isLowest, depth + 1);
                     });
             for (Item item : items) {
                 if (!item.shouldReport()) continue;
                 boolean isLowestItem = item == lowestItem;
-                String description = item.getDescription();
-                String line;
-                String scoreAsString = formatNumber(item.getScore(), 1);
-                if (description != null && !description.isEmpty()) {
-                    line = String.format("%s: %s (%s)", item.getName(), scoreAsString, description);
-                } else {
-                    line = String.format("%s: %s", item.getName(), scoreAsString);
-                }
-                Logger.Entry bullet;
+                RichText line = RichText.create();
                 if (depth > 1) {
-                    bullet = logger.atInfo().square();
+                    line.square();
                 } else {
-                    bullet = logger.atInfo().bullet();
+                    line.bullet();
                 }
-                if (item.shouldReport()) {
-                    bullet.append(line).append(isLowestItem ? lowestSuffix : EMPTY_STRING).log();
-                }
+                line.a(item.toRichText());
+                if (isLowestItem) line.a(lowestSuffix);
+                report.line(line);
             }
-            logger.decreaseIndent();
+            report.decreaseIndent();
         }
 
         private void addGroups(Collection<Group> groups) {
@@ -819,6 +909,38 @@ public final class Health extends IdentityAware<String> implements Timestampable
         }
 
         /**
+         * Returns the severity of the item score.
+         *
+         * @return a non-null instance
+         */
+        public Severity getSeverity() {
+            return toSeverity(getScore());
+        }
+
+        /**
+         * Renders the item as {@code name: score (description)}, with the score colored based on its severity.
+         *
+         * @return a non-null instance
+         */
+        public RichText toRichText() {
+            return toRichText(null);
+        }
+
+        /**
+         * Renders the item as {@code path/name: score (description)}, with the score colored based on its severity.
+         *
+         * @param path the path (group hierarchy separated by {@code /}) prefixed to the name, can be {@code null}
+         * @return a non-null instance
+         */
+        public RichText toRichText(String path) {
+            String name = StringUtils.isNotEmpty(path) ? path + "/" + getName() : getName();
+            RichText text = RichText.create().a(name).a(": ").a(scoreToRichText(getScore()));
+            String description = getDescription();
+            if (description != null && !description.isEmpty()) text.a(" (").a(description).a(")");
+            return text;
+        }
+
+        /**
          * Returns whether the item has a given policy.
          *
          * @param policy the policy to check
@@ -966,4 +1088,39 @@ public final class Health extends IdentityAware<String> implements Timestampable
     }
 
     private static final Set<Policy> EMPTY_POLICIES = EnumSet.noneOf(Policy.class);
+
+    /**
+     * Collects the (indented) lines of a health report and renders them in a given format.
+     */
+    private static final class Report {
+
+        private static final int INDENT_STEP = 2;
+
+        private final RichText.Format format;
+        private final List<RichText> lines = new ArrayList<>();
+        private int indent;
+
+        private Report(RichText.Format format) {
+            this.format = format;
+        }
+
+        void increaseIndent() {
+            indent += INDENT_STEP;
+        }
+
+        void decreaseIndent() {
+            indent = Math.max(0, indent - INDENT_STEP);
+        }
+
+        void line(RichText text) {
+            // HTML collapses regular spaces, so indent with non-breaking spaces
+            char space = format == RichText.Format.HTML ? ' ' : ' ';
+            lines.add(RichText.of(String.valueOf(space).repeat(indent)).a(text));
+        }
+
+        String render() {
+            String separator = format == RichText.Format.HTML ? "<br>" : "\n";
+            return lines.stream().map(line -> line.render(format)).collect(Collectors.joining(separator));
+        }
+    }
 }

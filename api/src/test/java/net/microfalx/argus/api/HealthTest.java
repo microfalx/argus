@@ -232,7 +232,7 @@ class HealthTest {
 
         // Item has a description, so it should appear in parentheses
         assertThat(report).contains("Memory:");
-        assertThat(report).containsPattern("Memory: \\d+\\.\\d+% \\(.*\\)");
+        assertThat(report).containsPattern(".*Memory: \\d+\\.\\d+% \\(.*\\).*");
     }
 
     @Test

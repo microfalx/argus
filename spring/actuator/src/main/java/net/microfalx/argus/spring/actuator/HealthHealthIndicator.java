@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.microfalx.argus.api.HealthService;
 import net.microfalx.argus.api.HealthSettings;
 import net.microfalx.lang.HttpServletUtils;
+import net.microfalx.lang.StringUtils;
 import org.springframework.boot.actuate.health.AbstractHealthIndicator;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.Status;
@@ -16,6 +17,8 @@ import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Supplier;
+
+import static net.microfalx.lang.StringUtils.defaultIfEmpty;
 
 /**
  * A Spring Boot health indicator backed by health information.
@@ -91,7 +94,10 @@ public class HealthHealthIndicator extends AbstractHealthIndicator {
         details.put("age", healthMetadata.getAge());
         details.put("groups", healthMetadata.getGroups());
         details.put("items", healthMetadata.getItems());
-        details.put("report", healthMetadata.getReport());
+        details.put("reportText", healthMetadata.getReportText());
+        details.put("reportHtml", healthMetadata.getReportHtml());
+        details.put("reportSummaryText", healthMetadata.getReportSummaryText());
+        details.put("reportSummaryHtml", healthMetadata.getReportSummaryHtml());
         details.put("reportPath", reportUri.getPath());
         HttpServletRequest request = currentRequest();
         if (HttpServletUtils.isClientLocal(request)) {
