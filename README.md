@@ -252,8 +252,13 @@ every instance's own page.
 
 ![Spring Boot Admin applications list with health badges](docs/images/sba-applications-health-badges.png "SBA Applications list, grouped by application: a Health badge next to each application group title (worst score across instances) and next to each individual instance row")
 
-Once an operator has narrowed the problem down to one instance, the badges alone aren't enough to diagnose
-it — the "Health Report" tab closes that gap by embedding that instance's own Argus HTML report (the same
+Each service instance can also open its health report overview in HTML form by clicking the button with "hearth" icon, so the operator can see right away which
+component(s) brought the score down without leaving the applications list.
+
+![Spring Boot Admin applications list with health overview](docs/images/sba-applications-health-overview.png "SBA Applications list, grouped by application: a Health badge next to each application group title (worst score across instances) and next to each individual instance row")
+
+Once an operator has narrowed the problem down to one instance, the badges alone or the report overview aren't enough to diagnose
+it — the "Health Report" dashboard closes that gap by embedding that instance's own Argus HTML report (the same
 report described above, with the full group/item breakdown, logs and environment) directly in SBA, without
 leaving the SBA UI or needing separate access to the monitored application.
 
