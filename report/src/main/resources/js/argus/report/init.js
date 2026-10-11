@@ -34,6 +34,7 @@ function initializeTooltips() {
         const element = tooltipElements.shift();
         if (!element) {
             console.info("Tooltips initialized");
+            hideProgress();
             return;
         }
         //console.info("Initialize tooltip: ", element);
@@ -161,12 +162,27 @@ function initializeNavigation() {
     });
 }
 
+function showProgress() {
+    const progressButton = document.getElementById("btn-progress");
+    if (progressButton) {
+        progressButton.style.display = "block";
+    }
+}
+
+function hideProgress() {
+    const progressButton = document.getElementById("btn-progress");
+    if (progressButton) {
+        progressButton.style.display = "none";
+    }
+}
+
 /**
  * Initializes the report by setting up the move to top button, sparklines, and data tables.
  */
 function initReport() {
     console.log("Initializing report...");
     $(document).ready(function () {
+        showProgress();
         initializeNavigation();
         initMoveToTopButton();
         initializeSparklines();

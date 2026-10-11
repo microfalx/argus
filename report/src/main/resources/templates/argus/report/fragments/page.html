@@ -57,6 +57,18 @@
             max-width: max-content !important;
             display: none;
         }
+
+        #btn-progress {
+            position: fixed !important;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1050;
+            width: auto !important;
+            left: auto !important;
+            max-width: max-content !important;
+            display: none;
+            pointer-events: none;
+        }
     </style>
 </head>
 
@@ -118,11 +130,6 @@
 
     <script>
         initReport();
-
-        // In folded-hover mode, collapse immediately after clicking a navigation link.
-        (function () {
-
-        })();
     </script>
 </div>
 

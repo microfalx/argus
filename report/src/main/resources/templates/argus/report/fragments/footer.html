@@ -3,7 +3,12 @@
 <body>
 
 <footer class="text-center" th:fragment="footer-full">
-    <button type="button" class="btn btn-secondary btn-floating btn-lg" id="btn-back-to-top"><i class="fas fa-arrow-up"></i></button>
+    <button type="button" class="btn btn-secondary btn-floating btn-lg" id="btn-back-to-top"
+            aria-label="Move to top" title="Move to top">
+        <i class="fas fa-arrow-up"></i></button>
+    <button id="btn-progress" type="button" class="btn btn-lg btn-info" aria-label="Loading" title="Loading">
+        <span>Loading </span><i class="fa-solid fa-spinner fa-spin"></i>
+    </button>
     <span>Copyright © 2024 <a th:href="${application.url}" target='_blank' th:text="${session.owner}"></a>. All rights reserved.</span>
 </footer>
 
