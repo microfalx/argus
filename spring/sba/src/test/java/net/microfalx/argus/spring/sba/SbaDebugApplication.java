@@ -42,6 +42,8 @@ public class SbaDebugApplication {
             return Health.up().withDetail("score", score).withDetail("report", report)
                     .withDetail("reportHtml", reportHtml)
                     .withDetail("reportSummaryHtml", String.format("&#9679; Debug / Random / Score: <b>%.1f</b>", score))
+                    // No real report page here; any local page enables the "Health Report" tab
+                    .withDetail("reportPath", "/actuator/health")
                     .build();
         };
     }

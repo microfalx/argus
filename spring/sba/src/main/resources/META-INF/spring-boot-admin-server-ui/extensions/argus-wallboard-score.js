@@ -90,7 +90,32 @@
       max: Math.max.apply(null, scores),
       count: scores.length,
       report: tooltip(worst, scores.length > 1),
+      reportInstanceId: hasReportView(worst) ? worst.id : null,
     };
+  }
+
+  // Mirrors argus-health-report.js: its "Health Report" instance tab is only enabled when the
+  // instance publishes a reportPath and has a service URL to resolve it against.
+  function hasReportView(instance) {
+    var details = instance && instance.statusInfo && instance.statusInfo.details;
+    var health = details && details.health;
+    var path = health && health.details && health.details.reportPath;
+    var base = instance && instance.registration && instance.registration.serviceUrl;
+    return typeof path === 'string' && path.length > 0 && !!base;
+  }
+
+  // Opens the instance's "Health Report" tab (registered by argus-health-report.js) through
+  // SBA's own Vue router, so it is an in-app navigation; Vue 3 exposes the app on its mount
+  // element. Falls back to a regular page load, relative to SBA's <base href>.
+  function showReportView(instanceId) {
+    var root = document.querySelector('#app');
+    var app = root && root.__vue_app__;
+    var router = app && app.config.globalProperties.$router;
+    if (router) {
+      router.push({ name: 'instances/health-report', params: { instanceId: instanceId } });
+    } else {
+      location.assign(new URL('instances/' + encodeURIComponent(instanceId) + '/health-report', document.baseURI));
+    }
   }
 
   function format(value) {
@@ -105,7 +130,7 @@
 
   function signature(stats, variant) {
     var base = stats.count > 1 ? format(stats.min) + '|' + format(stats.avg) + '|' + format(stats.max) : format(stats.min);
-    return variant + '|' + base + '|' + (stats.report || '');
+    return variant + '|' + base + '|' + (stats.report || '') + '|' + (stats.reportInstanceId || '');
   }
 
   function buildBadge(stats, variant) {
@@ -121,6 +146,24 @@
     var pill = document.createElement('span');
     pill.className = 'argus-health-pill ' + severityClass(stats.min);
     pill.textContent = format(stats.min);
+    // Applications list only (the wallboard hexagon already links to the instance): the
+    // pill opens the Health Report tab of the instance the score comes from - for a
+    // service, its lowest-scoring instance.
+    if (variant !== 'wallboard' && stats.reportInstanceId) {
+      pill.classList.add('argus-health-pill--link');
+      pill.setAttribute('role', 'link');
+      pill.tabIndex = 0;
+      var open = function (event) {
+        // Both the service title and the instance row have their own click behavior.
+        event.preventDefault();
+        event.stopPropagation();
+        showReportView(stats.reportInstanceId);
+      };
+      pill.addEventListener('click', open);
+      pill.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') open(event);
+      });
+    }
     badge.appendChild(pill);
 
     if (stats.count > 1) {
@@ -393,7 +436,14 @@
         if (extractReportHtml(instance) !== null) hasReportByInstanceId[instance.id] = true;
         var score = extractScore(instance);
         if (score !== null) {
-          statsByInstanceId[instance.id] = { min: score, avg: score, max: score, count: 1, report: tooltip(instance, false) };
+          statsByInstanceId[instance.id] = {
+            min: score,
+            avg: score,
+            max: score,
+            count: 1,
+            report: tooltip(instance, false),
+            reportInstanceId: hasReportView(instance) ? instance.id : null,
+          };
         }
       });
     });

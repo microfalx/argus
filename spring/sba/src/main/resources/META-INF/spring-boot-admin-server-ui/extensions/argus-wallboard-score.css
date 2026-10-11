@@ -25,6 +25,18 @@
   color: #fff;
 }
 
+/* Applications list: the pill opens the instance's Health Report tab. */
+.argus-health-pill--link {
+  cursor: pointer;
+}
+
+.argus-health-pill--link:hover,
+.argus-health-pill--link:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+  text-decoration: underline;
+}
+
 .argus-health-label,
 .argus-health-extra {
   opacity: 0.7;
