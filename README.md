@@ -30,6 +30,60 @@ This makes Argus useful in three situations that external monitoring struggles w
   degradation, gives a human everything needed to triage an incident, offline, without needing access to a
   monitoring stack.
 
+### Related projects
+
+Argus grew out of its authors' years of experience building, running and supporting JVM services in
+production — and out of the recurring need to answer "how healthy is this service, and why?" quickly. Along
+the way, several excellent open source projects served as inspiration and deserve credit:
+
+* [Spring Boot Admin](https://github.com/codecentric/spring-boot-admin) (by codecentric) has been the go-to
+  administration UI for Spring Boot fleets for years: it discovers instances, polls their Actuator endpoints
+  and presents health, metrics, environment, loggers, thread and heap dumps, log files and more in one
+  polished web UI, with notifications when an instance changes status.
+* [BootUI](https://github.com/jdubois/boot-ui) (by Julien Dubois) is an embedded, local-only developer
+  console for Spring Boot and Quarkus that lets developers — and their AI coding agents, via MCP and a CLI —
+  inspect beans, properties, databases and other runtime diagnostics while building an application.
+* [Arthas](https://github.com/alibaba/arthas) (by Alibaba) is the closest in spirit to Argus: a production
+  diagnostic tool that attaches to a running JVM and offers a real-time dashboard, thread and memory
+  inspection, method tracing/watching, decompilation, hot-swapping and profiling — all without restarting the
+  application. It sits in a family of similar tools: [Bistoury](https://github.com/qunarcorp/bistoury)
+  (Qunar's web-based platform built on top of Arthas), [BTrace](https://github.com/btraceio/btrace) (safe
+  dynamic tracing scripts) and [jvm-sandbox](https://github.com/alibaba/jvm-sandbox) (a non-invasive AOP
+  runtime for building such tools).
+* [JavaMelody](https://github.com/javamelody/javamelody) and [Glowroot](https://github.com/glowroot/glowroot)
+  are lightweight, embeddable monitoring/APM tools that collect request, SQL and JVM statistics inside the
+  application, with their own UI — JavaMelody can even mail periodic PDF reports.
+
+All of these are well worth using, and Argus is designed to work alongside them rather than replace them (the
+`argus-spring-sba` module plugs straight into Spring Boot Admin). They are, however, mostly *instruments*:
+they show what is happening, or let a skilled engineer dig into it, but leave the conclusion to a human. What
+Argus adds to the mix is a *judgment* about the process, not just a view of it:
+
+* **A graded health score instead of raw data or `UP`/`DOWN`.** Actuator health (and therefore Spring Boot
+  Admin) is essentially binary per indicator; Arthas, JavaMelody and Glowroot present metrics and traces for
+  a person to interpret. Argus computes a 1–10 score from thresholds over JVM, server, service and custom
+  metrics, explains which group and item pulled it down, and tracks its trend over time — the same score Argus
+  then surfaces inside Spring Boot Admin as badges.
+* **Continuous self-assessment, not on-demand investigation.** Arthas-style tools are attached by an
+  engineer once something already looks wrong; Spring Boot Admin needs a separate server that can reach the
+  instance; BootUI is intentionally limited to local development. Argus runs in production, in-process, all
+  the time, with or without Spring Boot, and can act on its own health — including self-terminating when the
+  score falls below a floor so the orchestrator restarts the instance.
+* **Issues and alerts feed the score.** Problems a service reports about itself (`Issue`) and spikes of
+  `WARN`/`ERROR` log events (`Alert`) are first-class inputs to the health score rather than something an
+  operator has to correlate by hand.
+* **A self-contained, offline HTML report built around the verdict.** Argus renders the health breakdown,
+  services, metrics, tasks, logs and environment into a single HTML file that can be downloaded, emailed on a
+  schedule *or as soon as the health degrades*, and optionally encrypted — useful for support and incident
+  response when nobody has access to a live UI or to the running process.
+* **A model of the application's resources.** Argus describes the service, its host and its external
+  dependencies (databases, caches, brokers, storage, search) as `Resource`s, each with its own health, so the
+  score reflects the whole picture an application depends on.
+
+In short: use BootUI while developing, Spring Boot Admin to administer a fleet, Arthas (or its siblings) to
+dig into a live JVM, and Argus to let each service continuously grade, explain and report on its own health —
+and surface that verdict in Spring Boot Admin too.
+
 ## Scope
 
 Argus is a library, not a standalone service. It is meant to be embedded in a JVM application (with or
