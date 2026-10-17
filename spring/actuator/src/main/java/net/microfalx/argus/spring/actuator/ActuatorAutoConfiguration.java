@@ -20,6 +20,13 @@ public class ActuatorAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(LoggerHealthIndicator.class)
+    @ConditionalOnEnabledHealthIndicator("logger")
+    public LoggerHealthIndicator logCountHealthIndicator() {
+        return new LoggerHealthIndicator();
+    }
+
+    @Bean
     @ConditionalOnMissingBean(ResourceEndpoint.class)
     @ConditionalOnAvailableEndpoint(endpoint = ResourceEndpoint.class)
     public ResourceEndpoint resourceEndpoint() {

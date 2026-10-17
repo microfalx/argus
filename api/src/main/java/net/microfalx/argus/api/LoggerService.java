@@ -110,6 +110,24 @@ public interface LoggerService extends Service {
     CounterStatisticalSummary getErrorTrend();
 
     /**
+     * Returns the counts of the warning events at 5m, 1h and 24h intervals.
+     * <p>
+     * This is similar to the server load average, but for warning events.
+     *
+     * @return a non-null instance
+     */
+    int[] getWarningCounts();
+
+    /**
+     * Returns the counts of the error events at 5m, 1h and 24h intervals.
+     * <p>
+     * This is similar to the server load average, but for error events.
+     *
+     * @return a non-null instance
+     */
+    int[] getErrorCounts();
+
+    /**
      * Registers the loggers.
      */
     void register();

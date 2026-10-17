@@ -148,6 +148,16 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
         return errorCounter;
     }
 
+    @Override
+    public int[] getWarningCounts() {
+        return getCounts(warningCounter);
+    }
+
+    @Override
+    public int[] getErrorCounts() {
+        return getCounts(errorCounter);
+    }
+
     public void register() {
         registerAppenders();
     }
@@ -263,6 +273,16 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
                 LOGGER.debug("Failed to forward logging event to '{}', event {}", listenerClassName, event);
                 LoggerUtils.METRICS_FORWARD_FAILURE.increment(listenerClassName);
             }
+        }
+    }
+
+    private int[] getCounts(CounterStatisticalSummary counter) {
+        synchronized (CounterStatisticalSummary.LOCK) {
+            return new int[]{
+                    Math.round(counter.getCount(Duration.ofMinutes(5))),
+                    Math.round(counter.getCount(Duration.ofHours(1))),
+                    Math.round(counter.getCount(Duration.ofHours(24)))
+            };
         }
     }
 
