@@ -58,13 +58,13 @@ public class ReportPerformanceTest {
     private void printStats() {
         VirtualMachineMetrics jvmMetrics = VirtualMachineMetrics.get();
         VirtualMachine jvm = VirtualMachine.get();
-       /* LOGGER.info("Generate report: CPU={}/{}, Memory: Heap={}/{} -> Tenured={}/{}",
+        LOGGER.info("Generate report: CPU={}/{}, Memory: Heap={}/{} -> Tenured={}/{}",
                 formatPercent(jvmMetrics.getAverageCpuSinceStartup()),
                 formatPercent(jvm.getProcess().getCpuTotal()),
                 formatBytes(jvmMetrics.getHeapMemoryAverageSinceStartup()),
                 formatBytes(jvm.getHeapUsedMemory()),
                 formatBytes(jvmMetrics.getTenuredMemoryAverageSinceStartup()),
-                formatBytes(jvm.getTenuredMemoryPool().getUsed()));*/
+                formatBytes(jvm.getTenuredMemoryPool().getUsed()));
     }
 
     private void saveReportLocation(Resource resource) {
@@ -78,7 +78,7 @@ public class ReportPerformanceTest {
     }
 
     private void checkIfOpen() {
-        if (millisSince(lastOpen) < THIRTY_SECONDS) return;
+        if (millisSince(lastOpen) < ONE_MINUTE) return;
         lastOpen = currentTimeMillis();
         ReportTestUtils.openInBrowser(report);
     }
