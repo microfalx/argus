@@ -1,5 +1,6 @@
 package net.microfalx.argus.api;
 
+import net.microfalx.metrics.statistics.CounterStatisticalSummary;
 import net.microfalx.service.api.Service;
 
 import java.io.File;
@@ -93,6 +94,20 @@ public interface LoggerService extends Service {
      * @return a non-null instance
      */
     Collection<LoggerEvent> getLoggerEvents();
+
+    /**
+     * Returns the trend of the warning events.
+     *
+     * @return a non-null instance
+     */
+    CounterStatisticalSummary getWarningTrend();
+
+    /**
+     * Returns the trend of the error events.
+     *
+     * @return a non-null instance
+     */
+    CounterStatisticalSummary getErrorTrend();
 
     /**
      * Registers the loggers.

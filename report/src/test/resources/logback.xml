@@ -9,7 +9,7 @@
         </encoder>
     </appender>
 
-    <logger name="net.microfalx.argus.report.ReportTest" level="OFF" additivity="false" />
+    <!--logger name="net.microfalx.argus.report.ReportTest" level="OFF" additivity="false" /-->
 
     <root level="INFO">
         <appender-ref ref="STDOUT" />

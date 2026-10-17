@@ -40,7 +40,7 @@ public class ReportPerformanceTest {
         while (true) {
             ReportTestUtils.scrape(reportService, true);
             printStats();
-            Report.Navigation navigation = new Report.Navigation(Report.Theme.LIGHT).withCollapsed(true);
+            Report.Navigation navigation = new Report.Navigation(Report.Theme.DARK).withCollapsed(false);
             Report report = reportService.createReport().setTheme(Report.Theme.LIGHT)
                     .setNavigation(navigation);
             Resource resource = Resource.memory();
@@ -58,13 +58,13 @@ public class ReportPerformanceTest {
     private void printStats() {
         VirtualMachineMetrics jvmMetrics = VirtualMachineMetrics.get();
         VirtualMachine jvm = VirtualMachine.get();
-        LOGGER.info("Generate report: CPU={}/{}, Memory: Heap={}/{} -> Tenured={}/{}",
+       /* LOGGER.info("Generate report: CPU={}/{}, Memory: Heap={}/{} -> Tenured={}/{}",
                 formatPercent(jvmMetrics.getAverageCpuSinceStartup()),
                 formatPercent(jvm.getProcess().getCpuTotal()),
                 formatBytes(jvmMetrics.getHeapMemoryAverageSinceStartup()),
                 formatBytes(jvm.getHeapUsedMemory()),
                 formatBytes(jvmMetrics.getTenuredMemoryAverageSinceStartup()),
-                formatBytes(jvm.getTenuredMemoryPool().getUsed()));
+                formatBytes(jvm.getTenuredMemoryPool().getUsed()));*/
     }
 
     private void saveReportLocation(Resource resource) {

@@ -9,6 +9,7 @@ import net.microfalx.lang.Initializable;
 import net.microfalx.lang.JvmUtils;
 import net.microfalx.lang.annotation.Provider;
 import net.microfalx.lang.annotation.SizeOf;
+import net.microfalx.metrics.statistics.CounterStatisticalSummary;
 import net.microfalx.resource.Resource;
 import net.microfalx.service.api.Logger;
 import net.microfalx.service.api.Service;
@@ -20,6 +21,7 @@ import net.microfalx.threadpool.ThreadPool;
 import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
@@ -48,6 +50,9 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
 
     private Store<LoggerEvent, Long> store;
     private Store<Alert, String> alertStore;
+
+    private final CounterStatisticalSummary warningCounter = new CounterStatisticalSummary(Duration.ofMinutes(5), Duration.ofHours(24));
+    private final CounterStatisticalSummary errorCounter = new CounterStatisticalSummary(Duration.ofMinutes(5), Duration.ofHours(24));
 
     private volatile Collection<LoggerListener> listeners = Collections.emptyList();
     private final Collection<LoggerListener> registeredListeners = new CopyOnWriteArraySet<>();
@@ -133,6 +138,16 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
         return immutableCollection(lastLoggerEvents);
     }
 
+    @Override
+    public CounterStatisticalSummary getWarningTrend() {
+        return warningCounter;
+    }
+
+    @Override
+    public CounterStatisticalSummary getErrorTrend() {
+        return errorCounter;
+    }
+
     public void register() {
         registerAppenders();
     }
@@ -186,7 +201,7 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
     public void onEvent(LoggerEvent event) {
         requireNonNull(event);
         try {
-            trackLogEvents(event);
+            incrementCounts(event);
             processLogEvent(event);
             processAlertEvent(event);
             forwardLogEvent(event);
@@ -239,12 +254,6 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
         getThreadPool().submit(new ArchiveLogsTask());
     }
 
-    private void trackLogEvents(LoggerEvent event) {
-        METRICS_COUNTS_SEVERITY.count(event.getLevel().name());
-        if (event.getExceptionClassName() != null) METRICS_COUNTS_EXCEPTION.count(event.getExceptionClassName());
-    }
-
-
     private void forwardLogEvent(LoggerEvent event) {
         for (LoggerListener listener : listeners) {
             try {
@@ -253,6 +262,19 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
                 String listenerClassName = ClassUtils.getName(listener);
                 LOGGER.debug("Failed to forward logging event to '{}', event {}", listenerClassName, event);
                 LoggerUtils.METRICS_FORWARD_FAILURE.increment(listenerClassName);
+            }
+        }
+    }
+
+    private void incrementCounts(LoggerEvent event) {
+        METRICS_COUNTS_SEVERITY.count(event.getLevel().name());
+        if (event.getExceptionClassName() != null) METRICS_COUNTS_EXCEPTION.count(event.getExceptionClassName());
+        if (event.getLevel().isLowerSeverity(LoggerEvent.Level.WARN)) return;
+        synchronized (CounterStatisticalSummary.LOCK) {
+            if (event.getLevel().isLowerSeverity(LoggerEvent.Level.ERROR)) {
+                warningCounter.increment();
+            } else {
+                errorCounter.increment();
             }
         }
     }
