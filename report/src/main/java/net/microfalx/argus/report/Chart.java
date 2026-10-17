@@ -343,11 +343,11 @@ public class Chart extends NamedIdentityAware<String> {
         }
     }
 
-    public static class AreaChart<X, Y extends Number> extends MultiSeriesChart<X, Y> {
+    public static class AreaSeriesChart<X, Y extends Number> extends MultiSeriesChart<X, Y> {
 
         private boolean stacked;
 
-        public AreaChart(String id, String name) {
+        public AreaSeriesChart(String id, String name) {
             super(id, name);
         }
 
@@ -355,7 +355,25 @@ public class Chart extends NamedIdentityAware<String> {
             return stacked;
         }
 
-        public AreaChart<X, Y> setStacked(boolean stacked) {
+        public AreaSeriesChart<X, Y> setStacked(boolean stacked) {
+            this.stacked = stacked;
+            return this;
+        }
+    }
+
+    public static class ColumnSeriesChart<X, Y extends Number> extends MultiSeriesChart<X, Y> {
+
+        private boolean stacked;
+
+        public ColumnSeriesChart(String id, String name) {
+            super(id, name);
+        }
+
+        public boolean isStacked() {
+            return stacked;
+        }
+
+        public ColumnSeriesChart<X, Y> setStacked(boolean stacked) {
             this.stacked = stacked;
             return this;
         }

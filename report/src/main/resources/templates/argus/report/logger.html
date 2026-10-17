@@ -32,6 +32,13 @@
 </div>
 
 <div th:fragment="content">
+    <h3 class="pt-2">Trends</h3>
+    <div class="container-fluid">
+        <div class="row justify-content-start g-2">
+            <div class="col-6" id="logger_warning_trend"></div>
+            <div class="col-6" id="logger_error_trend"></div>
+        </div>
+    </div>
     <h3 class="pt-2">Alerts</h3>
     <div th:replace="~{logger :: render-alerts}" th:unless="${alerts.isEmpty()}"></div>
     <p th:if="${alerts.isEmpty()}">
@@ -40,6 +47,8 @@
 </div>
 
 <div th:fragment="code" th:remove="tag">
+    <div th:replace="~{fragments/chart :: columnSeries(${loggerHelper.getWarningTrendBarChart('logger_warning_trend')})}"></div>
+    <div th:replace="~{fragments/chart :: columnSeries(${loggerHelper.getErrorTrendBarChart('logger_error_trend')})}"></div>
 </div>
 
 </body>

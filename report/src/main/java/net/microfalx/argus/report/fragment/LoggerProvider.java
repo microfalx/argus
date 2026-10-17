@@ -3,6 +3,8 @@ package net.microfalx.argus.report.fragment;
 import net.microfalx.argus.api.Alert;
 import net.microfalx.argus.api.LoggerService;
 import net.microfalx.argus.report.*;
+import net.microfalx.metrics.Series;
+import net.microfalx.metrics.statistics.CounterStatisticalSummary;
 
 import java.util.Collection;
 
@@ -64,9 +66,35 @@ public class LoggerProvider extends AbstractFragmentProvider {
         return chart;
     }
 
+    public Chart.ColumnSeriesChart<Long, Float> getWarningTrendBarChart(String id) {
+        Chart.ColumnSeriesChart<Long, Float> chart = new Chart.ColumnSeriesChart<>(id, "Warnings");
+        chart.getLegend().setShow(false);
+        chart.add(Chart.convert("Warnings", getWarningTrend()));
+        return chart;
+    }
+
+    public Chart.ColumnSeriesChart<Long, Float> getErrorTrendBarChart(String id) {
+        Chart.ColumnSeriesChart<Long, Float> chart = new Chart.ColumnSeriesChart<>(id, "Errors");
+        chart.getLegend().setShow(false);
+        chart.add(Chart.convert("Errors", getErrorTrend()));
+        return chart;
+    }
+
     private Collection<Alert> doGetAlerts() {
         Report report = Report.current();
         return LoggerService.getInstance().getAlerts(report.getStartTime().toLocalDateTime(),
                 report.getEndTime().toLocalDateTime());
+    }
+
+    private Series getWarningTrend() {
+        synchronized (CounterStatisticalSummary.LOCK) {
+            return LoggerService.getInstance().getWarningTrend().getSeries("Warnings");
+        }
+    }
+
+    private Series getErrorTrend() {
+        synchronized (CounterStatisticalSummary.LOCK) {
+            return LoggerService.getInstance().getErrorTrend().getSeries("Warnings");
+        }
     }
 }

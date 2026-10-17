@@ -69,9 +69,30 @@
     </script>
 </div>
 
-<div th:fragment="area(chart)" th:remove="tag">
+<div th:fragment="columnSeries(chart)" th:remove="tag">
     <script th:inline="javascript">
-        renderAreaChart({
+        renderColumnSeriesChart({
+            id: [[${chart.id}]],
+            unit: [[${chart.yaxis.unit}]],
+            series: [[${chart.getSeries()}]],
+            chart: {
+                width: [[${chart.width}]],
+                height: [[${chart.height}]],
+                stacked: [[${chart.stacked}]]
+            },
+            title: {
+                text: [[${chart.name}]]
+            },
+            xaxis: {
+                type: [[${chart.getXDataType()}]]
+            }
+        });
+    </script>
+</div>
+
+<div th:fragment="areaSeries(chart)" th:remove="tag">
+    <script th:inline="javascript">
+        renderAreaSeriesChart({
             id: [[${chart.id}]],
             unit: [[${chart.yaxis.unit}]],
             series: [[${chart.getSeries()}]],

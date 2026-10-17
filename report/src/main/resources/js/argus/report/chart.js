@@ -128,12 +128,91 @@ function renderColumnChart(options) {
 }
 
 /**
+ * Renders a column chart using ApexCharts for the given element ID.
+ *
+ * @param {Object} options options to configure the chart.
+ * @see #renderChart
+ */
+function renderColumnSeriesChart(options) {
+    const unit = options.unit;
+    delete options.unit;
+    options = applyProperties({
+        chart: {
+            type: 'bar',
+            animations: {
+                enabled: false
+            },
+            toolbar: {
+                show: false
+            },
+            zoom: {
+                enabled: false,
+            }
+        },
+        dataLabels: {
+            enabled: false
+        },
+        plotOptions: {
+            bar: {
+                horizontal: false,
+                columnWidth: '55%'
+            }
+        },
+        title: {
+            align: 'left',
+            margin: 10
+        },
+        legend: {
+            position: 'top',
+            horizontalAlign: 'left'
+        },
+        xaxis: {
+            type: 'datetime',
+            labels: {
+                datetimeFormatter: {
+                    year: 'yyyy',
+                    month: 'MMM \'yy',
+                    day: 'dd MMM',
+                    hour: 'HH:mm'
+                }
+            }
+        },
+        yaxis: {
+            labels: {
+                formatter: function (value) {
+                    return formatValue(value, unit)
+                }
+            }
+        },
+        tooltip: {
+            enabled: true,
+            followCursor: true,
+            onDatasetHover: {
+                highlightDataSeries: true,
+            },
+            x: {
+                formatter: dateTimeFormatter
+            },
+            y: {
+                formatter: function (value) {
+                    return formatValue(value, unit)
+                },
+                title: {
+                    formatter: (seriesName) => seriesName,
+                },
+            }
+        },
+    }, options);
+    renderChart(options);
+}
+
+/**
  * Renders a bar chart using ApexCharts for the given element ID.
  *
  * @param {Object} options options to configure the chart.
  * @see #renderChart
  */
-function renderAreaChart(options) {
+function renderAreaSeriesChart(options) {
     const unit = options.unit;
     delete options.unit;
     options = applyProperties({
@@ -153,6 +232,7 @@ function renderAreaChart(options) {
             enabled: false
         },
         stroke: {
+            width: 2,
             curve: 'monotoneCubic'
         },
         fill: {
@@ -182,6 +262,9 @@ function renderAreaChart(options) {
             followCursor: true,
             onDatasetHover: {
                 highlightDataSeries: true,
+            },
+            x: {
+                formatter: dateTimeFormatter
             },
             y: {
                 formatter: function (value) {
@@ -250,6 +333,24 @@ function renderTreeMapChart(options) {
         }
     }, options);
     renderChart(options);
+}
+
+/**
+ * Use the browser locale to format the date and time for the given value.
+ *
+ * @param {string|number} value the value as a timestamp or date string to format (accepted by Date).
+ * @return {string|number}
+ */
+function dateTimeFormatter(value) {
+    return new Date(value).toLocaleString(navigator.language, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+    });
 }
 
 /**
