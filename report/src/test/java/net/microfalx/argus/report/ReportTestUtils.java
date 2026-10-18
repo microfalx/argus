@@ -9,11 +9,15 @@ import net.microfalx.jvm.VirtualMachineMetrics;
 import net.microfalx.lang.JvmUtils;
 import net.microfalx.metrics.Metrics;
 import net.microfalx.resource.Resource;
+import net.microfalx.service.api.ServiceLocator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.io.File;
+import java.sql.SQLTransientException;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static net.microfalx.lang.FileUtils.getFileName;
 import static net.microfalx.lang.FileUtils.validateDirectoryExists;
@@ -22,6 +26,7 @@ public class ReportTestUtils {
 
     private static final Metrics METRICS = Metrics.of("Test");
     private static final Faker faker = new Faker();
+    private static final Random random = ThreadLocalRandom.current();
 
     static void setupLogs() {
         File directory = new File(JvmUtils.getMavenTargetDirectory().orElseThrow(), "logs");
@@ -48,6 +53,8 @@ public class ReportTestUtils {
 
     static void collectStats(ReportService reportService) {
         LoggerService.getInstance().register();
+        loggerActivity(true);
+        ServiceLocator.current().ready();
         for (int i = 0; i < 5; i++) {
             scrape(reportService, true);
             try {
@@ -67,7 +74,7 @@ public class ReportTestUtils {
             sm.scrape();
             healthService.update();
         }
-        loggerActivity();
+        loggerActivity(false);
         metricsActivity();
         issueTypeActivities(reportService);
     }
@@ -107,10 +114,38 @@ public class ReportTestUtils {
         });
     }
 
-    private static void loggerActivity() {
+    private static void loggerActivity(boolean force) {
+        if (ThreadLocalRandom.current().nextFloat() < 0.5 && !force) return;
         Logger logger = LoggerFactory.getLogger(ReportTest.class);
-        logger.error(faker.famousLastWords().lastWords(), new RuntimeException(faker.lorem().characters()));
-        logger.warn(faker.chuckNorris().fact());
-        logger.error(faker.lebowski().quote(), new RuntimeException(faker.simpsons().quote()));
+        logger.error(getErrorMessage(), createException());
+        logger.warn(faker.famousLastWords().lastWords());
+        if (ThreadLocalRandom.current().nextFloat() < 0.5) {
+            logger.error(faker.lebowski().quote(), createException());
+        }
     }
+
+    private static String getErrorMessage() {
+        return random.nextFloat() < 0.5 ? faker.slackEmoji().activity() : faker.slackEmoji().travelAndPlaces();
+    }
+
+    private static Throwable createException() {
+        String errorMsg = "Unable to " + faker.hacker().verb() + " the " + faker.hacker().noun()
+                + " " + faker.hacker().adjective();
+        try {
+            return (Throwable) EXCEPTION_TYPES[ThreadLocalRandom.current().nextInt(EXCEPTION_TYPES.length)]
+                    .getDeclaredConstructor(String.class).newInstance(errorMsg);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static final Class<?>[] EXCEPTION_TYPES = new Class<?>[]{
+            RuntimeException.class,
+            IllegalArgumentException.class,
+            IllegalStateException.class,
+            NullPointerException.class,
+            IndexOutOfBoundsException.class,
+            SecurityException.class,
+            SQLTransientException.class
+    };
 }

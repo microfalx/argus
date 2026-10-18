@@ -423,14 +423,20 @@ public final class Health extends IdentityAware<String> implements Timestampable
      * @param score the score
      * @return a non-null instance
      */
-    private static RichText scoreToRichText(float score) {
+    public static RichText scoreToRichText(float score) {
         Severity severity = toSeverity(score);
         RichText text = RichText.create().fg(toColor(severity));
         if (severity == Severity.CRITICAL) text.bold();
         return text.a(formatNumber(score, 1));
     }
 
-    private static RichText.Color toColor(Severity severity) {
+    /**
+     * Converts a severity to a color.
+     *
+     * @param severity the severity
+     * @return a non-null instance
+     */
+    public static RichText.Color toColor(Severity severity) {
         return switch (severity) {
             case NA -> RichText.Color.GRAY;
             case OK -> RichText.Color.GREEN;

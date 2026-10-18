@@ -1,5 +1,6 @@
 package net.microfalx.argus.api;
 
+import net.microfalx.lang.RichText;
 import net.microfalx.metrics.statistics.CounterStatisticalSummary;
 import net.microfalx.service.api.Service;
 
@@ -110,7 +111,23 @@ public interface LoggerService extends Service {
     CounterStatisticalSummary getErrorTrend();
 
     /**
-     * Returns the counts of the warning events at 5m, 1h and 24h intervals.
+     * Returns a report of the warning events.
+     *
+     * @param format the format of the report
+     * @return a non-null instance
+     */
+    String getWarningReport(RichText.Format format);
+
+    /**
+     * Returns a report of the error events.
+     *
+     * @param format the format of the report
+     * @return a non-null instance
+     */
+    String getErrorReport(RichText.Format format);
+
+    /**
+     * Returns the counts of the warning events at startup, 5m, 1h and 24h intervals.
      * <p>
      * This is similar to the server load average, but for warning events.
      *
@@ -119,7 +136,7 @@ public interface LoggerService extends Service {
     int[] getWarningCounts();
 
     /**
-     * Returns the counts of the error events at 5m, 1h and 24h intervals.
+     * Returns the counts of the error events at startup, 5m, 1h and 24h intervals.
      * <p>
      * This is similar to the server load average, but for error events.
      *

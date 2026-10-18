@@ -1,7 +1,6 @@
 package net.microfalx.argus.spring.actuator;
 
 import net.microfalx.argus.api.LoggerService;
-import net.microfalx.lang.FormatterUtils;
 import net.microfalx.lang.RichText;
 import org.slf4j.event.Level;
 import org.springframework.boot.actuate.health.AbstractHealthIndicator;
@@ -18,7 +17,7 @@ import static net.microfalx.argus.logger.LoggerUtils.countAt;
  */
 public class LoggerHealthIndicator extends AbstractHealthIndicator {
 
-    private static final String[] WINDOWS = {"5m", "1h", "24h"};
+    private static final String[] WINDOWS = {"startup", "5m", "1h", "24h"};
 
     private final Supplier<LoggerService> loggerServiceSupplier;
 
@@ -50,31 +49,23 @@ public class LoggerHealthIndicator extends AbstractHealthIndicator {
 
     private Map<String, Object> toDetails(LoggerService loggerService) {
         Map<String, Object> details = new LinkedHashMap<>();
-        int[] warningCounts = loggerService.getWarningCounts();
-        int[] errorCounts = loggerService.getErrorCounts();
         details.put("windows", WINDOWS);
-        details.put("warnings", toWindowCounts(Level.WARN, warningCounts));
-        details.put("errors", toWindowCounts(Level.ERROR, errorCounts));
+        details.put("warnings", toWindowCounts(loggerService, Level.WARN));
+        details.put("errors", toWindowCounts(loggerService, Level.ERROR));
         return details;
     }
 
-    private Map<String, Object> toWindowCounts(Level level, int[] counts) {
+    private Map<String, Object> toWindowCounts(LoggerService loggerService, Level level) {
         Map<String, Object> values = new LinkedHashMap<>();
-        values.put("reportText", getReportCounts(RichText.Format.TEXT, counts));
-        values.put("reportHtml", getReportCounts(RichText.Format.HTML, counts));
+        int[] counts = level == Level.WARN ? loggerService.getWarningCounts() : loggerService.getErrorCounts();
+        values.put("reportText", loggerService.getWarningReport(RichText.Format.TEXT));
+        values.put("reportHtml", loggerService.getWarningReport(RichText.Format.HTML));
         for (int i = 0; i < WINDOWS.length; i++) {
             values.put(WINDOWS[i], countAt(counts, i));
         }
         return values;
     }
 
-    private String getReportCounts(RichText.Format format, int[] counts) {
-        return RichText.create()
-                .a(FormatterUtils.formatCount(countAt(counts, 0))).a("/")
-                .a(FormatterUtils.formatCount(countAt(counts, 1))).a("/")
-                .a(FormatterUtils.formatCount(countAt(counts, 2)))
-                .render(format);
-    }
 
 }
 

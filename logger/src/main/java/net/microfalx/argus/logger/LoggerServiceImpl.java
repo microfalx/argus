@@ -7,6 +7,7 @@ import net.microfalx.configuration.Configuration;
 import net.microfalx.lang.ClassUtils;
 import net.microfalx.lang.Initializable;
 import net.microfalx.lang.JvmUtils;
+import net.microfalx.lang.RichText;
 import net.microfalx.lang.annotation.Provider;
 import net.microfalx.lang.annotation.SizeOf;
 import net.microfalx.metrics.statistics.CounterStatisticalSummary;
@@ -17,6 +18,7 @@ import net.microfalx.store.api.Query;
 import net.microfalx.store.api.Store;
 import net.microfalx.store.api.StoreService;
 import net.microfalx.threadpool.ThreadPool;
+import org.slf4j.event.Level;
 
 import java.io.File;
 import java.net.InetAddress;
@@ -28,12 +30,13 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static net.microfalx.argus.logger.LoggerUtils.METRICS_COUNTS_EXCEPTION;
-import static net.microfalx.argus.logger.LoggerUtils.METRICS_COUNTS_SEVERITY;
+import static net.microfalx.argus.logger.LoggerHealthContributor.*;
+import static net.microfalx.argus.logger.LoggerUtils.*;
 import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 import static net.microfalx.lang.ClassUtils.resolveProviderInstances;
 import static net.microfalx.lang.CollectionUtils.immutableCollection;
 import static net.microfalx.lang.ExceptionUtils.getRootCauseName;
+import static net.microfalx.lang.FormatterUtils.formatCount;
 
 @Provider
 public class LoggerServiceImpl extends AbstractService implements LoggerService, Service.Lifecycle,
@@ -51,7 +54,9 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
     private Store<LoggerEvent, Long> store;
     private Store<Alert, String> alertStore;
 
+    private int warningsStartup;
     private final CounterStatisticalSummary warningCounter = new CounterStatisticalSummary(Duration.ofMinutes(5), Duration.ofHours(24));
+    private int errorsStartup;
     private final CounterStatisticalSummary errorCounter = new CounterStatisticalSummary(Duration.ofMinutes(5), Duration.ofHours(24));
 
     private volatile Collection<LoggerListener> listeners = Collections.emptyList();
@@ -149,13 +154,28 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
     }
 
     @Override
+    public String getWarningReport(RichText.Format format) {
+        return getReportCounts(format, getWarningCounts(), Level.WARN);
+    }
+
+    @Override
+    public String getErrorReport(RichText.Format format) {
+        return getReportCounts(format, getErrorCounts(), Level.ERROR);
+    }
+
+    @Override
     public int[] getWarningCounts() {
-        return getCounts(warningCounter);
+        return getCounts(warningCounter, Level.WARN);
     }
 
     @Override
     public int[] getErrorCounts() {
-        return getCounts(errorCounter);
+        return getCounts(errorCounter, Level.ERROR);
+    }
+
+    @Override
+    public void ready() {
+        storeStartupCounts();
     }
 
     public void register() {
@@ -276,14 +296,28 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
         }
     }
 
-    private int[] getCounts(CounterStatisticalSummary counter) {
+    private void storeStartupCounts() {
+        warningsStartup = (int) warningCounter.getCount();
+        errorsStartup = (int) errorCounter.getCount();
+    }
+
+    private int[] getCounts(CounterStatisticalSummary summary, Level level) {
         synchronized (CounterStatisticalSummary.LOCK) {
             return new int[]{
-                    Math.round(counter.getCount(Duration.ofMinutes(5))),
-                    Math.round(counter.getCount(Duration.ofHours(1))),
-                    Math.round(counter.getCount(Duration.ofHours(24)))
+                    level == Level.WARN ? warningsStartup : errorsStartup,
+                    Math.round(summary.getCount(Duration.ofMinutes(5))),
+                    Math.round(summary.getCount(Duration.ofHours(1))),
+                    Math.round(summary.getCount(Duration.ofHours(24)))
             };
         }
+    }
+
+    private String getReportCounts(RichText.Format format, int[] counts, Level level) {
+        return RichText.create()
+                .a(getCountText(countAt(counts, 0), level == Level.WARN ? WARNING_5M : ERROR_5M)).a("/")
+                .a(getCountText(countAt(counts, 1), level == Level.WARN ? WARNING_1H : ERROR_1H)).a("/")
+                .a(getCountText(countAt(counts, 2), level == Level.WARN ? WARNING_24H : ERROR_24H)).a("/")
+                .render(format);
     }
 
     private void incrementCounts(LoggerEvent event) {
@@ -367,6 +401,13 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
         if (listener instanceof Initializable) {
             ((Initializable) listener).initialize();
         }
+    }
+
+    private RichText getCountText(int count, Thresholds thresholds) {
+        Health.Severity severity = Health.toSeverity(thresholds.getScore(count));
+        RichText text = RichText.create().fg(Health.toColor((severity)));
+        if (severity == Health.Severity.CRITICAL) text.bold();
+        return text.a(formatCount(count));
     }
 
     class ResumeLazyTask implements Runnable {
