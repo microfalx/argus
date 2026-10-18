@@ -1,13 +1,17 @@
 package net.microfalx.argus.spring.actuator;
 
 import net.microfalx.argus.api.LoggerService;
+import net.microfalx.lang.FormatterUtils;
+import net.microfalx.lang.RichText;
+import org.slf4j.event.Level;
 import org.springframework.boot.actuate.health.AbstractHealthIndicator;
 import org.springframework.boot.actuate.health.Health;
 
-import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Supplier;
+
+import static net.microfalx.argus.logger.LoggerUtils.countAt;
 
 /**
  * A Spring Boot health indicator exposing recent warning/error log counts.
@@ -46,35 +50,32 @@ public class LoggerHealthIndicator extends AbstractHealthIndicator {
 
     private Map<String, Object> toDetails(LoggerService loggerService) {
         Map<String, Object> details = new LinkedHashMap<>();
-        int[] warningCounts = resolveCounts(loggerService, "getWarningCounts");
-        int[] errorCounts = resolveCounts(loggerService, "getErrorCounts");
+        int[] warningCounts = loggerService.getWarningCounts();
+        int[] errorCounts = loggerService.getErrorCounts();
         details.put("windows", WINDOWS);
-        details.put("warnings", toWindowCounts(warningCounts));
-        details.put("errors", toWindowCounts(errorCounts));
+        details.put("warnings", toWindowCounts(Level.WARN, warningCounts));
+        details.put("errors", toWindowCounts(Level.ERROR, errorCounts));
         return details;
     }
 
-    private int[] resolveCounts(LoggerService loggerService, String methodName) {
-        try {
-            Method method = loggerService.getClass().getMethod(methodName);
-            Object counts = method.invoke(loggerService);
-            return counts instanceof int[] ? (int[]) counts : new int[0];
-        } catch (Exception e) {
-            return new int[0];
-        }
-    }
-
-    private Map<String, Integer> toWindowCounts(int[] counts) {
-        Map<String, Integer> values = new LinkedHashMap<>();
+    private Map<String, Object> toWindowCounts(Level level, int[] counts) {
+        Map<String, Object> values = new LinkedHashMap<>();
+        values.put("reportText", getReportCounts(RichText.Format.TEXT, counts));
+        values.put("reportHtml", getReportCounts(RichText.Format.HTML, counts));
         for (int i = 0; i < WINDOWS.length; i++) {
             values.put(WINDOWS[i], countAt(counts, i));
         }
         return values;
     }
 
-    private int countAt(int[] counts, int index) {
-        return counts != null && index < counts.length ? counts[index] : 0;
+    private String getReportCounts(RichText.Format format, int[] counts) {
+        return RichText.create()
+                .a(FormatterUtils.formatCount(countAt(counts, 0))).a("/")
+                .a(FormatterUtils.formatCount(countAt(counts, 1))).a("/")
+                .a(FormatterUtils.formatCount(countAt(counts, 2)))
+                .render(format);
     }
+
 }
 
 

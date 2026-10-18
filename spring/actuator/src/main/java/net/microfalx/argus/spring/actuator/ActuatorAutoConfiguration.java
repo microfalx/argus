@@ -22,7 +22,7 @@ public class ActuatorAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(LoggerHealthIndicator.class)
     @ConditionalOnEnabledHealthIndicator("logger")
-    public LoggerHealthIndicator logCountHealthIndicator() {
+    public LoggerHealthIndicator loggerHealthIndicator() {
         return new LoggerHealthIndicator();
     }
 

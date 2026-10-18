@@ -31,6 +31,17 @@ public class LoggerUtils {
     }
 
     /**
+     * Returns a safe count at the given index.
+     *
+     * @param counts the array of counts
+     * @param index  the index
+     * @return the count, 0 if the array is null or the index is out of bounds
+     */
+    public static int countAt(int[] counts, int index) {
+        return counts != null && index < counts.length ? counts[index] : 0;
+    }
+
+    /**
      * Returns the root logger for Logback.
      *
      * @return a non-null instance

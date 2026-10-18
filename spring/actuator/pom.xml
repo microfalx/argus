@@ -43,6 +43,12 @@
 
         <dependency>
             <groupId>net.microfalx.argus</groupId>
+            <artifactId>argus-logger</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>net.microfalx.argus</groupId>
             <artifactId>argus-spring-core</artifactId>
             <version>${project.version}</version>
         </dependency>
