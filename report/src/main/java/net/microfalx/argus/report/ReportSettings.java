@@ -83,5 +83,10 @@ public class ReportSettings {
      */
     private String systemName;
 
+    /**
+     * The version of the reporting system.
+     */
+    private String systemVersion;
+
 
 }

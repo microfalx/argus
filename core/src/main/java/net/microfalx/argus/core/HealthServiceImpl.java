@@ -100,6 +100,9 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
         return switch (type) {
             case SERVICE -> createServiceResource();
             case SERVER -> createServerResource();
+            case DATABASE -> createDatabaseResource();
+            case CACHE -> createCacheResource();
+            case BROKER -> createBrokerResource();
             default -> throw new IllegalArgumentException("Unknown resource type: " + type);
         };
     }
@@ -403,6 +406,27 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
         Resource resource = (Resource) Resource.create(Resource.Type.SERVER, getHostname())
                 .withGroup(getClusterName()).withHealth(health)
                 .withName(getHostname());
+        return resource.withHealth(health);
+    }
+
+    private synchronized Resource createDatabaseResource() {
+        Health health = getHealth(Resource.Type.DATABASE);
+        Resource resource = (Resource) Resource.create(Resource.Type.DATABASE, getHostname())
+                .withHealth(health);
+        return resource.withHealth(health);
+    }
+
+    private synchronized Resource createCacheResource() {
+        Health health = getHealth(Resource.Type.CACHE);
+        Resource resource = (Resource) Resource.create(Resource.Type.CACHE, getHostname())
+                .withHealth(health);
+        return resource.withHealth(health);
+    }
+
+    private synchronized Resource createBrokerResource() {
+        Health health = getHealth(Resource.Type.BROKER);
+        Resource resource = (Resource) Resource.create(Resource.Type.BROKER, getHostname())
+                .withHealth(health);
         return resource.withHealth(health);
     }
 

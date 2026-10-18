@@ -74,6 +74,18 @@
 
             <dependency>
                 <groupId>net.microfalx.argus</groupId>
+                <artifactId>argus-cache</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.microfalx.argus</groupId>
+                <artifactId>argus-database</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.microfalx.argus</groupId>
                 <artifactId>argus-report</artifactId>
                 <version>${project.version}</version>
             </dependency>

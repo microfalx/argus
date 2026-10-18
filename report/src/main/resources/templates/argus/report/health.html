@@ -2,10 +2,23 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 
+<div th:fragment="cards(all)">
+    <h3 th:replace="~{fragments/health :: card('Service', ${serviceResource}, all)}"></h3>
+    <h3 th:replace="~{fragments/health :: card('Server', ${serverResource}, all)}"></h3>
+    <th:block th:if="${databaseResource}">
+        <h3 th:replace="~{fragments/health :: card('Database', ${databaseResource}, all)}"></h3>
+    </th:block>
+    <th:block th:if="${cacheResource}">
+        <h3 th:replace="~{fragments/health :: card('Cache', ${cacheResource}, all)}"></h3>
+    </th:block>
+    <th:block th:if="${brokerResource}">
+        <h3 th:replace="~{fragments/health :: card('Broker', ${brokerResource}, all)}"></h3>
+    </th:block>
+</div>
+
 <div th:fragment="content" class="container-fluid">
     <div class="row row-cards">
-        <h3 th:replace="~{fragments/health :: card('Service', ${serviceResource}, true)}"></h3>
-        <h3 th:replace="~{fragments/health :: card('Server', ${serverResource}, true)}"></h3>
+        <div th:replace="~{health :: cards(true)}"></div>
     </div>
 </div>
 

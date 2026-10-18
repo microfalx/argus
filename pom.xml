@@ -62,6 +62,8 @@
         <module>spi</module>
         <module>core</module>
         <module>inspector</module>
+        <module>cache</module>
+        <module>database</module>
         <module>monitor</module>
         <module>logger</module>
         <module>report</module>
@@ -90,6 +92,7 @@
         <configuration.version>1.0.0-SNAPSHOT</configuration.version>
         <store.version>1.0.0-SNAPSHOT</store.version>
         <threadpool.version>1.0.2-SNAPSHOT</threadpool.version>
+        <database.version>1.0.0-SNAPSHOT</database.version>
         <webjar.version>1.0.2-SNAPSHOT</webjar.version>
 
         <jacoco.file>jacoco.exec</jacoco.file>
@@ -149,6 +152,12 @@
                 <groupId>net.microfalx</groupId>
                 <artifactId>configuration</artifactId>
                 <version>${configuration.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.microfalx</groupId>
+                <artifactId>database</artifactId>
+                <version>${database.version}</version>
             </dependency>
 
             <dependency>
