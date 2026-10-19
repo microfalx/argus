@@ -367,9 +367,9 @@ function renderChart(options) {
         window._chartProcessing = true;
         $(document).ready(function () {
             console.info("Initialize charts");
-            renderNextChar();
+            renderNextChart();
             // just in case, fire a delayed processing
-            setTimeout(renderNextChar, 30000);
+            setTimeout(renderNextChart, 30000);
         });
     }
 }
@@ -379,7 +379,7 @@ function renderChart(options) {
  *
  * This function is called recursively until all charts in the queue are rendered.
  */
-function renderNextChar() {
+function renderNextChart() {
     while (window._chartQueue.length > 0) {
         let options = window._chartQueue.shift();
         if (options) doRenderChart(options);
@@ -402,5 +402,5 @@ function doRenderChart(options) {
             chart.render();
         }, 0);
     }
-    renderNextChar();
+    renderNextChart();
 }
