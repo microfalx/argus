@@ -36,7 +36,6 @@
 </div>
 
 <div th:fragment="card(title, resource, all)" class="col-md-6">
-    <div th:text="${all}"></div>
     <div class="card">
         <div class="ribbon ribbon-top" th:classappend="${helper.getRibbonCls(resource.health.severity)}">
             <span th:text="${helper.formatScore(resource.health.score)}"></span>
