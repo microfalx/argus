@@ -12,7 +12,7 @@ import java.util.Collection;
 import java.util.List;
 
 @Provider
-@Order(40)
+@Order(100)
 @Tag("logger")
 public class LoggerHealthContributor extends AbstractHealthContributor {
 

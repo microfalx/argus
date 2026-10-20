@@ -95,6 +95,7 @@ function initializeSparklines() {
     console.info("Initialize sparklines");
     const sparklineBarElements = $('.sparkline-bar');
     const sparklineBars = sparklineBarElements.toArray();
+    const delayMs = 10;
 
     function processSparkline(element) {
         const isScore = $(element).hasClass('sparkline-score');
@@ -113,7 +114,7 @@ function initializeSparklines() {
             return;
         }
         processSparkline(element);
-        window.setTimeout(processNextSparkline, 0);
+        window.setTimeout(processNextSparkline, delayMs);
     }
 
     window.setTimeout(processNextSparkline, 0);
@@ -122,7 +123,7 @@ function initializeSparklines() {
 function initializeDataTables() {
     console.info("Initialize data tables");
     const tables = $('.datatable').toArray();
-    const delayMs = 50;
+    const delayMs = 10;
 
     function processNextTable() {
         const table = tables.shift();

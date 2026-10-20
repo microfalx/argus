@@ -395,12 +395,13 @@ function doRenderChart(options) {
     const id = options.id;
     delete options.id;
     let dom = document.querySelector("#" + id);
+    const delayMs = 10;
     if (dom) {
         //console.info("Initialize chart :", dom);
         let chart = new ApexCharts(dom, options);
         setTimeout(function () {
             chart.render();
-        }, 0);
+        }, delayMs);
     }
     renderNextChart();
 }
