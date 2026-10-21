@@ -64,6 +64,7 @@
         <module>inspector</module>
         <module>cache</module>
         <module>database</module>
+        <module>broker</module>
         <module>monitor</module>
         <module>logger</module>
         <module>report</module>
