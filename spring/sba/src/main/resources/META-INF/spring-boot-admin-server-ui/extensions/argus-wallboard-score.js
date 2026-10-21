@@ -57,6 +57,23 @@
     return typeof report === 'string' && report.trim().length > 0 ? report : null;
   }
 
+  // Warning/error counts published by the "logger" health indicator (LoggerHealthContributor):
+  // per severity, a reportHtml with one colored count per window ("startup", "5m", "1h", "24h").
+  function extractLogs(instance) {
+    var details = instance && instance.statusInfo && instance.statusInfo.details;
+    var logger = details && details.logger && details.logger.details;
+    if (!logger) return null;
+    var warnings = logger.warnings && logger.warnings.reportHtml;
+    var errors = logger.errors && logger.errors.reportHtml;
+    if (typeof warnings !== 'string' && typeof errors !== 'string') return null;
+    var windows = Array.isArray(logger.windows) && logger.windows.length > 0 ? logger.windows : ['startup', '5m', '1h', '24h'];
+    return {
+      warnings: typeof warnings === 'string' ? warnings : null,
+      errors: typeof errors === 'string' ? errors : null,
+      windows: windows.join(', '),
+    };
+  }
+
   // Native title tooltip (a positioned popup would be clipped by the wallboard hexagons).
   // For an aggregate, names the instance the report comes from.
   function tooltip(instance, named) {
@@ -192,6 +209,44 @@
       existing.replaceWith(replacement);
     } else {
       insertNew(replacement);
+    }
+  }
+
+  function appendLogCount(badge, label, html, windows) {
+    if (html === null) return;
+    var labelEl = document.createElement('span');
+    labelEl.className = 'argus-logs-label';
+    labelEl.textContent = label + ':';
+    badge.appendChild(labelEl);
+    var value = document.createElement('span');
+    value.className = 'argus-logs-value';
+    value.title = label + ' logged, in order: ' + windows;
+    // Rendered by the monitored application, same as the health reportHtml.
+    value.innerHTML = html;
+    badge.appendChild(value);
+  }
+
+  // "Warnings: a/b/c/d  Errors: a/b/c/d" on an instance row, placed before its Health badge.
+  function upsertLogsBadge(info, logs) {
+    var existing = info.parentNode.querySelector(':scope > .argus-logs-badge');
+    if (!logs) {
+      if (existing) existing.remove();
+      return;
+    }
+
+    var sig = (logs.warnings || '') + '|' + (logs.errors || '') + '|' + logs.windows;
+    if (existing && existing.dataset.sig === sig) return;
+
+    var badge = document.createElement('p');
+    badge.className = 'argus-logs-badge is-muted';
+    badge.dataset.sig = sig;
+    appendLogCount(badge, 'Warnings', logs.warnings, logs.windows);
+    appendLogCount(badge, 'Errors', logs.errors, logs.windows);
+
+    if (existing) {
+      existing.replaceWith(badge);
+    } else {
+      info.insertAdjacentElement('afterend', badge);
     }
   }
 
@@ -431,9 +486,11 @@
     var statsByName = collectStats(applications);
     var statsByInstanceId = {};
     var hasReportByInstanceId = {};
+    var logsByInstanceId = {};
     applications.forEach(function (application) {
       (application.instances || []).forEach(function (instance) {
         if (extractReportHtml(instance) !== null) hasReportByInstanceId[instance.id] = true;
+        logsByInstanceId[instance.id] = extractLogs(instance);
         var score = extractScore(instance);
         if (score !== null) {
           statsByInstanceId[instance.id] = {
@@ -472,12 +529,15 @@
       var info = li.querySelector('.instance-item-information');
       if (!info) return;
 
+      // Order after the instance info: logs badge, then Health badge.
+      upsertLogsBadge(info, logsByInstanceId[instanceId] || null);
+
       var stats = statsByInstanceId[instanceId] || null;
-      var next = info.nextElementSibling;
-      var existing = next && next.classList.contains('argus-health-badge') ? next : null;
+      var existing = info.parentNode.querySelector(':scope > .argus-health-badge');
 
       upsertBadge(existing, stats, 'inline', function (badge) {
-        info.insertAdjacentElement('afterend', badge);
+        var logsBadge = info.parentNode.querySelector(':scope > .argus-logs-badge');
+        (logsBadge || info).insertAdjacentElement('afterend', badge);
       });
     });
   }

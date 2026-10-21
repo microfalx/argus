@@ -72,6 +72,31 @@
   margin-left: 0.75rem;
 }
 
+/* Per-instance row: "Warnings: a/b/c/d  Errors: a/b/c/d" log counts, before the Health badge.
+   The counts keep the colors from the logger reportHtml (one per window). */
+.argus-logs-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  margin-left: 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.argus-logs-label {
+  opacity: 0.7;
+}
+
+.argus-logs-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.argus-logs-value + .argus-logs-label {
+  margin-left: 0.5em;
+}
+
 /* Service title row: pushed flush right within the title button, before the
    separate actions area (refresh/notifications), matching the instance row. */
 .argus-health-badge--title {

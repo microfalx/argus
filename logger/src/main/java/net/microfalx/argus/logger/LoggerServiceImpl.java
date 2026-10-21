@@ -4,10 +4,7 @@ import lombok.Getter;
 import net.microfalx.argus.api.*;
 import net.microfalx.argus.core.AbstractService;
 import net.microfalx.configuration.Configuration;
-import net.microfalx.lang.ClassUtils;
-import net.microfalx.lang.Initializable;
-import net.microfalx.lang.JvmUtils;
-import net.microfalx.lang.RichText;
+import net.microfalx.lang.*;
 import net.microfalx.lang.annotation.Provider;
 import net.microfalx.lang.annotation.SizeOf;
 import net.microfalx.metrics.statistics.CounterStatisticalSummary;
@@ -151,6 +148,14 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
     @Override
     public CounterStatisticalSummary getErrorTrend() {
         return errorCounter;
+    }
+
+    @Override
+    public String getReport(Level level, RichText.Format format) {
+        requireNonNull(level);
+        if (level == Level.WARN) return getWarningReport(format);
+        if (level == Level.ERROR) return getErrorReport(format);
+        return StringUtils.NA_STRING;
     }
 
     @Override
@@ -313,10 +318,13 @@ public class LoggerServiceImpl extends AbstractService implements LoggerService,
     }
 
     private String getReportCounts(RichText.Format format, int[] counts, Level level) {
+        requireNonNull(format);
+        requireNonNull(level);
         return RichText.create()
-                .a(getCountText(countAt(counts, 0), level == Level.WARN ? WARNING_5M : ERROR_5M)).a("/")
-                .a(getCountText(countAt(counts, 1), level == Level.WARN ? WARNING_1H : ERROR_1H)).a("/")
-                .a(getCountText(countAt(counts, 2), level == Level.WARN ? WARNING_24H : ERROR_24H)).a("/")
+                .a(getCountText(countAt(counts, 0), level == Level.WARN ? WARNING_STARTUP : ERROR_STARTUP)).a("/")
+                .a(getCountText(countAt(counts, 1), level == Level.WARN ? WARNING_5M : ERROR_5M)).a("/")
+                .a(getCountText(countAt(counts, 2), level == Level.WARN ? WARNING_1H : ERROR_1H)).a("/")
+                .a(getCountText(countAt(counts, 3), level == Level.WARN ? WARNING_24H : ERROR_24H))
                 .render(format);
     }
 

@@ -58,8 +58,8 @@ public class LoggerHealthIndicator extends AbstractHealthIndicator {
     private Map<String, Object> toWindowCounts(LoggerService loggerService, Level level) {
         Map<String, Object> values = new LinkedHashMap<>();
         int[] counts = level == Level.WARN ? loggerService.getWarningCounts() : loggerService.getErrorCounts();
-        values.put("reportText", loggerService.getWarningReport(RichText.Format.TEXT));
-        values.put("reportHtml", loggerService.getWarningReport(RichText.Format.HTML));
+        values.put("reportText", loggerService.getReport(level, RichText.Format.TEXT));
+        values.put("reportHtml", loggerService.getReport(level, RichText.Format.HTML));
         for (int i = 0; i < WINDOWS.length; i++) {
             values.put(WINDOWS[i], countAt(counts, i));
         }

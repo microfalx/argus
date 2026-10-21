@@ -3,6 +3,7 @@ package net.microfalx.argus.api;
 import net.microfalx.lang.RichText;
 import net.microfalx.metrics.statistics.CounterStatisticalSummary;
 import net.microfalx.service.api.Service;
+import org.slf4j.event.Level;
 
 import java.io.File;
 import java.time.LocalDateTime;
@@ -109,6 +110,15 @@ public interface LoggerService extends Service {
      * @return a non-null instance
      */
     CounterStatisticalSummary getErrorTrend();
+
+    /**
+     * Returns a report of the logger events at a given level.
+     *
+     * @param level  the level
+     * @param format the format of the report
+     * @return a non-null instance
+     */
+    String getReport(Level level, RichText.Format format);
 
     /**
      * Returns a report of the warning events.

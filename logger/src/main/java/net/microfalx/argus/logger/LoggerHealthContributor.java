@@ -61,7 +61,7 @@ public class LoggerHealthContributor extends AbstractHealthContributor {
         return JvmUtils.getUptime().compareTo(STARTUP_REPORT_DURATION) <= 0;
     }
 
-    static volatile Thresholds WARNING_STARTUP = Thresholds.create("Startup", 1, 5, Unit.COUNTER)
+    static volatile Thresholds WARNING_STARTUP = Thresholds.create("Startup", 5, 20, Unit.COUNTER)
             .withId("logger.startup.warn").withGroup(WARNING_GROUP);
     static volatile Thresholds WARNING_STARTUP_NA = Thresholds.create("Startup", 0, 0, Unit.COUNTER)
             .withId("logger.startup.warn.na").withGroup(WARNING_GROUP);
