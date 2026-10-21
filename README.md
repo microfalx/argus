@@ -288,7 +288,9 @@ Argus ships three layered Spring modules:
 * **`argus-spring-sba`** adds Spring Boot Admin server-side UI extensions (plain JS/CSS dropped into
   `META-INF/spring-boot-admin-server-ui/extensions`, auto-loaded by SBA):
     * Health badges overlaid on the wallboard hexagons and on the applications list, both service-level
-      (worst score across instances) and per-instance, without modifying SBA's own Vue components.
+      (worst score across instances) and per-instance, without modifying SBA's own Vue components. Hovering a
+      badge lists the worst items behind the score.
+    * Warnings/Errors log-event counters (startup/5m/1h/24h) on each instance row, colored by severity.
     * A "Health Report" tab on each instance's detail page (in the Insights group) that embeds the
       application's own HTML report in an iframe, using the `reportPath` detail published by
       `HealthHealthIndicator`.
@@ -304,19 +306,66 @@ which instance." The same badge is repeated at both levels — next to the appli
 and next to each instance row (individual) — so the worst-scoring instance is identifiable without opening
 every instance's own page.
 
-![Spring Boot Admin applications list with health badges](docs/images/sba-applications-health-badges.png "SBA Applications list, grouped by application: a Health badge next to each application group title (worst score across instances) and next to each individual instance row")
+![Spring Boot Admin applications list with health badges](docs/images/sba-applications-health-badges.png "SBA Applications list, grouped by application: a Health badge next to each application group title (worst score across instances) and, on each instance row, the Warnings/Errors counters followed by the instance's Health badge")
 
-Each service instance can also open its health report overview in HTML form by clicking the button with "hearth" icon, so the operator can see right away which
-component(s) brought the score down without leaving the applications list.
+Each instance row also shows two counters before its Health badge: **Warnings** and **Errors**, the number of
+`WARN`/`ERROR` log events captured by the `logger` module. Each counter is a group of four numbers, one per time
+window — **since startup / last 5 minutes / last hour / last 24 hours** — so an operator can tell at a glance
+whether a problem is old (only the startup count is high) or happening right now (the 5m/1h counts are rising).
+Each number is colored by the score of the matching `Logger` health item (green = healthy, yellow = with issues,
+red = faulty), the same items that feed the instance's health score. Hovering the counters shows a tooltip that
+explains the order of the windows.
 
-![Spring Boot Admin applications list with health overview](docs/images/sba-applications-health-overview.png "SBA Applications list, grouped by application: a Health badge next to each application group title (worst score across instances) and next to each individual instance row")
+![Warnings/Errors counters tooltip](docs/images/sba-applications-health-badges-logger-tooltip.png "Instance row in the SBA Applications list: Warnings 12/1/13/13 and Errors 0/0/2/2, colored per window, with the tooltip 'Counts for: startup/5m/1h/24h'")
 
-Once an operator has narrowed the problem down to one instance, the badges alone or the report overview aren't enough to diagnose
-it — the "Health Report" dashboard closes that gap by embedding that instance's own Argus HTML report (the same
-report described above, with the full group/item breakdown, logs and environment) directly in SBA, without
+The Health badge itself has a tooltip too: hovering it lists the **worst items** — the few health items with the
+lowest scores, each with its group path, score and the value behind it (e.g. `JVM/GC/Eden: 5.1 (162ms)`). This
+answers "what is the problem, and why is the score low?" without opening anything. On an application group badge
+the tooltip shows the worst items of the worst-scoring instance.
+
+![Health badge tooltip with worst items](docs/images/sba-applications-health-badges-worst-items.png "Hovering an instance Health badge (5.1): a tooltip listing the worst items - JVM/GC/Eden 5.1 (162ms), Logger/Warning/Startup 5.6 (12), Logger/Warning/Last 1h 6.8 (12)")
+
+For the full picture, each instance can open its health report overview by clicking the button with the "heart"
+icon. It shows the whole group/item tree as plain text, with each score colored by severity, so the operator can
+see right away which component(s) brought the score down without leaving the applications list.
+
+![Spring Boot Admin applications list with health overview](docs/images/sba-applications-health-overview.png "Health Report overlay for the heimdall instance (score 5.1): the full report as an indented tree - JVM (Memory, GC, File System, Other), Alerts, Issues, Logger - each item with its colored score and the value behind it")
+
+Once an operator has narrowed the problem down to one instance, the badges and the overview aren't enough to
+diagnose it — the "Health Report" tab closes that gap by embedding that instance's own Argus HTML report (the
+same report described above, with the full group/item breakdown, logs and environment) directly in SBA, without
 leaving the SBA UI or needing separate access to the monitored application.
 
-![Spring Boot Admin instance Health Report tab](docs/images/sba-health-report-tab.png "An instance's detail page in SBA with the 'Health Report' tab (Insights group) open, showing the Argus HTML report embedded in an iframe")
+The tab opens on the **Summary** fragment: one card per resource (here `Service` and `Server`), each with its
+score, the score of every group with a trend sparkline, and a **Worst Items** table naming the items responsible
+for the score.
+
+![Spring Boot Admin instance Health Report tab – Summary](docs/images/sba-health-report-tab-overview.png "An instance's detail page in SBA with the 'Health Report' tab (Insights group) open: the Summary fragment with the Service (4.6) and Server (5.9) cards, their group scores and trends, and the Worst Items tables")
+
+External dependencies registered as resources get their own card. The example below shows a `Database` resource,
+scored on its queries, transactions, connections, InnoDB and replication groups, with the worst item
+(`Queries / Temporary Disk Tables`, 36.4%) called out.
+
+![Spring Boot Admin instance Health Report tab – Database resource](docs/images/sba-health-report-tab-overview-database.png "The Summary fragment scrolled down to the Database resource card (5.6): Queries, Transactions, Connections, InnoDB and Replication groups with scores and trends, and the Worst Items table showing Queries / Temporary Disk Tables at 36.4%")
+
+The **Health** fragment is the drill-down view: every group can be expanded into its items, each with its score
+and the value it was computed from (e.g. `GC → Eden: 4.6, 181ms`, `CPU → System: 5.9, 8.7%`).
+
+![Spring Boot Admin instance Health Report tab – Health](docs/images/sba-health-report-tab-health.png "The Health fragment in the SBA Health Report tab: Service and Server cards with expandable groups - JVM/GC expanded to Eden 4.6 (181ms) and Tenured 10 (0ms), Server/CPU expanded to Total, User, System, Nice and I/O Wait")
+
+The **Logger** fragment explains the Warnings/Errors counters seen on the applications list: trend charts of
+warnings and errors over time, followed by the table of alerts (level, message, failure type, total count,
+acknowledged state) the log events were aggregated into.
+
+![Spring Boot Admin instance Health Report tab – Logger](docs/images/sba-health-report-tab-logger.png "The Logger fragment in the SBA Health Report tab: Warnings and Errors trend bar charts, followed by the Alerts table (created/modified at, level, message, failure type, acknowledged, total count)")
+
+> These screenshots are only examples, cropped from a much larger report. The tab embeds the complete HTML
+> report described in [HTML report](#html-report), so every fragment is available there: Summary, Health,
+> Services, Meters, Performance, Tasks, Logger and Environment. You can move between them with the icon bar on
+> the left. The resource cards depend on what the instance registers, so an application with a cache, broker
+> or other dependency gets a card for each one, next to the `Service`, `Server` and `Database` cards shown
+> here. Like the report screenshots above, these were taken from Heimdall in demo mode, so the scores and
+> values are randomly generated.
 
 Together these mean a Spring Boot application only needs `argus-spring-actuator` (and, for a fleet view,
 `argus-spring-sba` on the Spring Boot Admin server) to get health scores and reports surfaced without any
