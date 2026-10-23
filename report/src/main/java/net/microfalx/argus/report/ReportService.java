@@ -10,8 +10,8 @@ import net.microfalx.argus.core.AbstractService;
 import net.microfalx.lang.*;
 import net.microfalx.lang.annotation.Provider;
 import net.microfalx.lang.annotation.SizeOf;
-import net.microfalx.service.api.Service;
 import net.microfalx.resource.Resource;
+import net.microfalx.service.api.Service;
 import net.microfalx.threadpool.CronTrigger;
 import net.microfalx.threadpool.IdentifiableTask;
 import net.microfalx.threadpool.ThreadPool;
@@ -105,6 +105,15 @@ public class ReportService extends AbstractService implements Initializable {
      */
     public Collection<Fragment.Provider> getProviders() {
         return unmodifiableCollection(providers);
+    }
+
+    /**
+     * Returns registered listeners.
+     *
+     * @return a non-null instance
+     */
+    public Collection<ReportingListener> getListeners() {
+        return unmodifiableCollection(listeners);
     }
 
     /**
@@ -234,11 +243,19 @@ public class ReportService extends AbstractService implements Initializable {
         // nothing to do
     }
 
+    @Override
+    public void ready() {
+        super.ready();
+        getThreadPool().schedule(new SendStartupReportTask(), 60, TimeUnit.SECONDS);
+    }
+
     /**
      * Sends the startup report.
+     * <p>
+     * If the report was already sent, it will not be sent again.
      */
     public void sendStartup() {
-        if (settings.isEnabled() && settings.isOnBoot()) {
+        if (settings.isEnabled() && settings.isOnBoot() && startReportSent.compareAndSet(false, true)) {
             getThreadPool().execute(new SendReportTask(ofHours(1), "Startup"));
         }
         startReportSent.set(true);
@@ -549,9 +566,7 @@ public class ReportService extends AbstractService implements Initializable {
 
         @Override
         public void run() {
-            if (startReportSent.compareAndSet(false, true)) {
-                sendStartup();
-            }
+            sendStartup();
         }
     }
 
