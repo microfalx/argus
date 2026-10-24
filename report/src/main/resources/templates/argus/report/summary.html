@@ -121,7 +121,7 @@
         <tbody>
         <tr th:each="issue : ${issues}">
             <td><span th:text="${helper.toLabel(issue.type)}"></span></td>
-            <td><span th:text="${helper.toLabel(issue.severity)}"></span></td>
+            <td><span class="text-nowrap" th:text="${helper.toLabel(issue.severity)}"></span></td>
             <td><span th:text="${issue.module}"></span></td>
             <td><span th:text="${issue.name}"></span></td>
             <td><span th:text="${issue.occurrences}"></span></td>

@@ -24,6 +24,7 @@ import static net.microfalx.lang.StringUtils.isNotEmpty;
 /**
  * Holds the system report.
  */
+@SuppressWarnings("LombokGetterMayBeUsed")
 @Slf4j
 public class Report implements Nameable {
 
@@ -36,6 +37,7 @@ public class Report implements Nameable {
     private boolean offline = true;
     private boolean dynamic = true;
     private boolean secure;
+    private boolean email;
     private String fragment;
     private Theme theme = Theme.LIGHT;
     private Navigation navigation = new Navigation(Theme.DARK);
@@ -339,6 +341,25 @@ public class Report implements Nameable {
     public Report setVariable(String name, Object value) {
         requireNotEmpty(name);
         variables.put(name, value);
+        return this;
+    }
+
+    /**
+     * Returns whether the email would be rendered to be sent by email.
+     *
+     * @return {@code true} if the report is to be sent by email, {@code false} otherwise
+     */
+    public boolean isEmail() {
+        return email;
+    }
+
+    /**
+     * Changes whether the report would be rendered to be sent by email.
+     *
+     * @param email {@code true} if the report is to be sent by email, {@code false} otherwise
+     */
+    public Report setEmail(boolean email) {
+        this.email = email;
         return this;
     }
 

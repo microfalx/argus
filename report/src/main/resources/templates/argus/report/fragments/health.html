@@ -35,7 +35,7 @@
     </table>
 </div>
 
-<div th:fragment="card(title, resource, all)" th:class="${dynamic} ? 'col-md-6' : 'col-md-3'" th:with="showTrend=${dynamic}">
+<div th:fragment="card(title, resource, all)" th:class="${dynamic} ? 'col-md-6' : (${email} ? 'w-100' : 'col-md-3')" th:with="showTrend=${dynamic}">
     <div class="card">
         <div class="ribbon ribbon-top" th:classappend="${helper.getRibbonCls(resource.health.severity)}">
             <span th:text="${helper.formatScore(resource.health.score)}"></span>

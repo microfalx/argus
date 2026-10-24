@@ -3,16 +3,44 @@
 <body>
 
 <div th:fragment="cards(all)" th:remove="tag">
-    <h3 th:replace="~{fragments/health :: card('Service', ${serviceResource}, ${all})}"></h3>
-    <h3 th:replace="~{fragments/health :: card('Server', ${serverResource}, ${all})}"></h3>
-    <th:block th:if="${databaseResource}">
-        <h3 th:replace="~{fragments/health :: card('Database', ${databaseResource}, ${all})}"></h3>
+    <th:block th:if="${email}">
+        <table class="table-light">
+            <tr class="align-top">
+                <td><div th:replace="~{fragments/health :: card('Service', ${serviceResource}, ${all})}"></div></td>
+                <td class="m-2"><div th:replace="~{fragments/health :: card('Server', ${serverResource}, ${all})}"></div></td>
+                <td class="m-2">
+                    <th:block th:if="${databaseResource}">
+                        <div th:replace="~{fragments/health :: card('Database', ${databaseResource}, ${all})}"></div>
+                    </th:block>
+                </td>
+            </tr>
+            <tr class="align-top">
+                <td>
+                    <th:block th:if="${cacheResource}">
+                        <div th:replace="~{fragments/health :: card('Cache', ${cacheResource}, ${all})}"></div>
+                    </th:block>
+                </td>
+                <td class="m-2">
+                    <th:block th:if="${brokerResource}">
+                        <div th:replace="~{fragments/health :: card('Broker', ${brokerResource}, ${all})}"></div>
+                    </th:block>
+                </td>
+                <td class="m-2"></td>
+            </tr>
+        </table>
     </th:block>
-    <th:block th:if="${cacheResource}">
-        <h3 th:replace="~{fragments/health :: card('Cache', ${cacheResource}, ${all})}"></h3>
-    </th:block>
-    <th:block th:if="${brokerResource}">
-        <h3 th:replace="~{fragments/health :: card('Broker', ${brokerResource}, ${all})}"></h3>
+    <th:block th:unless="${email}">
+        <div th:replace="~{fragments/health :: card('Service', ${serviceResource}, ${all})}"></div>
+        <div th:replace="~{fragments/health :: card('Server', ${serverResource}, ${all})}"></div>
+        <th:block th:if="${databaseResource}">
+            <div th:replace="~{fragments/health :: card('Database', ${databaseResource}, ${all})}"></div>
+        </th:block>
+        <th:block th:if="${cacheResource}">
+            <div th:replace="~{fragments/health :: card('Cache', ${cacheResource}, ${all})}"></div>
+        </th:block>
+        <th:block th:if="${brokerResource}">
+            <div th:replace="~{fragments/health :: card('Broker', ${brokerResource}, ${all})}"></div>
+        </th:block>
     </th:block>
 </div>
 
