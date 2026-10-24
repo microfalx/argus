@@ -33,6 +33,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -61,6 +62,7 @@ public class ReportService extends AbstractService implements Initializable {
 
     private final Collection<Fragment.Provider> providers = new CopyOnWriteArrayList<>();
     private final Collection<ReportingListener> listeners = new CopyOnWriteArrayList<>();
+    private final Collection<Future<?>> scheduledTasks = new CopyOnWriteArrayList<>();
     private final Object lock = new Object();
     private final AtomicBoolean startReportSent = new AtomicBoolean(false);
     @SizeOf(shallow = false, deepSize = 5000)
@@ -263,7 +265,7 @@ public class ReportService extends AbstractService implements Initializable {
         if (settings.isEnabled() && settings.isOnBoot()
                 && startReportSent.compareAndSet(false, true)) {
             getThreadPool().execute(new SendReportTask(ofHours(1), "Startup"));
-            getThreadPool().schedule(new SendReportTask(ofHours(1), "Warmed"), 15, MINUTES);
+            getThreadPool().schedule(new SendReportTask(ofHours(1), "Warmed Up"), 5, MINUTES);
         }
         startReportSent.set(true);
     }
@@ -363,14 +365,14 @@ public class ReportService extends AbstractService implements Initializable {
 
     private void initTasks() {
         if (!settings.isEnabled()) return;
+        cancelTasks();
         LOGGER.info("Support report scheduled at '{}/{}/{}', recipients: '{}'", settings.getDailySchedule(),
                 settings.getWithIssuesSchedule(), settings.getWithCriticalIssuesSchedule(), settings.getRecipients());
         ThreadPool threadPool = getThreadPool();
-        threadPool.schedule(new SendStartupReportTask(), 60, TimeUnit.SECONDS);
-        threadPool.schedule(new SendReportTask(ofHours(24)), new CronTrigger(settings.getDailySchedule()));
-        threadPool.schedule(new IssuesReportTask(Issue.Severity.NOTICE), new CronTrigger(settings.getWithIssuesSchedule()));
-        threadPool.schedule(new IssuesReportTask(Issue.Severity.MEDIUM), new CronTrigger(settings.getWithIssuesSchedule()));
-        threadPool.schedule(new IssuesReportTask(Issue.Severity.CRITICAL), new CronTrigger(settings.getWithCriticalIssuesSchedule()));
+        scheduledTasks.add(threadPool.schedule(new SendReportTask(ofHours(24)), new CronTrigger(settings.getDailySchedule())));
+        scheduledTasks.add(threadPool.schedule(new IssuesReportTask(Issue.Severity.NOTICE), new CronTrigger(settings.getWithIssuesSchedule())));
+        scheduledTasks.add(threadPool.schedule(new IssuesReportTask(Issue.Severity.MEDIUM), new CronTrigger(settings.getWithIssuesSchedule())));
+        scheduledTasks.add(threadPool.schedule(new IssuesReportTask(Issue.Severity.CRITICAL), new CronTrigger(settings.getWithCriticalIssuesSchedule())));
     }
 
     private synchronized void initEngine() {
@@ -541,6 +543,13 @@ public class ReportService extends AbstractService implements Initializable {
             issue = previous.merge(issue);
             issues.put(issue.getId(), issue);
         }
+    }
+
+    private void cancelTasks() {
+        for (Future<?> task : scheduledTasks) {
+            task.cancel(false);
+        }
+        scheduledTasks.clear();
     }
 
     @Provider
