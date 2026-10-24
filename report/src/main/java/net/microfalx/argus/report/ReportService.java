@@ -34,7 +34,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -342,7 +341,7 @@ public class ReportService extends AbstractService implements Initializable {
         for (ReportingListener listener : listeners) {
             listener.send(destinations, report.getName(), summary, fullReport, Optional.of(encryptedFullReport));
         }
-        LOGGER.info("Report sent to: {}", destinations);
+        LOGGER.info("Report '{}' sent to: {}", report.getName(), destinations);
     }
 
     private void reload(boolean onStartup) {
