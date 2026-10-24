@@ -91,7 +91,12 @@ public class ReportSettings {
     /**
      * The theme of the report
      */
-    private Report.Theme theme = Report.Theme.DARK;
+    private Report.Theme reportTheme = Report.Theme.LIGHT;
+
+    /**
+     * The theme of the summary report
+     */
+    private Report.Theme summaryTheme = Report.Theme.DARK;
 
 
 }

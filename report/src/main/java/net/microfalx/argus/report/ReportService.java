@@ -198,6 +198,7 @@ public class ReportService extends AbstractService implements Initializable {
     public Report send(Duration interval, String suffix) {
         requireNonNull(interval);
         Report report = createReport(interval, suffix);
+        report.setTheme(settings.getReportTheme());
         AtomicReference<Resource> fullReportRef = new AtomicReference<>(null);
         AtomicReference<Resource> encryptedFullReportRef = new AtomicReference<>(null);
         AtomicReference<Resource> summaryReportRef = new AtomicReference<>(null);
@@ -214,6 +215,7 @@ public class ReportService extends AbstractService implements Initializable {
         METRICS.time("Generate Summary Report", (t) -> {
             try {
                 Report internalReport = createReport(interval, suffix).setFragment("summary");
+                internalReport.setTheme(settings.getSummaryTheme());
                 internalReport.setDynamic(false).setOffline(false).setSecure(true)
                         .setEmail(true);
                 Resource summaryReport = Resource.temporary("report_summary_", ".html");
@@ -393,7 +395,6 @@ public class ReportService extends AbstractService implements Initializable {
 
     private Report createReport(Duration interval, String suffix) {
         Report report = createReport();
-        report.setTheme(settings.getTheme());
         updateReportName(report, suffix);
         report.setEndTime(ZonedDateTime.now());
         report.setStartTime(report.getEndTime().minus(interval));
