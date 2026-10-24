@@ -2,13 +2,14 @@ package net.microfalx.argus.report;
 
 import net.microfalx.argus.api.Health;
 import net.microfalx.argus.api.HealthService;
+import net.microfalx.argus.api.Issue;
 import net.microfalx.argus.api.Resource;
 import net.microfalx.lang.*;
-import net.microfalx.service.api.Service;
 import net.microfalx.metrics.Metrics;
 import net.microfalx.metrics.statistics.Trend;
 import net.microfalx.metrics.statistics.TrendStatisticalSummary;
 import net.microfalx.resource.ClassPathResource;
+import net.microfalx.service.api.Service;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.IOException;
@@ -312,7 +313,7 @@ public class ReportHelper {
     @SuppressWarnings({"unchecked", "rawtypes"})
     public String toLabel(Object value) {
         if (value instanceof Enum) {
-            return EnumUtils.toLabel((Enum) value);
+            return getEnumGlyph((Enum<?>) value) + EnumUtils.toLabel((Enum) value);
         } else if (value instanceof Class<?> clazz) {
             return ClassUtils.getCompactName(clazz);
         } else {
@@ -323,6 +324,16 @@ public class ReportHelper {
     public String toHtmlId(Object value) {
         if (value == null) return null;
         return "#" + ObjectUtils.toString(value);
+    }
+
+    private String getEnumGlyph(Enum<?> value) {
+        String glyph = EMPTY_STRING;
+        if (value instanceof Health.Severity severity) {
+            return severity.getGlyph() + StringUtils.SPACE;
+        } else if (value instanceof Issue.Severity severity) {
+            return severity.getGlyph() + StringUtils.SPACE;
+        }
+        return glyph;
     }
 
     private String formatTrendValue(Number value) {

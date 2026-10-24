@@ -88,5 +88,10 @@ public class ReportSettings {
      */
     private String systemVersion;
 
+    /**
+     * The theme of the report
+     */
+    private Report.Theme theme = Report.Theme.DARK;
+
 
 }

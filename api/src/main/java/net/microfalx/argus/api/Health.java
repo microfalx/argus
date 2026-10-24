@@ -346,7 +346,8 @@ public final class Health extends IdentityAware<String> implements Timestampable
         }
         Report report = new Report(format);
         for (Item item : worstItems) {
-            report.line(RichText.create().glyph(toGlyph(item.getSeverity())).a(item.toRichText(paths.get(item))));
+            report.line(RichText.create().glyph(item.getSeverity().getGlyph())
+                    .a(item.toRichText(paths.get(item))));
         }
         return report.render();
     }
@@ -446,16 +447,6 @@ public final class Health extends IdentityAware<String> implements Timestampable
         };
     }
 
-    private static String toGlyph(Severity severity) {
-        return switch (severity) {
-            case NA -> Glyph.WHITE_CIRCLE;
-            case OK -> Glyph.GREEN_CIRCLE;
-            case LOW -> Glyph.YELLOW_CIRCLE;
-            case MEDIUM -> Glyph.ORANGE_CIRCLE;
-            case HIGH, CRITICAL -> Glyph.RED_CIRCLE;
-        };
-    }
-
     private void updateScored(Collection<Scored> scored, Group group) {
         scored.add(group);
         for (Group childGroup : group.getGroups()) {
@@ -516,7 +507,23 @@ public final class Health extends IdentityAware<String> implements Timestampable
         /**
          * Critical severity issue - severe impact
          */
-        CRITICAL
+        CRITICAL;
+
+        /**
+         * Returns the severity as a glyph for display purposes.
+         *
+         * @return a non-null instance
+         */
+        public String getGlyph() {
+            return switch (this) {
+                case NA -> Glyph.WHITE_CIRCLE;
+                case LOW -> Glyph.BLUE_CIRCLE;
+                case OK -> Glyph.GREEN_CIRCLE;
+                case MEDIUM -> Glyph.YELLOW_CIRCLE;
+                case HIGH -> Glyph.ORANGE_CIRCLE;
+                case CRITICAL -> Glyph.RED_CIRCLE;
+            };
+        }
     }
 
     /**
@@ -553,6 +560,11 @@ public final class Health extends IdentityAware<String> implements Timestampable
 
         private final Collection<Item> items = new ArrayList<>();
         private final Map<String, Group> groups = new LinkedHashMap<>();
+
+        /**
+         * Holds the parent of this group, which is either another group or the health score itself.
+         */
+        private String group;
 
         /**
          * Holds the trend of the scores for this group and its subgroups.
@@ -769,6 +781,7 @@ public final class Health extends IdentityAware<String> implements Timestampable
         }
 
         private void setParent(Identifiable<?> parent) {
+            if (parent instanceof Nameable nameable) this.group = nameable.getName();
             this.setId(parent.getId() + "." + toIdentifier(getName()));
         }
 

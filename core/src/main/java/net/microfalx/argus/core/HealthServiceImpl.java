@@ -20,17 +20,20 @@ import net.microfalx.registry.Registry;
 import net.microfalx.service.api.Service;
 import net.microfalx.threadpool.Trigger;
 
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+import static java.lang.Integer.MAX_VALUE;
 import static java.lang.System.currentTimeMillis;
+import static java.time.Duration.ofMinutes;
+import static java.time.Duration.ofSeconds;
 import static net.microfalx.jvm.VirtualMachineUtils.METRICS_METRICS;
 import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 import static net.microfalx.lang.ClassUtils.resolveProviderInstances;
 import static net.microfalx.lang.CollectionUtils.immutableCollection;
 import static net.microfalx.lang.CollectionUtils.immutableSet;
+import static net.microfalx.lang.StringUtils.NA_STRING;
 import static net.microfalx.lang.StringUtils.defaultIfNull;
 
 @Slf4j
@@ -230,14 +233,28 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
     }
 
     private void registerTasks() {
-        getThreadPool().schedule(new MaintenanceTask(), Trigger.fixedDelay(Duration.ofMinutes(15)));
-        getThreadPool().schedule(new ScrapeTask(), Trigger.fixedDelay(Duration.ofSeconds(30)));
-        getThreadPool().schedule(new ServiceStatisticsWorker(), Trigger.fixedDelay(Duration.ofSeconds(10)));
-        getThreadPool().schedule(this::updateMetrics, Trigger.fixedDelay(Duration.ofSeconds(10)));
+        getThreadPool().schedule(new MaintenanceTask(), Trigger.fixedDelay(ofMinutes(15)));
+        getThreadPool().schedule(new ScrapeTask(), Trigger.fixedDelay(ofSeconds(30)));
+        getThreadPool().schedule(new ServiceStatisticsWorker(), Trigger.fixedDelay(ofSeconds(60)));
+        getThreadPool().schedule(new IssuesTask(), Trigger.fixedDelay(ofSeconds(60)));
+        getThreadPool().schedule(this::updateMetrics, Trigger.fixedDelay(ofSeconds(10)));
     }
 
     void maintenance() {
         METRICS.time("Update Contributors Stats", t -> updateContributorsStats());
+    }
+
+    void updateIssues() {
+        for (Health health : resourceHealths.values()) {
+            Collection<Health.Item> items = health.getWorstItems(MAX_VALUE);
+            for (Health.Item item : items) {
+                Issue.create(Issue.Type.OBSERVABILITY, item.getName())
+                        .withModule(item.getGroup().orElse(NA_STRING))
+                        .withSeverity(getSeverity(item.getSeverity()))
+                        .withDescription(item.getDescription())
+                        .register();
+            }
+        }
     }
 
     void updateHealth() {
@@ -442,6 +459,15 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
         return itemTrends.computeIfAbsent(item.getId(), t -> new TimeWindowStatisticalSummary(settings.getHealthInterval()));
     }
 
+    private static Issue.Severity getSeverity(Health.Severity severity) {
+        return switch (severity) {
+            case MEDIUM -> Issue.Severity.MEDIUM;
+            case HIGH -> Issue.Severity.HIGH;
+            case CRITICAL -> Issue.Severity.CRITICAL;
+            default -> Issue.Severity.LOW;
+        };
+    }
+
     private class MaintenanceTask implements Runnable {
 
         @Override
@@ -455,6 +481,14 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
         @Override
         public void run() {
             update();
+        }
+    }
+
+    private class IssuesTask implements Runnable {
+
+        @Override
+        public void run() {
+            updateIssues();
         }
     }
 }

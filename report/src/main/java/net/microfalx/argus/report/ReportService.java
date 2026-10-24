@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static java.lang.System.currentTimeMillis;
 import static java.time.Duration.ofHours;
 import static java.util.Collections.unmodifiableCollection;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static net.lingala.zip4j.model.enums.CompressionLevel.MAXIMUM;
 import static net.lingala.zip4j.model.enums.CompressionMethod.DEFLATE;
 import static net.lingala.zip4j.model.enums.EncryptionMethod.ZIP_STANDARD;
@@ -212,8 +213,9 @@ public class ReportService extends AbstractService implements Initializable {
         });
         METRICS.time("Generate Summary Report", (t) -> {
             try {
-                Report internalReport = createReport(interval, suffix);
-                internalReport.setDynamic(false).setOffline(false).setSecure(true).setFragment("summary");
+                Report internalReport = createReport(interval, suffix).setFragment("summary");
+                internalReport.setDynamic(false).setOffline(false).setSecure(true)
+                        .setEmail(true);
                 Resource summaryReport = Resource.temporary("report_summary_", ".html");
                 internalReport.render(summaryReport);
                 summaryReportRef.set(summaryReport);
@@ -247,7 +249,7 @@ public class ReportService extends AbstractService implements Initializable {
     @Override
     public void ready() {
         super.ready();
-        getThreadPool().schedule(new SendStartupReportTask(), 60, TimeUnit.SECONDS);
+        getThreadPool().schedule(new SendStartupReportTask(), 2, MINUTES);
     }
 
     /**
@@ -256,8 +258,10 @@ public class ReportService extends AbstractService implements Initializable {
      * If the report was already sent, it will not be sent again.
      */
     public void sendStartup() {
-        if (settings.isEnabled() && settings.isOnBoot() && startReportSent.compareAndSet(false, true)) {
+        if (settings.isEnabled() && settings.isOnBoot()
+                && startReportSent.compareAndSet(false, true)) {
             getThreadPool().execute(new SendReportTask(ofHours(1), "Startup"));
+            getThreadPool().schedule(new SendReportTask(ofHours(1), "Warmed"), 15, MINUTES);
         }
         startReportSent.set(true);
     }
@@ -384,11 +388,12 @@ public class ReportService extends AbstractService implements Initializable {
         templateEngine.setCacheManager(new StandardCacheManager());
         templateEngine.setTemplateResolver(templateResolver);
         lastRenderingTime = currentTimeMillis();
-        getThreadPool().schedule(new ReleaseEngineTask(), 5, TimeUnit.MINUTES);
+        getThreadPool().schedule(new ReleaseEngineTask(), 5, MINUTES);
     }
 
     private Report createReport(Duration interval, String suffix) {
         Report report = createReport();
+        report.setTheme(settings.getTheme());
         updateReportName(report, suffix);
         report.setEndTime(ZonedDateTime.now());
         report.setStartTime(report.getEndTime().minus(interval));
@@ -418,16 +423,24 @@ public class ReportService extends AbstractService implements Initializable {
         int issueLowCount = getIssueCount(Issue.Severity.LOW);
         boolean hasIssues = issueCriticalCount + issueHighCount + issueMediumHighCount + issueLowCount > 0;
         int issueNoticeCount = getIssueCount(Issue.Severity.NOTICE);
-        if (hasIssues) {
-            name += " (Critical: " + issueCriticalCount + ", High: " + issueHighCount + ", Medium: " + issueMediumHighCount
-                    + ", Low: " + issueLowCount;
-        }
+        name += " (Critical: " + issueCriticalCount + ", High: " + issueHighCount + ", Medium: " + issueMediumHighCount
+                + ", Low: " + issueLowCount;
         if (issueNoticeCount > 0) {
             if (hasIssues) name += ", ";
             name += "Notice: " + issueNoticeCount;
         }
+        String glyph = Glyph.GREEN_CIRCLE;
         name += ")";
-        report.setName(name);
+        if (issueCriticalCount > 0) {
+            glyph = Glyph.RED_CIRCLE;
+        } else if (issueHighCount > 0) {
+            glyph = Glyph.ORANGE_CIRCLE;
+        } else if (issueMediumHighCount > 0) {
+            glyph = Glyph.YELLOW_CIRCLE;
+        } else if (issueLowCount > 0) {
+            glyph = Glyph.BLUE_CIRCLE;
+        }
+        report.setName(glyph + " " + name);
     }
 
     private String getSystemName() {

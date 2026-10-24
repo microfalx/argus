@@ -466,6 +466,21 @@ public class Issue implements Identifiable<String>, Nameable, Descriptable, Clon
          * Critical severity issue - severe impact
          */
         @Name("Critical")
-        CRITICAL
+        CRITICAL;
+
+        /**
+         * Returns the severity as a glyph for display purposes.
+         *
+         * @return a non-null instance
+         */
+        public String getGlyph() {
+            return switch (this) {
+                case NOTICE -> Glyph.WHITE_CIRCLE;
+                case LOW -> Glyph.BLUE_CIRCLE;
+                case MEDIUM -> Glyph.YELLOW_CIRCLE;
+                case HIGH -> Glyph.ORANGE_CIRCLE;
+                case CRITICAL -> Glyph.RED_CIRCLE;
+            };
+        }
     }
 }
