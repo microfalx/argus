@@ -19,6 +19,7 @@ import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 import static net.microfalx.lang.ArgumentUtils.requireNotEmpty;
 import static net.microfalx.lang.ExceptionUtils.getRootCauseDescription;
 import static net.microfalx.lang.ExceptionUtils.rethrowException;
+import static net.microfalx.lang.StringUtils.isNotEmpty;
 
 /**
  * Holds the system report.
@@ -40,6 +41,7 @@ public class Report implements Nameable {
     private Navigation navigation = new Navigation(Theme.DARK);
     private final List<Fragment> fragments = new ArrayList<>();
     private final Map<String, Object> attributes = new HashMap<>();
+    private final Map<String, Object> variables = new HashMap<>();
 
     private static final ThreadLocal<Report> CURRENT_REPORT = new ThreadLocal<>();
 
@@ -319,9 +321,25 @@ public class Report implements Nameable {
      * @param name  the name of the attribute
      * @param value the value of the attribute
      */
-    public void setAttribute(String name, Object value) {
+    public Report setAttribute(String name, Object value) {
         requireNotEmpty(name);
         attributes.put(name, value);
+        return this;
+    }
+
+    /**
+     * Sets a variable for the template engine.
+     * <p>
+     * This method can be used to tweak the reporting template by adding custom variables
+     * to the template engine.
+     *
+     * @param name  the name of the attribute
+     * @param value the value of the attribute
+     */
+    public Report setVariable(String name, Object value) {
+        requireNotEmpty(name);
+        variables.put(name, value);
+        return this;
     }
 
     /**
@@ -379,8 +397,12 @@ public class Report implements Nameable {
     }
 
     private void updateTemplate(Template template) {
+        variables.forEach(template::addVariable);
         template.addVariable("report", this);
+        template.addVariable("reportFragment", this.fragment);
+        template.addVariable("singleFragment", isNotEmpty(this.fragment));
         template.addVariable("helper", new ReportHelper(this));
+        template.addVariable("dynamic", isDynamic());
         template.addVariable("theme", getTheme().name().toLowerCase());
         template.addVariable("navTheme", getNavigation().getTheme().name().toLowerCase());
         template.addVariable("navCollapsed", getNavigation().isCollapsed());

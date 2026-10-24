@@ -196,33 +196,34 @@ public class ReportService extends AbstractService implements Initializable {
      */
     public Report send(Duration interval, String suffix) {
         requireNonNull(interval);
-        Report report = createReport();
-        updateReportName(report, suffix);
-        report.setEndTime(ZonedDateTime.now());
-        report.setStartTime(report.getEndTime().minus(interval));
+        Report report = createReport(interval, suffix);
         AtomicReference<Resource> fullReportRef = new AtomicReference<>(null);
+        AtomicReference<Resource> encryptedFullReportRef = new AtomicReference<>(null);
         AtomicReference<Resource> summaryReportRef = new AtomicReference<>(null);
-        METRICS.time("Generate", (t) -> {
-            Resource fullReport = Resource.temporary("report_", ".html");
+        METRICS.time("Generate Report", (t) -> {
             try {
+                Resource fullReport = Resource.temporary("report_", ".html");
                 report.render(fullReport);
-                fullReport = encryptReport(fullReport);
+                fullReportRef.set(fullReport);
+                encryptedFullReportRef.set(encryptReport(fullReport));
             } catch (Exception e) {
                 throw new ReportException("Failed to render the report for interval " + interval, e);
             }
-            fullReportRef.set(fullReport);
-            report.setDynamic(false).setOffline(false).setSecure(true).setFragment("summary");
-            Resource summaryReport = Resource.temporary("report_summary_", ".html");
+        });
+        METRICS.time("Generate Summary Report", (t) -> {
             try {
-                report.render(summaryReport);
+                Report internalReport = createReport(interval, suffix);
+                internalReport.setDynamic(false).setOffline(false).setSecure(true).setFragment("summary");
+                Resource summaryReport = Resource.temporary("report_summary_", ".html");
+                internalReport.render(summaryReport);
+                summaryReportRef.set(summaryReport);
             } catch (Exception e) {
                 throw new ReportException("Failed to render the report for interval " + interval, e);
             }
-            summaryReportRef.set(summaryReport);
         });
         METRICS.time("Send", (t) -> {
             try {
-                send(report, summaryReportRef.get(), fullReportRef.get());
+                send(report, summaryReportRef.get(), fullReportRef.get(), encryptedFullReportRef.get());
             } catch (Exception e) {
                 throw new ReportException("Failed to send the report for interval " + interval, e);
             }
@@ -322,7 +323,7 @@ public class ReportService extends AbstractService implements Initializable {
         LOGGER.info("Loaded {} reporting listeners", listeners.size());
     }
 
-    private void send(Report report, Resource summary, Resource fullReport) {
+    private void send(Report report, Resource summary, Resource fullReport, Resource encryptedFullReport) {
         Set<String> destinations = new HashSet<>(Arrays.asList(split(settings.getRecipients(), ",")));
         if (destinations.isEmpty()) {
             LOGGER.info("No report destinations configured, ask services");
@@ -331,7 +332,7 @@ public class ReportService extends AbstractService implements Initializable {
             }
         }
         for (ReportingListener listener : listeners) {
-            listener.send(destinations, report.getName(), summary, Optional.of(fullReport));
+            listener.send(destinations, report.getName(), summary, fullReport, Optional.of(encryptedFullReport));
         }
         LOGGER.info("Report sent to: {}", destinations);
     }
@@ -384,6 +385,14 @@ public class ReportService extends AbstractService implements Initializable {
         templateEngine.setTemplateResolver(templateResolver);
         lastRenderingTime = currentTimeMillis();
         getThreadPool().schedule(new ReleaseEngineTask(), 5, TimeUnit.MINUTES);
+    }
+
+    private Report createReport(Duration interval, String suffix) {
+        Report report = createReport();
+        updateReportName(report, suffix);
+        report.setEndTime(ZonedDateTime.now());
+        report.setStartTime(report.getEndTime().minus(interval));
+        return report;
     }
 
     private void updateTemplate(Template template, Report report) {

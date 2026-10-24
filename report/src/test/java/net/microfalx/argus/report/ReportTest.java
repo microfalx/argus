@@ -28,4 +28,14 @@ class ReportTest extends AbstractReportServiceTestCase {
         ReportTestUtils.openInBrowser(resource);
     }
 
+    @Test
+    void summary() throws IOException {
+        Report report = reportService.createReport().setFragment("summary")
+                .setDynamic(false).setOffline(false).setSecure(true);
+        Resource resource = Resource.memory();
+        report.render(resource);
+        Assertions.assertThat(resource.loadAsString()).contains("css/bootstrap/tabler.css");
+        ReportTestUtils.openInBrowser(resource);
+    }
+
 }

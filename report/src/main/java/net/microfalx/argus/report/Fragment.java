@@ -79,6 +79,7 @@ public class Fragment implements Identifiable<String>, Nameable {
         try {
             Template template = reportService.createTemplate(this.template, report).setSelector(selector);
             template.addVariable("report", report);
+            template.addVariable("dynamic", report.isDynamic());
             template.render(resource);
         } catch (Exception e) {
             throwable = e;
