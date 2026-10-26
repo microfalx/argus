@@ -254,8 +254,8 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
                 issue = issue.withDescription(item.getDescription());
                 Thresholds thresholds = item.getThresholds();
                 if (thresholds != null) {
-                    issue = issue.withAttribute("Warning", thresholds.getWarn().toDescription())
-                            .withAttribute("Error", thresholds.getError().toDescription());
+                    issue = issue.withAttribute("Warning Threshold", thresholds.getWarn().toDescription())
+                            .withAttribute("Error Threshold", thresholds.getError().toDescription());
                 }
                 issue.register();
             }
