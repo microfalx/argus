@@ -77,6 +77,15 @@ public final class Threshold implements Serializable {
         return newThreshold;
     }
 
+    /**
+     * Returns a description of the threshold, including its value and unit.
+     *
+     * @return a non-null instance
+     */
+    public String toDescription() {
+        return unit.format(value);
+    }
+
     public enum Type {
         WARN,
         ERROR

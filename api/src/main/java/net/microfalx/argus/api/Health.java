@@ -683,6 +683,20 @@ public final class Health extends IdentityAware<String> implements Timestampable
                     .min(Comparator.comparing(Item::getScore));
         }
 
+
+        /**
+         * Returns the breadcrumbs for this group, which is a string representation of the group hierarchy.
+         *
+         * @return a non-null string
+         */
+        public String getBreadcrumbs() {
+            if (StringUtils.isNotEmpty(group)) {
+                return group + " / " + getName();
+            } else {
+                return getName();
+            }
+        }
+
         /**
          * Registers an item with its score and a {@link Policy} of {@link Policy#REPORT_IF_DOWNGRADE}..
          *
@@ -1089,7 +1103,7 @@ public final class Health extends IdentityAware<String> implements Timestampable
         }
 
         private void setParent(Group parent) {
-            this.group = parent.getName();
+            this.group = parent.getBreadcrumbs();
             this.setId(parent.getId() + "." + toIdentifier(getName()));
         }
     }

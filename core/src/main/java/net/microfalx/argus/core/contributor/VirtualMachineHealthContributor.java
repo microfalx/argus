@@ -138,8 +138,8 @@ public class VirtualMachineHealthContributor extends AbstractHealthContributor i
     private static volatile Thresholds MEMORY_METASPACE = Thresholds.create("Metaspace", 100f, 100f, Unit.PERCENT).withId("jvm.memory.metaspace").withGroup(MEMORY_GROUP);
     private static volatile Thresholds MEMORY_BUFFERS = Thresholds.create("Buffers", 100f, 100f, Unit.PERCENT).withId("jvm.memory.buffers").withGroup(MEMORY_GROUP);
 
-    private static volatile Thresholds GC_EDEN = Thresholds.create("Eden", 100, 200, Unit.MILLISECOND).withId("jvm.gc.eden").withGroup(GC_GROUP);
-    private static volatile Thresholds GC_TENURED = Thresholds.create("Tenured", 200, 500, Unit.MILLISECOND).withId("jvm.gc.tenured").withGroup(GC_GROUP);
+    private static volatile Thresholds GC_EDEN = Thresholds.create("Eden", 10, 50, Unit.MILLISECOND).withId("jvm.gc.eden").withGroup(GC_GROUP);
+    private static volatile Thresholds GC_TENURED = Thresholds.create("Tenured", 50, 100, Unit.MILLISECOND).withId("jvm.gc.tenured").withGroup(GC_GROUP);
 
     private static volatile Thresholds FILE_SYSTEM_HOME = Thresholds.create("Home Directory", 85f, 95f, Unit.PERCENT).withId("jvm.filesystem.home").withGroup(FILE_SYSTEM_GROUP);
     private static volatile Thresholds FILE_SYSTEM_VARIABLE = Thresholds.create("Variable Directory", 85f, 95f, Unit.PERCENT).withId("jvm.filesystem.variable").withGroup(FILE_SYSTEM_GROUP);
