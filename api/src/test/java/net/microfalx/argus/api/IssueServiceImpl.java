@@ -47,6 +47,11 @@ public class IssueServiceImpl extends AbstractService implements IssueService {
     }
 
     @Override
+    public TrendStatisticalSummary getTrend(Failure.Severity severity, Failure.Type type) {
+        return new TimeWindowStatisticalSummary();
+    }
+
+    @Override
     public TrendStatisticalSummary getTrend(Alert.Severity severity) {
         return new TimeWindowStatisticalSummary();
     }

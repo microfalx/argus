@@ -17,7 +17,7 @@ public class EnvironmentProvider extends AbstractFragmentProvider {
     public Fragment create() {
         return Fragment.builder("Environment").template("environment")
                 .icon("fa-solid fa-server")
-                .order(1000)
+                .order(2000)
                 .build();
     }
 

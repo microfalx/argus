@@ -1,12 +1,10 @@
 package net.microfalx.argus.core;
 
-import net.microfalx.argus.api.Alert;
-import net.microfalx.argus.api.Issue;
-import net.microfalx.argus.api.IssueListener;
-import net.microfalx.argus.api.IssueService;
+import net.microfalx.argus.api.*;
 import net.microfalx.lang.ClassUtils;
 import net.microfalx.lang.Initializable;
 import net.microfalx.metrics.statistics.MutableStatisticalSummary;
+import net.microfalx.metrics.statistics.TimeWindowStatisticalSummary;
 import net.microfalx.metrics.statistics.TrendStatisticalSummary;
 import net.microfalx.service.api.Logger;
 import net.microfalx.service.api.Service;
@@ -50,6 +48,15 @@ public class IssueServiceImpl extends AbstractService implements IssueService, I
     @Override
     public Collection<Alert> getPendingAlerts() {
         return unmodifiableCollection(alerts);
+    }
+
+    @Override
+    public TrendStatisticalSummary getTrend(Failure.Severity severity, Failure.Type type) {
+        requireNonNull(severity);
+        requireNonNull(type);
+        Map<Failure.Type, TrendStatisticalSummary> trends = severity == Failure.Severity.ERROR
+                ? Failure.getTypeErrorsTrend() : Failure.getTypeWarningsTrend();
+        return trends.getOrDefault(type, EMPTY_TREND);
     }
 
     @Override
@@ -194,4 +201,6 @@ public class IssueServiceImpl extends AbstractService implements IssueService, I
             }
         }
     }
+
+    private static final TrendStatisticalSummary EMPTY_TREND = TrendStatisticalSummary.create();
 }

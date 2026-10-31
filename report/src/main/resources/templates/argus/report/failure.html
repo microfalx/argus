@@ -1,0 +1,58 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="render-failure(failures)">
+    <table class="table table-hover datatable">
+        <thead class="table-light">
+        <tr>
+            <th scope="col" class="w-50">Name</th>
+            <th scope="col" class="text-end w-25">Warning</th>
+            <th scope="col" class="text-end w-25">Error</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="failure : ${failures}">
+            <td><span th:text="${failure.name}"></span></td>
+            <td><span th:text="${failure.warningCount}" class="text-end"></span></td>
+            <td><span th:text="${failure.errorCount}" class="text-end"></span></td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<div th:fragment="summary">
+    <table class="table-light w-100">
+        <tr class="align-top">
+            <td class="w-50">
+                <h3 th:replace="~{fragments/utils :: h3('By Type', ${failuresByType.size()})}"></h3>
+                <div th:replace="~{failure :: render-failure(${failuresByType})}"></div>
+            </td>
+            <td class="w-50">
+                <h3 th:replace="~{fragments/utils :: h3('By Exception', ${failuresByException.size()})}"></h3>
+                <div th:replace="~{failure :: render-failure(${failuresByException})}"></div>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div th:fragment="content">
+    <h3 class="pt-2">Distribution</h3>
+    <div class="container-fluid">
+        <div class="row justify-content-start g-2">
+            <div class="col-6" id="failure_type_trend"></div>
+            <div class="col-6" id="failure_exception_trend"></div>
+        </div>
+    </div>
+    <h3 th:replace="~{fragments/utils :: h3('By Type', ${failuresByType.size()})}"></h3>
+    <div th:replace="~{failure :: render-failure(${failuresByType})}"></div>
+    <h3 th:replace="~{fragments/utils :: h3('By Exception', ${failuresByException.size()})}"></h3>
+    <div th:replace="~{failure :: render-failure(${failuresByException})}"></div>
+</div>
+
+<div th:fragment="code" th:remove="tag">
+
+</div>
+
+</body>
+</html>

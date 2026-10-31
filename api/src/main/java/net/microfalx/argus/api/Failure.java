@@ -2,12 +2,13 @@ package net.microfalx.argus.api;
 
 import lombok.Getter;
 import lombok.ToString;
+import lombok.With;
 import lombok.extern.slf4j.Slf4j;
-import net.microfalx.lang.ClassUtils;
-import net.microfalx.lang.ExceptionUtils;
-import net.microfalx.lang.ObjectUtils;
-import net.microfalx.lang.StringUtils;
+import net.microfalx.lang.*;
 import net.microfalx.metrics.Metrics;
+import net.microfalx.metrics.statistics.MutableStatisticalSummary;
+import net.microfalx.metrics.statistics.TimeWindowStatisticalSummary;
+import net.microfalx.metrics.statistics.TrendStatisticalSummary;
 
 import javax.naming.NameNotFoundException;
 import javax.naming.ServiceUnavailableException;
@@ -26,17 +27,20 @@ import java.nio.file.NoSuchFileException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.JarException;
 import java.util.zip.DataFormatException;
 import java.util.zip.ZipException;
 
 import static net.microfalx.argus.api.Failure.Type.INTERNAL_ERROR;
 import static net.microfalx.lang.ArgumentUtils.requireNonNull;
+import static net.microfalx.lang.CollectionUtils.immutableMap;
 
 /**
  * A class which represents a failure description in the application. It contains information about the type of failure and the associated exception (if any).
  * This class can be used to encapsulate failure information and provide a standardized way to handle failures across the application.
  */
+@SuppressWarnings("LombokGetterMayBeUsed")
 @Slf4j
 @Getter
 @ToString
@@ -48,6 +52,18 @@ public final class Failure {
     private static final Metrics METRICS = Metrics.of("Failure");
     private static final Metrics MISSING = METRICS.withGroup("Missing");
     private static final Metrics MAPPED = METRICS.withGroup("Mapped");
+    private static final Metrics FAILURE_BY_EXCEPTION = METRICS.withGroup("Exception");
+    private static final Metrics FAILURE_BY_EXCEPTION_WARN = FAILURE_BY_EXCEPTION.withGroup("Warn");
+    private static final Metrics FAILURE_BY_EXCEPTION_ERROR = FAILURE_BY_EXCEPTION.withGroup("Error");
+    private static final Metrics FAILURE_BY_TYPE = METRICS.withGroup("Type");
+    private static final Metrics FAILURE_BY_TYPE_WARN = FAILURE_BY_TYPE.withGroup("Warn");
+    private static final Metrics FAILURE_BY_TYPE_ERROR = FAILURE_BY_TYPE.withGroup("Error");
+
+    private static final Map<Class<? extends Throwable>, Counts> exceptionCounts = new ConcurrentHashMap<>();
+    private static final Map<Type, Counts> typeCounts = new ConcurrentHashMap<>();
+
+    private static final Map<Type, TrendStatisticalSummary> typeWarningsTrend = new ConcurrentHashMap<>();
+    private static final Map<Type, TrendStatisticalSummary> typeErrorsTrend = new ConcurrentHashMap<>();
 
     /**
      * The type of failure, which categorizes the nature of the failure (e.g., connectivity issues, authentication failures, etc).
@@ -60,19 +76,27 @@ public final class Failure {
     private final Throwable throwable;
 
     /**
+     * Holds the severity of the failure, which indicates how critical the failure is (e.g., warning, error).
+     * This can be used to determine how to handle the failure in the application.
+     */
+    @With
+    private final Severity severity;
+
+    /**
      * Returns the failure description by looking into the call stack. It tries to extract <code>Failure.Type</code> using custom
      *
      * @param throwable the exception to examine
      * @return a non-null instance
      */
     public static Failure of(Throwable throwable) {
-        if (throwable == null) return new Failure(INTERNAL_ERROR, null);
-        return new Failure(getType(throwable), throwable);
+        if (throwable == null) return new Failure(INTERNAL_ERROR, null, Severity.ERROR);
+        return new Failure(getType(throwable), throwable, Severity.ERROR);
     }
 
-    private Failure(Type type, Throwable throwable) {
+    private Failure(Type type, Throwable throwable, Severity severity) {
         this.type = type;
         this.throwable = throwable;
+        this.severity = severity;
     }
 
     /**
@@ -135,6 +159,61 @@ public final class Failure {
             if (ExceptionUtils.contains(throwable, exceptionClass)) return true;
         }
         return false;
+    }
+
+    /**
+     * Registers the failure count.
+     */
+    public void register() {
+        Throwable rootThrowable = ExceptionUtils.getRootCause(throwable);
+        Class<? extends Throwable> exceptionClass = rootThrowable != null ? rootThrowable.getClass() : null;
+        String exceptionClassName = rootThrowable != null ? ClassUtils.getCompactName(rootThrowable) : StringUtils.NA_STRING;
+        String typeName = StringUtils.capitalizeWords(type.name());
+        if (severity == Severity.WARNING) {
+            getCounts(type).incrementWarningCount();
+            if (exceptionClass != null) {
+                getCounts(exceptionClass).incrementWarningCount();
+            }
+            FAILURE_BY_TYPE_WARN.count(typeName);
+            FAILURE_BY_EXCEPTION_WARN.count(exceptionClassName);
+            increment(typeWarningsTrend.computeIfAbsent(type, key -> new TimeWindowStatisticalSummary()));
+        } else {
+            getCounts(type).incrementErrorCount();
+            if (exceptionClass != null) {
+                getCounts(exceptionClass).incrementErrorCount();
+            }
+            FAILURE_BY_TYPE_ERROR.count(typeName);
+            FAILURE_BY_EXCEPTION_ERROR.count(exceptionClassName);
+            increment(typeErrorsTrend.computeIfAbsent(type, key -> new TimeWindowStatisticalSummary()));
+        }
+    }
+
+    /**
+     * Returns warning trends grouped by failure type.
+     */
+    public static Map<Type, TrendStatisticalSummary> getTypeWarningsTrend() {
+        return immutableMap(typeWarningsTrend);
+    }
+
+    /**
+     * Returns error trends grouped by failure type.
+     */
+    public static Map<Type, TrendStatisticalSummary> getTypeErrorsTrend() {
+        return immutableMap(typeErrorsTrend);
+    }
+
+    /**
+     * Returns warning counters grouped by exception class.
+     */
+    public static Map<Class<? extends Throwable>, Counts> getExceptionCounts() {
+        return immutableMap(exceptionCounts);
+    }
+
+    /**
+     * Returns warning counters grouped by failure type.
+     */
+    public static Map<Type, Counts> getTypeCounts() {
+        return immutableMap(typeCounts);
     }
 
     /**
@@ -249,6 +328,22 @@ public final class Failure {
         return null;
     }
 
+    private static void increment(Number value) {
+        ((AtomicInteger) value).incrementAndGet();
+    }
+
+    private static void increment(TrendStatisticalSummary value) {
+        ((MutableStatisticalSummary) value).add(1);
+    }
+
+    private static Counts getCounts(Class<? extends Throwable> exceptionClass) {
+        return exceptionCounts.computeIfAbsent(exceptionClass, k -> new Counts(exceptionClass));
+    }
+
+    private static Counts getCounts(Type type) {
+        return typeCounts.computeIfAbsent(type, k -> new Counts(type));
+    }
+
     private static void registerMissing(Throwable throwable) {
         MISSING.count(ClassUtils.getName(throwable));
     }
@@ -324,6 +419,22 @@ public final class Failure {
          * @return the failure type, or null if it cannot be determined
          */
         Type resolve(Throwable throwable);
+    }
+
+    /**
+     * A severity associated with the failure.
+     */
+    public enum Severity {
+
+        /**
+         * A warning indicates a potential issue that should be looked into, but it does not necessarily indicate a failure.
+         */
+        WARNING,
+
+        /**
+         * An error indicates a failure that needs to be addressed. It represents a significant problem that has occurred in the application.
+         */
+        ERROR
     }
 
     /**
@@ -520,6 +631,33 @@ public final class Failure {
                     .add("_transient=" + _transient)
                     .toString();
         }
+    }
+
+    @Getter
+    @ToString(callSuper = true)
+    public static class Counts extends NamedIdentityAware<String> {
+
+        private volatile int warningCount;
+        private volatile int errorCount;
+
+        Counts(Failure.Type type) {
+            setId(type.name());
+            setName(EnumUtils.toLabel(type));
+        }
+
+        Counts(Class<?> exceptionType) {
+            setId(exceptionType.getName());
+            setName(ClassUtils.getName(exceptionType));
+        }
+
+        private synchronized void incrementWarningCount() {
+            warningCount++;
+        }
+
+        private synchronized void incrementErrorCount() {
+            errorCount++;
+        }
+
     }
 
     static class IOExceptionTypeExtractor implements TypeExtractor {

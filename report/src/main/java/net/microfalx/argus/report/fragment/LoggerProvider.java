@@ -18,7 +18,7 @@ public class LoggerProvider extends AbstractFragmentProvider {
     public Fragment create() {
         return Fragment.builder("Logger").template("logger")
                 .icon("fa-regular fa-file-lines")
-                .order(900)
+                .order(1000)
                 .build();
     }
 

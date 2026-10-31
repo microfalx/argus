@@ -248,6 +248,7 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
         for (Health health : resourceHealths.values()) {
             Collection<Health.Item> items = health.getWorstItems(MAX_VALUE);
             for (Health.Item item : items) {
+                if (item.has(Health.Policy.IGNORE_FROM_OBSERVABILITY)) continue;
                 Issue issue = Issue.create(Issue.Type.OBSERVABILITY, item.getName())
                         .withModule(item.getGroup().orElse(NA_STRING))
                         .withSeverity(getSeverity(item.getSeverity()));

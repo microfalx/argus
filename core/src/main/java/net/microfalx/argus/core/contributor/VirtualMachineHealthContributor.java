@@ -18,6 +18,7 @@ import net.microfalx.metrics.Metric;
 import net.microfalx.metrics.statistics.MutableStatisticalSummary;
 import net.microfalx.metrics.statistics.TimeWindowStatisticalSummary;
 
+import java.io.File;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
@@ -97,9 +98,22 @@ public class VirtualMachineHealthContributor extends AbstractHealthContributor i
 
     private void updateFileSystem(Health.Group group) {
         group = group.getGroup(FILE_SYSTEM_GROUP);
-        group.update(asPercentageItem(FILE_SYSTEM_HOME, JvmUtils.getHomeDirectory()));
-        group.update(asPercentageItem(FILE_SYSTEM_VARIABLE, JvmUtils.getVariableDirectory()));
-        group.update(asPercentageItem(FILE_SYSTEM_TEMPORARY, JvmUtils.getTemporaryDirectory()));
+        updateFileSystem(group, FILE_SYSTEM_HOME, JvmUtils.getHomeDirectory());
+        updateFileSystem(group, FILE_SYSTEM_VARIABLE, JvmUtils.getVariableDirectory());
+        updateFileSystem(group, FILE_SYSTEM_TEMPORARY, JvmUtils.getTemporaryDirectory());
+    }
+
+    private void updateFileSystem(Health.Group group, Thresholds thresholds, File directory) {
+        File homeDirectory = JvmUtils.getHomeDirectory();
+        Health.Item item = asPercentageItem(thresholds, directory);
+        if (homeDirectory != directory && homeDirectory.equals(directory)) {
+            item.withPolicy(Health.Policy.IGNORE_FROM_OBSERVABILITY);
+        }
+        group.update(item);
+    }
+
+    private void update(Health.Item item, File homeDirectory, File otherDirectory) {
+
     }
 
     private void updateOther(Health.Group group, VirtualMachineMetrics metrics, VirtualMachine virtualMachine) {

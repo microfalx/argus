@@ -1117,6 +1117,7 @@ public final class Health extends IdentityAware<String> implements Timestampable
         REPORT_IF_ERROR,
         REPORT_IF_NEEDED,
         REPORT_IF_HAS_VALUE,
+        IGNORE_FROM_OBSERVABILITY,
         RESTART_IF_NEEDED
     }
 

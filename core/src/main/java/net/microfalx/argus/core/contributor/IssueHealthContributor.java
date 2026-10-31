@@ -35,7 +35,7 @@ public class IssueHealthContributor extends AbstractHealthContributor {
         for (Issue.Type type : getTypes()) {
             Thresholds thresholds = getThresholds(type);
             group.update(asCounterItem(thresholds, (int) issueService.getTrend(type).getMean())
-                    .withPolicy(Health.Policy.REPORT_IF_NEEDED));
+                    .withPolicy(Health.Policy.REPORT_IF_HAS_VALUE));
         }
     }
 

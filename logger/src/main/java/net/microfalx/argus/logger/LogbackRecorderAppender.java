@@ -5,6 +5,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.IThrowableProxy;
 import ch.qos.logback.classic.spi.StackTraceElementProxy;
 import ch.qos.logback.classic.spi.ThrowableProxy;
+import net.microfalx.argus.api.Failure;
 import net.microfalx.argus.api.LoggerEvent;
 import net.microfalx.argus.api.LoggerListener;
 import net.microfalx.lang.*;
@@ -69,6 +70,7 @@ class LogbackRecorderAppender extends ch.qos.logback.core.AppenderBase<ILoggingE
             if (throwable != null) {
                 builder.exceptionClassName(ClassUtils.getName(throwable));
                 builder.exceptionStackTrace(ExceptionUtils.getStackTrace(throwable));
+                Failure.of(throwable).withSeverity(toFailureSeverity(eventObject)).register();
             }
         }
         LoggerEvent loggerEvent = builder.build();
@@ -105,5 +107,9 @@ class LogbackRecorderAppender extends ch.qos.logback.core.AppenderBase<ILoggingE
         } else {
             return null;
         }
+    }
+
+    private static Failure.Severity toFailureSeverity(ILoggingEvent eventObject) {
+        return eventObject.getLevel() == ch.qos.logback.classic.Level.ERROR ? Failure.Severity.ERROR : Failure.Severity.WARNING;
     }
 }

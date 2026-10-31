@@ -67,6 +67,14 @@ public interface IssueService extends Service {
     void register(Alert alert);
 
     /**
+     * Returns a statistical summary of the trend of the failures with the given severity.
+     *
+     * @param severity the severity
+     * @return a non-null instance
+     */
+    TrendStatisticalSummary getTrend(Failure.Severity severity, Failure.Type type);
+
+    /**
      * Returns a statistical summary of the trend of the alerts with the given severity.
      *
      * @param severity the severity
