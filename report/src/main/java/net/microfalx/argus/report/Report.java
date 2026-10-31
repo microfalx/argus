@@ -438,7 +438,7 @@ public class Report implements Nameable {
         template.addVariable("useCdn", useCdn);
         if (useCdn) return;
         template.addVariable("css", getResources("css/bootstrap/tabler.css"));
-        template.addVariable("js", getResources("css/bootstrap/tabler.js"));
+        template.addVariable("js", getResources("js/bootstrap/tabler.js"));
     }
 
     private void updateCodeFragments(Template template) {
