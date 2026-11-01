@@ -135,8 +135,8 @@ public class ServerHealthContributor extends AbstractHealthContributor {
     private static volatile Thresholds CPU_TOTAL = Thresholds.create("Total", 85f, 95f, Unit.PERCENT).withId("server.cpu.total").withGroup(CPU_GROUP);
     private static volatile Thresholds CPU_USER = Thresholds.create("User", 75f, 90f, Unit.PERCENT).withId("server.cpu.user").withGroup(CPU_GROUP);
     private static volatile Thresholds CPU_SYSTEM = Thresholds.create("System", 5f, 15f, Unit.PERCENT).withId("server.cpu.system").withGroup(CPU_GROUP);
-    private static volatile Thresholds CPU_NICE = Thresholds.create("Nice", 85f, 95f, Unit.PERCENT).withId("server.cpu.total").withGroup(CPU_GROUP);
-    private static volatile Thresholds CPU_IO_WAIT = Thresholds.create("I/O Wait", 5f, 15f, Unit.PERCENT).withId("server.cpu.total").withGroup(CPU_GROUP);
+    private static volatile Thresholds CPU_NICE = Thresholds.create("Nice", 85f, 95f, Unit.PERCENT).withId("server.cpu.nice").withGroup(CPU_GROUP);
+    private static volatile Thresholds CPU_IO_WAIT = Thresholds.create("I/O Wait", 5f, 15f, Unit.PERCENT).withId("server.cpu.io.wait").withGroup(CPU_GROUP);
 
     private static volatile Thresholds FILE_SYSTEM = Thresholds.create("File System", 80f, 90f, Unit.PERCENT).withId("server.file.system").withGroup(FILE_SYSTEM_GROUP);
 

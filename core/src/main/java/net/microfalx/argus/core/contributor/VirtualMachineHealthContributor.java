@@ -162,7 +162,7 @@ public class VirtualMachineHealthContributor extends AbstractHealthContributor i
     private static volatile Thresholds FILE_SYSTEM_TEMPORARY = Thresholds.create("Temporary Directory", 85f, 95f, Unit.PERCENT).withId("jvm.filesystem.temporary").withGroup(FILE_SYSTEM_GROUP);
 
     private static volatile Thresholds OTHER_THREADS = Thresholds.create("Threads", 100f, 200f, Unit.COUNTER).withId("jvm.threads").withGroup(OTHER_GROUP);
-    private static volatile Thresholds OTHER_FILE_DESCRIPTORS = Thresholds.create("File Descriptors", 1000f, 2000f, Unit.COUNTER).withId("jvm.threads").withGroup(OTHER_GROUP);
+    private static volatile Thresholds OTHER_FILE_DESCRIPTORS = Thresholds.create("File Descriptors", 1000f, 2000f, Unit.COUNTER).withId("jvm.file.descriptors").withGroup(OTHER_GROUP);
 
     public static final Metric SCORE_METRIC = Metric.get(VirtualMachineMetrics.METRIC_PREFIX + "score").withGroup("Health").withDisplayName("JVM Score");
 }

@@ -3,33 +3,33 @@
 
     <group key="health.thresholds.database" name="Database" section="Health Thresholds" description="Health thresholds for databases, each entry holds the warning and error threshold as '&lt;warn&gt;,&lt;error&gt;'">
         <item key="connections" name="Connections" separator="Connections" default="75%,90%" description="Thresholds for the connections usage (%)"/>
-        <item key="connections_running_threads" name="Running Threads" default="20,50" description="Thresholds for the number of running threads"/>
-        <item key="connections_aborted_connections" name="Aborted Connections" default="5,20" description="Thresholds for the number of aborted connections"/>
-        <item key="connections_rejected_connections" name="Rejected Connections" default="1,5" description="Thresholds for the number of rejected connections"/>
+        <item key="threads.running" name="Running Threads" default="20,50" description="Thresholds for the number of running threads"/>
+        <item key="connections.aborted" name="Aborted Connections" default="5,20" description="Thresholds for the number of aborted connections"/>
+        <item key="connections.rejected" name="Rejected Connections" default="1,5" description="Thresholds for the number of rejected connections"/>
 
-        <item key="queries_response_time" name="Response Time" separator="Queries" default="50ms,200ms" description="Thresholds for the response time (ms)"/>
-        <item key="queries_latency_p95" name="Latency P95" default="100ms,500ms" description="Thresholds for the 95th percentile latency (ms)"/>
-        <item key="queries_latency_p99" name="Latency P99" default="500ms,2s" description="Thresholds for the 99th percentile latency (ms)"/>
-        <item key="queries_slow_queries" name="Slow Queries" default="5,20" description="Thresholds for the number of slow queries"/>
-        <item key="queries_temporary_disk_tables" name="Temporary Disk Tables" default="25%,50%" description="Thresholds for the temporary tables created on disk (%)"/>
+        <item key="response.time" name="Response Time" separator="Queries" default="50ms,200ms" description="Thresholds for the response time (ms)"/>
+        <item key="latency.p95" name="Latency P95" default="100ms,500ms" description="Thresholds for the 95th percentile latency (ms)"/>
+        <item key="latency.p99" name="Latency P99" default="500ms,2s" description="Thresholds for the 99th percentile latency (ms)"/>
+        <item key="queries.slow" name="Slow Queries" default="5,20" description="Thresholds for the number of slow queries"/>
+        <item key="tables.temporary.disk" name="Temporary Disk Tables" default="25%,50%" description="Thresholds for the temporary tables created on disk (%)"/>
 
-        <item key="innodb_buffer_pool_misses" name="Buffer Pool Misses" separator="InnoDB" default="1%,5%" description="Thresholds for the buffer pool misses (%)"/>
-        <item key="innodb_row_lock_waits" name="Row Lock Waits" default="5,20" description="Thresholds for the number of row lock waits"/>
-        <item key="innodb_row_lock_time" name="Row Lock Time" default="50ms,500ms" description="Thresholds for the row lock time (ms)"/>
-        <item key="innodb_deadlocks" name="Deadlocks" default="1,5" description="Thresholds for the number of deadlocks"/>
-        <item key="innodb_history_length" name="History Length" default="10000,100000" description="Thresholds for the history list length"/>
+        <item key="innodb.buffer.pool.misses" name="Buffer Pool Misses" separator="InnoDB" default="1%,5%" description="Thresholds for the buffer pool misses (%)"/>
+        <item key="innodb.row.lock.waits" name="Row Lock Waits" default="5,20" description="Thresholds for the number of row lock waits"/>
+        <item key="innodb.row.lock.time" name="Row Lock Time" default="50ms,500ms" description="Thresholds for the row lock time (ms)"/>
+        <item key="innodb.deadlocks" name="Deadlocks" default="1,5" description="Thresholds for the number of deadlocks"/>
+        <item key="innodb.history.length" name="History Length" default="10000,100000" description="Thresholds for the history list length"/>
 
-        <item key="transactions_long_transactions" name="Long Transactions" separator="Transactions" default="1,5" description="Thresholds for the number of long transactions"/>
-        <item key="transactions_oldest_transaction" name="Oldest Transaction" default="5m,30m" description="Thresholds for the age of the oldest transaction (ms)"/>
+        <item key="transactions.long" name="Long Transactions" separator="Transactions" default="1,5" description="Thresholds for the number of long transactions"/>
+        <item key="transactions.oldest" name="Oldest Transaction" default="5m,30m" description="Thresholds for the age of the oldest transaction (ms)"/>
 
-        <item key="replication_lag" name="Lag" separator="Replication" default="30s,5m" description="Thresholds for the replication lag (ms)"/>
+        <item key="replication.lag" name="Lag" separator="Replication" default="30s,5m" description="Thresholds for the replication lag (ms)"/>
     </group>
 
-    <group key="health.thresholds.data_source" name="Data Source" section="Health Thresholds" description="Health thresholds for data sources, each entry holds the warning and error threshold as '&lt;warn&gt;,&lt;error&gt;'">
-        <item key="pool_usage" name="Pool Usage" default="75%,90%" description="Thresholds for the pool usage (%)"/>
-        <item key="pending_threads" name="Pending Threads" default="2,10" description="Thresholds for the number of threads waiting for a connection"/>
-        <item key="idle_shortfall" name="Idle Shortfall" default="50%,90%" description="Thresholds for the idle connections shortfall (%)"/>
-        <item key="acquire_time" name="Acquire Time" default="50ms,250ms" description="Thresholds for the connection acquire time (ms)"/>
+    <group key="health.thresholds.datasource" name="Data Source" section="Health Thresholds" description="Health thresholds for data sources, each entry holds the warning and error threshold as '&lt;warn&gt;,&lt;error&gt;'">
+        <item key="pool.usage" name="Pool Usage" default="75%,90%" description="Thresholds for the pool usage (%)"/>
+        <item key="pool.pending" name="Pending Threads" default="2,10" description="Thresholds for the number of threads waiting for a connection"/>
+        <item key="pool.idle.shortfall" name="Idle Shortfall" default="50%,90%" description="Thresholds for the idle connections shortfall (%)"/>
+        <item key="acquire.time" name="Acquire Time" default="50ms,250ms" description="Thresholds for the connection acquire time (ms)"/>
         <item key="timeouts" name="Timeouts" default="1,10" description="Thresholds for the number of connection timeouts"/>
         <item key="leaks" name="Leaks" default="1,5" description="Thresholds for the number of connection leaks"/>
         <item key="connection" name="Connection" default="100ms,500ms" description="Thresholds for the time to create a connection (ms)"/>

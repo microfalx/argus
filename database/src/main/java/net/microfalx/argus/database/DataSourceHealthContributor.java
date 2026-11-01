@@ -35,7 +35,7 @@ import static net.microfalx.lang.ExceptionUtils.getRootCauseMessage;
 @SuppressWarnings("FieldMayBeFinal")
 @Provider
 @Order(200)
-@Tag("database")
+@Tag("datasource")
 public class DataSourceHealthContributor extends AbstractHealthContributor implements LoggerListener {
 
     private final static String GROUP = "Data Source";

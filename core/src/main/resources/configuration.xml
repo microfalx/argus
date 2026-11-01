@@ -1,47 +1,47 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <configuration xmlns="https://net.microfalx/xsd/configuration-1.0.xsd">
 
-    <group key="health.thresholds.alerts" name="Alerts" section="Health Thresholds" description="Health thresholds for alerts, each entry holds the warning and error threshold as '&lt;warn&gt;,&lt;error&gt;'">
-        <item key="warning" name="Warning" default="200,500" description="Thresholds for the number of warning alerts"/>
+    <group key="health.thresholds.alert" name="Alerts" section="Health Thresholds" description="Health thresholds for alerts, each entry holds the warning and error threshold as '&lt;warn&gt;,&lt;error&gt;'">
+        <item key="warn" name="Warning" default="200,500" description="Thresholds for the number of warning alerts"/>
         <item key="error" name="Error" default="10,200" description="Thresholds for the number of error alerts"/>
     </group>
 
-    <group key="health.thresholds.failures" name="Failures" section="Health Thresholds" description="Health thresholds for failures, each entry holds the warning and error threshold as '&lt;warn&gt;,&lt;error&gt;'">
-        <item key="warning" name="Warning" default="200,500" description="Thresholds for the number of warning failures"/>
+    <group key="health.thresholds.failure" name="Failures" section="Health Thresholds" description="Health thresholds for failures, each entry holds the warning and error threshold as '&lt;warn&gt;,&lt;error&gt;'">
+        <item key="warn" name="Warning" default="200,500" description="Thresholds for the number of warning failures"/>
         <item key="error" name="Error" default="10,200" description="Thresholds for the number of error failures"/>
     </group>
 
-    <group key="health.thresholds.issues" name="Issues" section="Health Thresholds" description="Health thresholds for issues, each entry holds the warning and error threshold as '&lt;warn&gt;,&lt;error&gt;'">
+    <group key="health.thresholds.issue" name="Issues" section="Health Thresholds" description="Health thresholds for issues, each entry holds the warning and error threshold as '&lt;warn&gt;,&lt;error&gt;'">
         <item key="security" name="Security" default="5,10" description="Thresholds for the number of security issues"/>
-        <item key="denial_of_service" name="Denial of Service" default="5,10" description="Thresholds for the number of denial of service issues"/>
+        <item key="dos" name="Denial of Service" default="5,10" description="Thresholds for the number of denial of service issues"/>
         <item key="other" name="Other" default="10,20" description="Thresholds for the number of issues for any other type"/>
     </group>
 
     <group key="health.thresholds.server" name="Server" section="Health Thresholds" description="Health thresholds for the server, each entry holds the warning and error threshold as '&lt;warn&gt;,&lt;error&gt;'">
-        <item key="cpu_total" name="Total" separator="CPU" default="85%,95%" description="Thresholds for the total CPU usage (%)"/>
-        <item key="cpu_user" name="User" default="75%,90%" description="Thresholds for the user CPU usage (%)"/>
-        <item key="cpu_system" name="System" default="5%,15%" description="Thresholds for the system CPU usage (%)"/>
-        <item key="cpu_nice" name="Nice" default="85%,95%" description="Thresholds for the nice CPU usage (%)"/>
-        <item key="cpu_i_o_wait" name="I/O Wait" default="5%,15%" description="Thresholds for the I/O wait CPU usage (%)"/>
+        <item key="cpu.total" name="Total" separator="CPU" default="85%,95%" description="Thresholds for the total CPU usage (%)"/>
+        <item key="cpu.user" name="User" default="75%,90%" description="Thresholds for the user CPU usage (%)"/>
+        <item key="cpu.system" name="System" default="5%,15%" description="Thresholds for the system CPU usage (%)"/>
+        <item key="cpu.nice" name="Nice" default="85%,95%" description="Thresholds for the nice CPU usage (%)"/>
+        <item key="cpu.io.wait" name="I/O Wait" default="5%,15%" description="Thresholds for the I/O wait CPU usage (%)"/>
 
-        <item key="file_system" name="File System" separator="File System" default="80%,90%" description="Thresholds for the file system usage (%)"/>
+        <item key="file.system" name="File System" separator="File System" default="80%,90%" description="Thresholds for the file system usage (%)"/>
     </group>
 
     <group key="health.thresholds.jvm" name="JVM" section="Health Thresholds" description="Health thresholds for the JVM, each entry holds the warning and error threshold as '&lt;warn&gt;,&lt;error&gt;'">
-        <item key="memory_tenured" name="Tenured" separator="Memory" default="85%,95%" description="Thresholds for the tenured memory pool usage (%)"/>
-        <item key="memory_eden" name="Eden" default="85%,95%" description="Thresholds for the eden memory pool usage (%)"/>
-        <item key="memory_metaspace" name="Metaspace" default="100%,100%" description="Thresholds for the metaspace usage (%)"/>
-        <item key="memory_buffers" name="Buffers" default="100%,100%" description="Thresholds for the buffer pools usage (%)"/>
+        <item key="memory.tenured" name="Tenured" separator="Memory" default="85%,95%" description="Thresholds for the tenured memory pool usage (%)"/>
+        <item key="memory.eden" name="Eden" default="85%,95%" description="Thresholds for the eden memory pool usage (%)"/>
+        <item key="memory.metaspace" name="Metaspace" default="100%,100%" description="Thresholds for the metaspace usage (%)"/>
+        <item key="memory.buffers" name="Buffers" default="100%,100%" description="Thresholds for the buffer pools usage (%)"/>
 
-        <item key="gc_eden" name="Eden" separator="GC" default="10ms,50ms" description="Thresholds for the eden collection duration (ms)"/>
-        <item key="gc_tenured" name="Tenured" default="50ms,100ms" description="Thresholds for the tenured collection duration (ms)"/>
+        <item key="gc.eden" name="Eden" separator="GC" default="10ms,50ms" description="Thresholds for the eden collection duration (ms)"/>
+        <item key="gc.tenured" name="Tenured" default="50ms,100ms" description="Thresholds for the tenured collection duration (ms)"/>
 
-        <item key="file_system_home_directory" name="Home Directory" separator="File System" default="85%,95%" description="Thresholds for the file system usage of the home directory (%)"/>
-        <item key="file_system_variable_directory" name="Variable Directory" default="85%,95%" description="Thresholds for the file system usage of the variable directory (%)"/>
-        <item key="file_system_temporary_directory" name="Temporary Directory" default="85%,95%" description="Thresholds for the file system usage of the temporary directory (%)"/>
+        <item key="filesystem.home" name="Home Directory" separator="File System" default="85%,95%" description="Thresholds for the file system usage of the home directory (%)"/>
+        <item key="filesystem.variable" name="Variable Directory" default="85%,95%" description="Thresholds for the file system usage of the variable directory (%)"/>
+        <item key="filesystem.temporary" name="Temporary Directory" default="85%,95%" description="Thresholds for the file system usage of the temporary directory (%)"/>
 
-        <item key="other_threads" name="Threads" separator="Other" default="100,200" description="Thresholds for the number of threads"/>
-        <item key="other_file_descriptors" name="File Descriptors" default="500,1000" description="Thresholds for the number of file descriptors"/>
+        <item key="threads" name="Threads" separator="Other" default="100,200" description="Thresholds for the number of threads"/>
+        <item key="file.descriptors" name="File Descriptors" default="1000,2000" description="Thresholds for the number of file descriptors"/>
     </group>
 
 </configuration>

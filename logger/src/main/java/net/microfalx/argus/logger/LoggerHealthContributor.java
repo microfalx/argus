@@ -64,7 +64,7 @@ public class LoggerHealthContributor extends AbstractHealthContributor {
     static volatile Thresholds WARNING_STARTUP = Thresholds.create("Startup", 5, 20, Unit.COUNTER)
             .withId("logger.startup.warn").withGroup(WARNING_GROUP);
     static volatile Thresholds WARNING_STARTUP_NA = Thresholds.create("Startup", 0, 0, Unit.COUNTER)
-            .withId("logger.startup.warn.na").withGroup(WARNING_GROUP);
+            .withId("logger.startup.warn").withGroup(WARNING_GROUP);
     static volatile Thresholds WARNING_5M = Thresholds.create("Last 5m", 10, 50, Unit.COUNTER)
             .withId("logger.5m.warn").withGroup(WARNING_GROUP);
     static volatile Thresholds WARNING_1H = Thresholds.create("Last 1h", 50, 200, Unit.COUNTER)
@@ -73,9 +73,9 @@ public class LoggerHealthContributor extends AbstractHealthContributor {
             .withId("logger.24h.warn").withGroup(WARNING_GROUP);
 
     static volatile Thresholds ERROR_STARTUP = Thresholds.create("Startup", 1, 2, Unit.COUNTER)
-            .withId("logger.5m.error").withGroup(ERROR_GROUP);
+            .withId("logger.startup.error").withGroup(ERROR_GROUP);
     static volatile Thresholds ERROR_STARTUP_NA = Thresholds.create("Startup", 0, 0, Unit.COUNTER)
-            .withId("logger.5m.error").withGroup(ERROR_GROUP);
+            .withId("logger.startup.error").withGroup(ERROR_GROUP);
     static volatile Thresholds ERROR_5M = Thresholds.create("Last 5m", 5, 20, Unit.COUNTER)
             .withId("logger.5m.error").withGroup(ERROR_GROUP);
     static volatile Thresholds ERROR_1H = Thresholds.create("Last 1h", 50, 100, Unit.COUNTER)

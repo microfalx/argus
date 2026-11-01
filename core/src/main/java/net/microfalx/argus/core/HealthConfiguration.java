@@ -25,7 +25,7 @@ import static net.microfalx.lang.StringUtils.*;
  * Manages the configuration around health thresholds.
  * <p>
  * Each threshold (declared as a {@code static volatile} field in a health contributor) is stored under
- * {@code health.thresholds.<contributor>.<thresholds>} with the value {@code <warn>,<error>}, each value
+ * {@code health.thresholds.<contributor id>.<thresholds id>} with the value {@code <warn>,<error>}, each value
  * including the unit (like {@code 85%,95%} or {@code 50ms,2s}). The metadata
  * for these entries is provided by {@code configuration.xml} descriptors in each module.
  */
@@ -98,11 +98,11 @@ class HealthConfiguration implements ConfigurationListener {
     }
 
     private String getKey(HealthContributor contributor, Thresholds thresholds) {
-        String name = thresholds.getName();
-        String group = thresholds.getGroup().orElse(null);
-        String id = group == null || group.equalsIgnoreCase(contributor.getName()) || group.equalsIgnoreCase(name)
-                ? toIdentifier(name) : toIdentifier(group, name);
-        return PREFIX + "." + toIdentifier(contributor.getName()) + "." + id;
+        String contributorId = contributor.getId();
+        String id = thresholds.getId();
+        // thresholds identifiers are usually prefixed with the contributor identifier
+        if (id.startsWith(contributorId + ".")) id = id.substring(contributorId.length() + 1);
+        return PREFIX + "." + contributorId + "." + id;
     }
 
     private String encode(Thresholds thresholds) {
@@ -161,7 +161,7 @@ class HealthConfiguration implements ConfigurationListener {
             }
             Thresholds thresholds = getThresholds(field);
             if (thresholds == null) continue;
-            // the first declared field wins (variants like "not available" share the name)
+            // the first declared field wins (variants like "not available" share the identifier)
             fields.putIfAbsent(getKey(contributor, thresholds), field);
         }
         return fields;

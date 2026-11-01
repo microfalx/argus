@@ -53,7 +53,7 @@ public class FailureHealthContributor extends AbstractHealthContributor {
     }
 
     private static volatile Thresholds WARNING = Thresholds.create("Warning", 200, 500, Unit.COUNTER)
-            .withId("alert.warn").withGroup(GROUP);
+            .withId("failure.warn").withGroup(GROUP);
     private static volatile Thresholds ERROR = Thresholds.create("Error", 10, 200, Unit.COUNTER)
-            .withId("alert.error").withGroup(GROUP);
+            .withId("failure.error").withGroup(GROUP);
 }
