@@ -27,6 +27,7 @@ import java.nio.file.NoSuchFileException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.JarException;
 import java.util.zip.DataFormatException;
@@ -49,6 +50,7 @@ public final class Failure {
     private static final Map<Class<? extends Throwable>, Type> exceptionTypes = new ConcurrentHashMap<>();
     private static final Map<Class<? extends Throwable>, Type> exceptionSubTypes = new ConcurrentHashMap<>();
     private static final Collection<TypeExtractor> extractors = new CopyOnWriteArrayList<>();
+    private static final Collection<String> jdkPackages = new ArrayList<>();
     private static final Metrics METRICS = Metrics.of("Failure");
     private static final Metrics MISSING = METRICS.withGroup("Missing");
     private static final Metrics MAPPED = METRICS.withGroup("Mapped");
@@ -170,17 +172,17 @@ public final class Failure {
         String exceptionClassName = rootThrowable != null ? ClassUtils.getCompactName(rootThrowable) : StringUtils.NA_STRING;
         String typeName = StringUtils.capitalizeWords(type.name());
         if (severity == Severity.WARNING) {
-            getCounts(type).incrementWarningCount();
+            getCounts(type).incrementWarningCount(rootThrowable);
             if (exceptionClass != null) {
-                getCounts(exceptionClass).incrementWarningCount();
+                getCounts(exceptionClass).incrementWarningCount(rootThrowable);
             }
             FAILURE_BY_TYPE_WARN.count(typeName);
             FAILURE_BY_EXCEPTION_WARN.count(exceptionClassName);
             increment(typeWarningsTrend.computeIfAbsent(type, key -> new TimeWindowStatisticalSummary()));
         } else {
-            getCounts(type).incrementErrorCount();
+            getCounts(type).incrementErrorCount(rootThrowable);
             if (exceptionClass != null) {
-                getCounts(exceptionClass).incrementErrorCount();
+                getCounts(exceptionClass).incrementErrorCount(rootThrowable);
             }
             FAILURE_BY_TYPE_ERROR.count(typeName);
             FAILURE_BY_EXCEPTION_ERROR.count(exceptionClassName);
@@ -311,6 +313,23 @@ public final class Failure {
         return cause;
     }
 
+    /**
+     * Returns the source of the exception, which is the class name of the first element in the stack trace.
+     * If the throwable is null or has no stack trace, it returns null or "N/A" respectively.
+     *
+     * @param throwable the exception
+     * @return the source, null if the throwable is null, or "N/A" if the stack trace is empty
+     */
+    public static String getSourceOf(Throwable throwable) {
+        if (throwable == null) return null;
+        StackTraceElement[] stackTraces = throwable.getStackTrace();
+        for (StackTraceElement stackTrace : stackTraces) {
+            if (isJdkClass(stackTrace.getClassName())) continue;
+            return ClassUtils.getCompactName(stackTrace.getClassName());
+        }
+        return null;
+    }
+
     public static void reset() {
         exceptionTypes.clear();
         exceptionSubTypes.clear();
@@ -351,6 +370,13 @@ public final class Failure {
     private static Failure.Type registerMapped(Failure.Type type) {
         MAPPED.count(type.name());
         return type;
+    }
+
+    private static boolean isJdkClass(String className) {
+        for (String jdkPackage : jdkPackages) {
+            if (className.startsWith(jdkPackage)) return true;
+        }
+        return false;
     }
 
     private static void registerExtractors() {
@@ -639,6 +665,7 @@ public final class Failure {
 
         private volatile int warningCount;
         private volatile int errorCount;
+        private final Set<String> sources = new CopyOnWriteArraySet<>();
 
         Counts(Failure.Type type) {
             setId(type.name());
@@ -654,8 +681,22 @@ public final class Failure {
             warningCount++;
         }
 
+        private void incrementWarningCount(Throwable throwable) {
+            incrementWarningCount();
+            addSource(getSourceOf(throwable));
+        }
+
         private synchronized void incrementErrorCount() {
             errorCount++;
+        }
+
+        private void incrementErrorCount(Throwable throwable) {
+            incrementErrorCount();
+            addSource(getSourceOf(throwable));
+        }
+
+        private void addSource(String source) {
+            if (source != null) sources.add(source);
         }
 
     }
@@ -686,5 +727,10 @@ public final class Failure {
             if (ObjectUtils.contains(message, RESET_MESSAGES)) return Type.RESET;
             return null;
         }
+    }
+
+    static {
+        jdkPackages.add("java.");
+        jdkPackages.add("jdk.");
     }
 }

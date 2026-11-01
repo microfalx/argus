@@ -20,7 +20,12 @@
               th:text="${#numbers.formatInteger(count,0)}"></span><span class="ms-2" th:text="${text}"></span>
 </h3>
 
-<h3 th:fragment="h2(text)" class="border-top mt-3 pt-2" th:text="${text}">
+<h3 th:fragment="h3_text(text)" class="border-top mt-3 pt-2">
+    <span class="ms-2" th:text="${text}"></span>
+</h3>
+
+<h3 th:fragment="h2(text)" class="border-top mt-3 pt-2">
+    <span class="ms-2" th:text="${text}"></span>
 </h3>
 
 <div th:fragment="failures_details(failures)" class="bt-1">

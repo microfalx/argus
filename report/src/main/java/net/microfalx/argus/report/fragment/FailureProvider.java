@@ -23,9 +23,17 @@ public class FailureProvider extends AbstractFragmentProvider {
     @Override
     public void update(Template template) {
         super.update(template);
+        Collection<Failure.Counts> failuresByType = getFailuresByType();
+        Collection<Failure.Counts> failuresByException = getFailuresByException();
+        int failuresByExceptionCount = sum(failuresByException);
         template.addVariable("failureHelper", this);
-        template.addVariable("failuresByType", getFailuresByType());
-        template.addVariable("failuresByException", getFailuresByException());
+        template.addVariable("failuresCount", failuresByExceptionCount);
+        template.addVariable("failuresByType", failuresByType);
+        template.addVariable("failuresByException", failuresByException);
+    }
+
+    private int sum(Collection<Failure.Counts> failures) {
+        return failures.stream().mapToInt(Failure.Counts::getErrorCount).sum();
     }
 
     private Collection<Failure.Counts> getFailuresByType() {
