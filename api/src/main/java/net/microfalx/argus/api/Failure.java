@@ -892,7 +892,7 @@ public final class Failure {
 
         Counts(Class<?> exceptionType) {
             setId(exceptionType.getName());
-            setName(ClassUtils.getName(exceptionType));
+            setName(ClassUtils.getCompactName(exceptionType));
         }
 
         private synchronized void incrementWarningCount() {
