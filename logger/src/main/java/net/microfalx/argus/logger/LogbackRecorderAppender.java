@@ -68,6 +68,7 @@ class LogbackRecorderAppender extends ch.qos.logback.core.AppenderBase<ILoggingE
             builder.exceptionClassName(throwableProxy.getClassName());
             Throwable throwable = getThrowable(throwableProxy);
             if (throwable != null) {
+                builder.exception(throwable);
                 builder.exceptionClassName(ClassUtils.getName(throwable));
                 builder.exceptionStackTrace(ExceptionUtils.getStackTrace(throwable));
                 Failure.of(throwable).withSeverity(toFailureSeverity(eventObject)).register();

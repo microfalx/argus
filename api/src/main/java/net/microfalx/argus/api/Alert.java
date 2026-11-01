@@ -1,6 +1,7 @@
 package net.microfalx.argus.api;
 
 import lombok.*;
+import net.microfalx.lang.EnumUtils;
 import net.microfalx.lang.Identifiable;
 import net.microfalx.lang.TimeUtils;
 import net.microfalx.lang.Timestampable;
@@ -38,6 +39,7 @@ public class Alert implements Identifiable<String>, Timestampable<LocalDateTime>
 
     private volatile String failureClass;
     private volatile String failureType;
+    private volatile String failureStackTrace;
 
     public String getMessage() {
         return event.getMessage();
@@ -87,7 +89,12 @@ public class Alert implements Identifiable<String>, Timestampable<LocalDateTime>
             if (timestamp > modifiedAt) modifiedAt = timestamp;
         }
         failureClass = event.getExceptionClassName();
-        failureType = isNotEmpty(failureClass) ? getRootCauseName(failureClass) : NA_STRING;
+        if (event.getException() != null) {
+            failureType = EnumUtils.toLabel(Failure.of(event.getException()).getType());
+        } else {
+            failureType = isNotEmpty(failureClass) ? getRootCauseName(failureClass) : NA_STRING;
+        }
+        failureStackTrace = event.getExceptionStackTrace();
         acknowledged = false;
         totalEventCount++;
         pendingEventCount++;

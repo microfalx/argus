@@ -29,6 +29,7 @@ public class LoggerEvent implements Identifiable<Long>, Timestampable<LocalDateT
     private String message;
     private String threadName;
     private Map<String, String> mdc;
+    private Throwable exception;
     private String exceptionClassName;
     private String exceptionStackTrace;
     private String correlationId;
