@@ -130,6 +130,8 @@ public class VirtualMachineHealthContributor extends AbstractHealthContributor i
     }
 
     private void updateGc(Health.Group group, VirtualMachineMetrics metrics) {
+        // do not track GC metrics for the first 5 minutes of the JVM, as it can be misleading due to the initial warmup phase
+        if (JvmUtils.getUptime().compareTo(Duration.ofMinutes(5)) < 0) return;
         group = group.getGroup(GC_GROUP);
         group.update(asDurationItem(GC_EDEN, metrics.getAverageGcEdenDuration()));
         group.update(asDurationItem(GC_TENURED, metrics.getAverageGcTenuredDuration()));
