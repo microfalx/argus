@@ -248,7 +248,7 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
         getThreadPool().schedule(new MaintenanceTask(), Trigger.fixedDelay(ofMinutes(15)));
         getThreadPool().schedule(new ScrapeTask(), Trigger.fixedDelay(ofSeconds(30)));
         getThreadPool().schedule(new ServiceStatisticsWorker(), Trigger.fixedDelay(ofSeconds(60)));
-        getThreadPool().schedule(new IssuesTask(), Trigger.fixedDelay(ofSeconds(60)));
+        getThreadPool().schedule(new IssuesTask(), Trigger.fixedDelay(ofMinutes(5)));
         getThreadPool().schedule(this::updateMetrics, Trigger.fixedDelay(ofSeconds(10)));
         getThreadPool().execute(this::initializeConfiguration);
     }
@@ -257,7 +257,7 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
         METRICS.time("Update Contributors Stats", t -> updateContributorsStats());
     }
 
-    void updateIssues() {
+    void updateIssuesFromHealth() {
         for (Health health : resourceHealths.values()) {
             Collection<Health.Item> items = health.getWorstItems(MAX_VALUE);
             for (Health.Item item : items) {
@@ -507,7 +507,7 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
 
         @Override
         public void run() {
-            updateIssues();
+            updateIssuesFromHealth();
         }
     }
 }
