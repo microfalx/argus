@@ -16,7 +16,7 @@
         <tr th:each="failure : ${failures}">
             <td><span th:text="${failure.name}"></span></td>
             <td><span th:text="${helper.toString(failure.sources)}"></span></td>
-            <td class="text-end"><span th:text="${failure.warningCount}" ></span></td>
+            <td class="text-end"><span th:text="${failure.warningCount}"></span></td>
             <td class="text-end"><span th:text="${failure.errorCount}"></span></td>
         </tr>
         </tbody>
@@ -24,21 +24,19 @@
 </div>
 
 <div th:fragment="summary">
-    <div class="container-fluid">
-        <h3 th:replace="~{fragments/utils :: h3_count('Failures', ${failuresCount})}"></h3>
-        <table class="table-light w-100">
-            <tr class="align-top">
-                <td class="w-50 me-5">
-                    <h3 th:replace="~{fragments/utils :: h3_text('By Type')}"></h3>
-                    <div th:replace="~{failure :: render-failure(${failuresByType})}"></div>
-                </td>
-                <td class="w-50 ms-5">
-                    <h3 th:replace="~{fragments/utils :: h3_text('By Exception')}"></h3>
-                    <div th:replace="~{failure :: render-failure(${failuresByException})}"></div>
-                </td>
-            </tr>
-        </table>
-    </div>
+    <h3 th:replace="~{fragments/utils :: h3_count('Failures', ${failuresCount})}"></h3>
+    <table class="table-light w-100">
+        <tr class="align-top">
+            <td class="w-50 me-5">
+                <h3 th:replace="~{fragments/utils :: h3_text('By Type')}"></h3>
+                <div th:replace="~{failure :: render-failure(${failuresByType})}"></div>
+            </td>
+            <td class="w-50 ms-5">
+                <h3 th:replace="~{fragments/utils :: h3_text('By Exception')}"></h3>
+                <div th:replace="~{failure :: render-failure(${failuresByException})}"></div>
+            </td>
+        </tr>
+    </table>
 </div>
 
 <div th:fragment="content">
