@@ -64,6 +64,7 @@ public class ReportService extends AbstractService implements Initializable {
     private final Collection<Future<?>> scheduledTasks = new CopyOnWriteArrayList<>();
     private final Object lock = new Object();
     private final AtomicBoolean startReportSent = new AtomicBoolean(false);
+    private final AtomicBoolean issuesReportSent = new AtomicBoolean(false);
     @SizeOf(shallow = false, deepSize = 5000)
     private volatile TemplateEngine templateEngine;
     private volatile long lastRenderingTime = TimeUtils.oneHourAgo();
@@ -482,29 +483,38 @@ public class ReportService extends AbstractService implements Initializable {
     private void extractAndSendIssues(Issue.Severity severity) {
         METRICS.count("Check Issues: " + severity.name());
         updateIssuesCache();
+        String suffix = null;
         if (cachedIssues.isEmpty()) {
             LOGGER.info("No issues found with severity {}", severity);
         } else {
             long criticalIssuesCount = getIssueCount(Issue.Severity.CRITICAL);
             long highIssuesCount = getIssueCount(Issue.Severity.HIGH);
             long noticeIssuesCount = getIssueCount(Issue.Severity.NOTICE);
-            String suffix;
-            boolean shouldSend;
             if (severity == Issue.Severity.NOTICE) {
-                suffix = "Notices";
-                shouldSend = noticeIssuesCount > 0 && settings.isOnNotice();
+                if (noticeIssuesCount > 0 && settings.isOnNotice()) suffix = "Notices";
             } else {
                 // if it was requested to send only critical issues, but there are none, skip sending
                 if (criticalIssuesCount > 0 && severity != Issue.Severity.CRITICAL) return;
                 // if there are issues, sent the report, looking at the last hour
                 boolean hasCritical = criticalIssuesCount >= settings.getCriticalIssuesThreshold();
                 boolean hasHigh = highIssuesCount >= settings.getHighIssuesThreshold();
-                shouldSend = hasCritical || hasHigh;
-                suffix = hasCritical ? "Critical Issues" : "Important Issues";
+                if (hasCritical || hasHigh) suffix = hasCritical ? "Critical Issues" : "Important Issues";
             }
-            if (shouldSend) {
-                METRICS.count("Sent: " + severity.name());
-                send(Duration.ofHours(1), suffix);
+        }
+        if (suffix != null) {
+            METRICS.count("Sent: " + severity.name());
+            send(Duration.ofHours(1), suffix);
+            if (severity != Issue.Severity.NOTICE) issuesReportSent.set(true);
+        } else if (severity != Issue.Severity.NOTICE && issuesReportSent.compareAndSet(true, false)) {
+            // an issues report was sent previously, and now there is nothing to report, let administrators know
+            METRICS.count("Sent: Resolved");
+            LOGGER.info("Issues reported previously are resolved, send report");
+            try {
+                send(Duration.ofHours(1), "Resolved");
+            } catch (Exception e) {
+                // retry on the next run
+                issuesReportSent.set(true);
+                throw e;
             }
         }
     }
