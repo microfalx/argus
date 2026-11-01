@@ -3,7 +3,6 @@ package net.microfalx.argus.core;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.microfalx.argus.api.*;
-import net.microfalx.argus.core.contributor.HealthConfiguration;
 import net.microfalx.configuration.Configuration;
 import net.microfalx.jvm.ServerMetrics;
 import net.microfalx.jvm.VirtualMachineMetrics;

@@ -1,4 +1,4 @@
-package net.microfalx.argus.core.contributor;
+package net.microfalx.argus.core;
 
 import lombok.extern.slf4j.Slf4j;
 import net.microfalx.argus.api.HealthContributor;
@@ -30,7 +30,7 @@ import static net.microfalx.lang.StringUtils.*;
  * for these entries is provided by {@code configuration.xml} descriptors in each module.
  */
 @Slf4j
-public class HealthConfiguration implements ConfigurationListener {
+class HealthConfiguration implements ConfigurationListener {
 
     public static final String PREFIX = "health.thresholds";
     private static final String SEPARATOR = ",";
@@ -43,14 +43,14 @@ public class HealthConfiguration implements ConfigurationListener {
     /**
      * Discovers thresholds from health contributors and registers as external configuration.
      */
-    public void register() {
+    void register() {
         getContributors().forEach(this::register);
     }
 
     /**
      * Updates the thresholds from external configuration and applies to health contributors.
      */
-    public void update() {
+    void update() {
         Configuration configuration = Configuration.get();
         fields.forEach((key, field) -> update(field, key, configuration.get(key)));
     }
