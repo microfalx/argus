@@ -20,7 +20,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.regex.Pattern;
 
 @SuppressWarnings("FieldMayBeFinal")
 @Provider
@@ -141,7 +140,6 @@ public class ServerHealthContributor extends AbstractHealthContributor {
 
     private static volatile Thresholds FILE_SYSTEM = Thresholds.create("File System", 80f, 90f, Unit.PERCENT).withId("server.file.system").withGroup(FILE_SYSTEM_GROUP);
 
-    private static final Pattern WINDOWS_DRIVE_PATTERN = Pattern.compile("^[A-Za-z]:\\\\");
     private static final Set<String> WINDOWS_LOCAL_TYPES = Set.of("ntfs", "fat", "fat32", "exfat", "refs");
     private static final Set<String> LINUX_VIRTUAL_TYPES = Set.of(
             "autofs", "bpf", "cgroup", "cgroup2", "configfs", "debugfs", "devpts", "devtmpfs", "fusectl",

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<configuration xmlns="https://net.microfalx/xsd/configuration-1.0.xsd">
+
+    <group key="health.thresholds.logger" name="Logger" section="Health Thresholds" description="Health thresholds for logged events, each entry holds the warning and error threshold as '&lt;warn&gt;,&lt;error&gt;'">
+        <item key="warning_startup" name="Startup" separator="Warning" default="5,20" description="Thresholds for the number of warnings logged during startup"/>
+        <item key="warning_last_5m" name="Last 5m" default="10,50" description="Thresholds for the number of warnings logged in the last 5 minutes"/>
+        <item key="warning_last_1h" name="Last 1h" default="50,200" description="Thresholds for the number of warnings logged in the last hour"/>
+        <item key="warning_last_24h" name="Last 24h" default="500,1000" description="Thresholds for the number of warnings logged in the last 24 hours"/>
+
+        <item key="error_startup" name="Startup" separator="Error" default="1,2" description="Thresholds for the number of errors logged during startup"/>
+        <item key="error_last_5m" name="Last 5m" default="5,20" description="Thresholds for the number of errors logged in the last 5 minutes"/>
+        <item key="error_last_1h" name="Last 1h" default="50,100" description="Thresholds for the number of errors logged in the last hour"/>
+        <item key="error_last_24h" name="Last 24h" default="500,1000" description="Thresholds for the number of errors logged in the last 24 hours"/>
+    </group>
+
+</configuration>

@@ -3,6 +3,8 @@ package net.microfalx.argus.core;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.microfalx.argus.api.*;
+import net.microfalx.argus.core.contributor.HealthConfiguration;
+import net.microfalx.configuration.Configuration;
 import net.microfalx.jvm.ServerMetrics;
 import net.microfalx.jvm.VirtualMachineMetrics;
 import net.microfalx.lang.ClassUtils;
@@ -47,6 +49,7 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
     private final Collection<HealthContributor> classPathContributors = new CopyOnWriteArraySet<>();
 
     private final Map<String, Thresholds> thresholds = new ConcurrentHashMap<>();
+    private final HealthConfiguration configuration = new HealthConfiguration();
     private volatile boolean memory = true;
     @SizeOf private volatile SeriesStore seriesStore;
     private volatile net.microfalx.argus.api.Service service;
@@ -216,6 +219,16 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
         initializeMetrics();
     }
 
+    private void initializeConfiguration() {
+        try {
+            configuration.register();
+            configuration.update();
+            Configuration.get().addListener(configuration);
+        } catch (Exception e) {
+            LOGGER.atError().setCause(e).log("Failed to initialize health thresholds configuration");
+        }
+    }
+
     private void discoverHealthContributors() {
         LOGGER.info("Discover health contributors");
         for (HealthContributor contributor : resolveProviderInstances(HealthContributor.class)) {
@@ -238,6 +251,7 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
         getThreadPool().schedule(new ServiceStatisticsWorker(), Trigger.fixedDelay(ofSeconds(60)));
         getThreadPool().schedule(new IssuesTask(), Trigger.fixedDelay(ofSeconds(60)));
         getThreadPool().schedule(this::updateMetrics, Trigger.fixedDelay(ofSeconds(10)));
+        getThreadPool().execute(this::initializeConfiguration);
     }
 
     void maintenance() {
