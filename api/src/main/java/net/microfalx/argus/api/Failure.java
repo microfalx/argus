@@ -950,5 +950,6 @@ public final class Failure {
     static {
         ignorePackages.add("java.");
         ignorePackages.add("jdk.");
+        ignorePackages.add("sun.");
     }
 }
