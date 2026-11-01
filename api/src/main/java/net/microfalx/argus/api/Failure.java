@@ -50,7 +50,7 @@ public final class Failure {
     private static final Map<Class<? extends Throwable>, Type> exceptionTypes = new ConcurrentHashMap<>();
     private static final Map<Class<? extends Throwable>, Type> exceptionSubTypes = new ConcurrentHashMap<>();
     private static final Collection<TypeExtractor> extractors = new CopyOnWriteArrayList<>();
-    private static final Collection<String> jdkPackages = new ArrayList<>();
+    private static final Collection<String> ignorePackages = new ArrayList<>();
     private static final Metrics METRICS = Metrics.of("Failure");
     private static final Metrics MISSING = METRICS.withGroup("Missing");
     private static final Metrics MAPPED = METRICS.withGroup("Mapped");
@@ -324,10 +324,21 @@ public final class Failure {
         if (throwable == null) return null;
         StackTraceElement[] stackTraces = throwable.getStackTrace();
         for (StackTraceElement stackTrace : stackTraces) {
-            if (isJdkClass(stackTrace.getClassName())) continue;
+            if (shouldIgnoreClass(stackTrace.getClassName())) continue;
             return ClassUtils.getCompactName(stackTrace.getClassName());
         }
         return null;
+    }
+
+    /**
+     * Registers a package to be ignored when determining the source of an exception. This is useful for filtering
+     * out internal or framework classes from the stack trace.
+     *
+     * @param packageName the package name
+     */
+    public static void registerPackageToIgnore(String packageName) {
+        requireNonNull(packageName);
+        ignorePackages.add(packageName);
     }
 
     public static void reset() {
@@ -372,9 +383,9 @@ public final class Failure {
         return type;
     }
 
-    private static boolean isJdkClass(String className) {
-        for (String jdkPackage : jdkPackages) {
-            if (className.startsWith(jdkPackage)) return true;
+    private static boolean shouldIgnoreClass(String className) {
+        for (String ignorePackage : ignorePackages) {
+            if (className.startsWith(ignorePackage)) return true;
         }
         return false;
     }
@@ -730,7 +741,7 @@ public final class Failure {
     }
 
     static {
-        jdkPackages.add("java.");
-        jdkPackages.add("jdk.");
+        ignorePackages.add("java.");
+        ignorePackages.add("jdk.");
     }
 }
