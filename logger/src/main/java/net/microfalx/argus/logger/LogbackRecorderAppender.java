@@ -12,6 +12,8 @@ import net.microfalx.lang.*;
 import net.microfalx.service.api.Logger;
 import net.microfalx.service.api.Service;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -72,6 +74,13 @@ class LogbackRecorderAppender extends ch.qos.logback.core.AppenderBase<ILoggingE
                 builder.exceptionClassName(ClassUtils.getName(throwable));
                 builder.exceptionStackTrace(ExceptionUtils.getStackTrace(throwable));
                 Failure.of(throwable).withSeverity(toFailureSeverity(eventObject)).register();
+            } else {
+                StackTraceElementProxy[] stackTraceElementProxyArray = throwableProxy.getStackTraceElementProxyArray();
+                if (stackTraceElementProxyArray != null) {
+                    List<StackTraceElement> stackTraceElements = Arrays.stream(stackTraceElementProxyArray)
+                            .map(StackTraceElementProxy::getStackTraceElement).toList();
+                    builder.exceptionStackTrace(ExceptionUtils.getStackTrace(stackTraceElements));
+                }
             }
         }
         LoggerEvent loggerEvent = builder.build();

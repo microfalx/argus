@@ -1,10 +1,7 @@
 package net.microfalx.argus.api;
 
 import lombok.*;
-import net.microfalx.lang.EnumUtils;
-import net.microfalx.lang.Identifiable;
-import net.microfalx.lang.TimeUtils;
-import net.microfalx.lang.Timestampable;
+import net.microfalx.lang.*;
 
 import java.time.LocalDateTime;
 
@@ -26,10 +23,11 @@ import static net.microfalx.lang.StringUtils.isNotEmpty;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class Alert implements Identifiable<String>, Timestampable<LocalDateTime> {
+public class Alert implements Identifiable<String>, Nameable, Timestampable<LocalDateTime> {
 
     private String id;
-    private volatile LoggerEvent event;
+    private String message;
+    private LoggerEvent.Level level;
     private volatile long createdAt;
     private volatile long modifiedAt;
 
@@ -41,12 +39,16 @@ public class Alert implements Identifiable<String>, Timestampable<LocalDateTime>
     private volatile String failureType;
     private volatile String failureStackTrace;
 
+    public String getName() {
+        return message;
+    }
+
     public String getMessage() {
-        return event.getMessage();
+        return message;
     }
 
     public LoggerEvent.Level getLevel() {
-        return event.getLevel();
+        return level;
     }
 
     public Severity getSeverity() {
@@ -80,7 +82,6 @@ public class Alert implements Identifiable<String>, Timestampable<LocalDateTime>
      */
     public synchronized void update(LoggerEvent event) {
         requireNonNull(event);
-        this.event = event;
         long timestamp = event.getTimestamp();
         if (createdAt == 0) {
             createdAt = timestamp;
@@ -88,6 +89,8 @@ public class Alert implements Identifiable<String>, Timestampable<LocalDateTime>
         } else {
             if (timestamp > modifiedAt) modifiedAt = timestamp;
         }
+        this.message = event.getMessage();
+        this.level = event.getLevel();
         failureClass = event.getExceptionClassName();
         if (event.getException() != null) {
             failureType = EnumUtils.toLabel(Failure.of(event.getException()).getType());
