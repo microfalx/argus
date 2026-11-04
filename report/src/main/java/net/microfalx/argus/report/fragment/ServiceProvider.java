@@ -13,6 +13,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.StreamSupport;
 
+@SuppressWarnings("unused")
 @Provider
 public class ServiceProvider extends AbstractFragmentProvider {
 

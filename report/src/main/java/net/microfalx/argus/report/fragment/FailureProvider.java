@@ -6,6 +6,7 @@ import net.microfalx.argus.report.*;
 import java.util.Collection;
 import java.util.Comparator;
 
+@SuppressWarnings("unused")
 @net.microfalx.lang.annotation.Provider
 public class FailureProvider extends AbstractFragmentProvider {
 

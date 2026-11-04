@@ -27,15 +27,20 @@
         <div class="row justify-content-start g-0">
             <div class="col-4">Server</div>
             <div class="col-8">
-                Average CPU: <span th:text="${helper.formatPercent(environment.getAverageServerCpu())}"></span>
-                (Cores: <span th:text="${environment.server.cores}"></span>, Average Load: <span th:text="${helper.formatNumber(environment.getAverageServerLoad15())}"/>)
-                , Average Memory: <span th:text="${helper.formatBytes(environment.getAverageServerMemory())}"/>
+                CPU: <span th:text="${helper.formatPercent(environment.getAverageServerCpu())}"></span>
+                (Cores: <span th:text="${environment.server.cores}"></span>, Load: <span th:text="${helper.formatNumber(environment.getAverageServerLoad15())}"/>)
+                , Memory: <span th:text="${helper.formatBytes(environment.getAverageServerMemory())}"/> of
+                <span th:text="${helper.formatBytes(environment.getServer().getMemoryTotal())}"/>
             </div>
         </div>
         <div class="row justify-content-start g-0">
             <div class="col-4">Process</div>
             <div class="col-8">
                 CPU: <span th:text="${helper.formatPercent(environment.getAverageProcessCpu())}"></span>
+                , Heap Memory: <span th:text="${helper.formatBytes(environment.getAverageProcessHeapMemory())}"/> of
+                 <span th:text="${helper.formatBytes(environment.getVirtualMachine().getHeapTotalMemory())}"/>
+                , Non Heap Memory: <span th:text="${helper.formatBytes(environment.getAverageProcessNonHeapMemory())}"/> of
+                 <span th:text="${helper.formatBytes(environment.getVirtualMachine().getNonHeapTotalMemory())}"/>
             </div>
         </div>
     </div>

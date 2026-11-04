@@ -8,6 +8,7 @@ import net.microfalx.metrics.statistics.CounterStatisticalSummary;
 
 import java.util.Collection;
 
+@SuppressWarnings("unused")
 @net.microfalx.lang.annotation.Provider
 public class LoggerProvider extends AbstractFragmentProvider {
 

@@ -10,6 +10,7 @@ import java.util.Comparator;
 
 import static net.microfalx.lang.FormatterUtils.formatDuration;
 
+@SuppressWarnings("unused")
 @net.microfalx.lang.annotation.Provider
 public class MetricProvider extends AbstractFragmentProvider {
 

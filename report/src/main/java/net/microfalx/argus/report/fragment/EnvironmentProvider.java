@@ -10,6 +10,7 @@ import net.microfalx.jvm.model.VirtualMachine;
 
 import java.time.Duration;
 
+@SuppressWarnings("unused")
 @net.microfalx.lang.annotation.Provider
 public class EnvironmentProvider extends AbstractFragmentProvider {
 
@@ -45,6 +46,22 @@ public class EnvironmentProvider extends AbstractFragmentProvider {
 
     public double getAverageProcessCpu() {
         return VirtualMachineMetrics.get().getAverageCpuSinceStartup();
+    }
+
+    public double getAverageProcessEdenMemory() {
+        return VirtualMachineMetrics.get().getAverageEdenMemory();
+    }
+
+    public double getAverageProcessTenuredMemory() {
+        return VirtualMachineMetrics.get().getAverageTenuredMemory();
+    }
+
+    public double getAverageProcessHeapMemory() {
+        return VirtualMachineMetrics.get().getAverageHeapMemory();
+    }
+
+    public double getAverageProcessNonHeapMemory() {
+        return VirtualMachineMetrics.get().getAverageNonHeapMemory();
     }
 
     public double getAverageServerLoad15() {

@@ -8,6 +8,7 @@ import net.microfalx.jvm.ServerMetrics;
 import net.microfalx.jvm.VirtualMachineMetrics;
 import net.microfalx.metrics.SeriesStore;
 
+@SuppressWarnings("unused")
 @net.microfalx.lang.annotation.Provider
 public class PerformanceProvider extends AbstractFragmentProvider {
 
@@ -94,6 +95,16 @@ public class PerformanceProvider extends AbstractFragmentProvider {
         Chart.AreaSeriesChart<Long, Float> chart = new Chart.AreaSeriesChart<>(id, "Memory");
         chart.add(Chart.convert("Heap", getSeries(store, VirtualMachineMetrics.MEMORY_HEAP_USED)));
         chart.add(Chart.convert("Non-Heap", getSeries(store, VirtualMachineMetrics.MEMORY_NON_HEAP_USED)));
+        chart.setStacked(true);
+        chart.getYaxis().setUnit(Chart.Unit.BYTE);
+        return chart;
+    }
+
+    public Chart.AreaSeriesChart<Long, Float> getProcessMemoryPools(String id) {
+        SeriesStore store = getVirtualMachineMetrics();
+        Chart.AreaSeriesChart<Long, Float> chart = new Chart.AreaSeriesChart<>(id, "Memory / Pools");
+        chart.add(Chart.convert("Eden", getSeries(store, VirtualMachineMetrics.MEMORY_EDEN_USED)));
+        chart.add(Chart.convert("Tenured", getSeries(store, VirtualMachineMetrics.MEMORY_TENURED_USED)));
         chart.setStacked(true);
         chart.getYaxis().setUnit(Chart.Unit.BYTE);
         return chart;

@@ -5,6 +5,7 @@ import net.microfalx.argus.report.Fragment;
 import net.microfalx.argus.report.Template;
 import net.microfalx.argus.report.TrendHelper;
 
+@SuppressWarnings("unused")
 @net.microfalx.lang.annotation.Provider
 public class SummaryProvider extends AbstractFragmentProvider {
 

@@ -20,10 +20,28 @@
     </div>
 
     <h3 class="pt-2">Process</h3>
+    <div>
+        <div>
+        CPU: <span th:text="${helper.formatPercent(environment.getAverageProcessCpu())}"></span>
+        , Heap Memory: <span class="badge text-bg-secondary"><span th:text="${helper.formatBytes(environment.getAverageProcessHeapMemory())}"/> of
+            <span th:text="${helper.formatBytes(environment.getVirtualMachine().getHeapTotalMemory())}"/></span>
+        , Non Heap Memory: <span class="badge text-bg-secondary"><span th:text="${helper.formatBytes(environment.getAverageProcessNonHeapMemory())}"/> of
+        <span th:text="${helper.formatBytes(environment.getVirtualMachine().getNonHeapTotalMemory())}"/>
+        </div>
+        <div>
+            Eden: <span class="badge text-bg-secondary"><span th:text="${helper.formatBytes(environment.getAverageProcessEdenMemory())}"/> of
+            <span th:text="${helper.formatBytes(environment.getVirtualMachine().getEdenMemoryPool().getCapacity())}"/></span>
+            , Tenured: <span class="badge text-bg-secondary"><span th:text="${helper.formatBytes(environment.getAverageProcessTenuredMemory())}"/> of
+            <span th:text="${helper.formatBytes(environment.getVirtualMachine().getTenuredMemoryPool().getCapacity())}"/></span>
+        </div>
+    </div>
     <div class="container-fluid">
         <div class="row justify-content-start g-2">
             <div class="col-6" id="process_cpu"></div>
             <div class="col-6" id="process_memory"></div>
+        </div>
+        <div class="row justify-content-start g-2">
+            <div class="col-12" id="process_memory_pools"></div>
         </div>
         <div class="row justify-content-start g-2">
             <div class="col-6" id="process_threads"></div>
@@ -46,6 +64,7 @@
 
     <div th:replace="~{fragments/chart :: areaSeries(${performanceHelper.getProcessCpu('process_cpu')})}"></div>
     <div th:replace="~{fragments/chart :: areaSeries(${performanceHelper.getProcessMemory('process_memory')})}"></div>
+    <div th:replace="~{fragments/chart :: areaSeries(${performanceHelper.getProcessMemoryPools('process_memory_pools')})}"></div>
     <div th:replace="~{fragments/chart :: areaSeries(${performanceHelper.getProcessThreads('process_threads')})}"></div>
     <div th:replace="~{fragments/chart :: areaSeries(${performanceHelper.getProcessIO('process_io')})}"></div>
     <div th:replace="~{fragments/chart :: areaSeries(${performanceHelper.getProcessGcCounts('process_gc_counts')})}"></div>
