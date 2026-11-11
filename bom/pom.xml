@@ -92,6 +92,12 @@
 
             <dependency>
                 <groupId>net.microfalx.argus</groupId>
+                <artifactId>argus-diagnostics</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.microfalx.argus</groupId>
                 <artifactId>argus-web</artifactId>
                 <version>${project.version}</version>
             </dependency>
