@@ -120,8 +120,8 @@ public class DiagnosticsService extends AbstractService {
     private Diagnostics create(Diagnostics.Type type, String name, Diagnostics.Options options) {
         requireNonNull(type);
         return switch (type) {
-            case HISTOGRAM -> new Histogram(name, getOptions(type, options, Diagnostics.Options.class,
-                    Diagnostics.Options::create));
+            case HISTOGRAM -> new Histogram(name, getOptions(type, options, Histogram.Options.class,
+                    Histogram.Options::create));
             case HEAP_DUMP -> new HeapDump(name, getOptions(type, options, HeapDump.Options.class,
                     HeapDump.Options::create));
             case PROFILE -> new Profile(name, getOptions(type, options, Diagnostics.Options.class,
