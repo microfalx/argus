@@ -54,9 +54,9 @@ public abstract class Diagnostics extends NamedIdentityAware<String> {
     @Getter(AccessLevel.NONE)
     transient DiagnosticsService diagnosticsService;
 
-    public Diagnostics() {
+    public Diagnostics(String name) {
         setId(IdGenerator.get().nextAsString());
-        setName(EnumUtils.toLabel(getType()));
+        setName(name);
     }
 
     /**

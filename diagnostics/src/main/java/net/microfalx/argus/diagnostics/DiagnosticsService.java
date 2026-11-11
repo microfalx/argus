@@ -74,8 +74,8 @@ public class DiagnosticsService extends AbstractService {
      * @param type the diagnostics type
      * @return a non-null instance
      */
-    public Diagnostics start(Diagnostics.Type type) {
-        Diagnostics diagnostics = create(type);
+    public Diagnostics start(Diagnostics.Type type, String name) {
+        Diagnostics diagnostics = create(type, name);
         store.add(diagnostics);
         return diagnostics;
     }
@@ -102,12 +102,11 @@ public class DiagnosticsService extends AbstractService {
         }
     }
 
-    private Diagnostics create(Diagnostics.Type type) {
+    private Diagnostics create(Diagnostics.Type type, String name) {
         return switch (type) {
-            case HISTOGRAM -> new Histogram(type.name());
-            case HEAP_DUMP -> new HeapDump(type.name());
-            case PROFILE -> new Profile(type.name());
-            default -> throw new IllegalArgumentException("Unsupported diagnostics type: " + type);
+            case HISTOGRAM -> new Histogram(name);
+            case HEAP_DUMP -> new HeapDump(name);
+            case PROFILE -> new Profile(name);
         };
     }
 }
