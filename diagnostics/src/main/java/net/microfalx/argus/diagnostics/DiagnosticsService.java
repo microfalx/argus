@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static java.lang.Integer.MAX_VALUE;
 import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 import static net.microfalx.lang.StringUtils.isNotEmpty;
 
@@ -237,8 +236,8 @@ public class DiagnosticsService extends AbstractService {
     }
 
     private static List<Health.Item> getCriticalItems(Health health, String thresholdsPrefix) {
-        return health.getWorstItems(MAX_VALUE).stream()
-                .filter(item -> item.getScore() < Health.ERROR)
+        return health.getWorstItems().stream()
+                .filter(item -> item.getScore() < Health.BAD)
                 .filter(item -> {
                     Thresholds thresholds = item.getThresholds();
                     return thresholds != null && isNotEmpty(thresholds.getId())
