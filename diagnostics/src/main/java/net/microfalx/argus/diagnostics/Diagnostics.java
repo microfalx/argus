@@ -147,6 +147,7 @@ public abstract class Diagnostics extends NamedIdentityAware<String> {
             failure = Failure.of(e);
         } finally {
             endTime = ZonedDateTime.now();
+            diagnosticsService.update(this);
         }
     }
 

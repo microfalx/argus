@@ -157,7 +157,11 @@ public class DiagnosticsService extends AbstractService implements HealthListene
     }
 
     void update(Diagnostics diagnostics) {
-        getStore().add(diagnostics);
+        try {
+            getStore().add(diagnostics);
+        } catch (Exception e) {
+            LOGGER.atError().setCause(e).log("Failed to update diagnostics '{}'", diagnostics.getName());
+        }
     }
 
     private void registerHealthListener() {
