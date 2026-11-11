@@ -86,6 +86,17 @@ public class DiagnosticsService extends AbstractService implements HealthListene
     }
 
     /**
+     * Returns all diagnostics collected by the service between the specified start and end date.
+     *
+     * @param start the start date
+     * @param end   the end date
+     * @return a non-null instance
+     */
+    public Collection<Diagnostics> getDiagnostics(LocalDateTime start, LocalDateTime end) {
+        return getStore().list(Query.<Diagnostics>builder().start(start).end(end).build());
+    }
+
+    /**
      * Returns all diagnostics collected by the service for a given type, between the specified start and end date.
      *
      * @param type  the diagnostics type

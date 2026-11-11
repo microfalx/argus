@@ -7,6 +7,8 @@ import net.lingala.zip4j.io.outputstream.ZipOutputStream;
 import net.lingala.zip4j.model.ZipParameters;
 import net.microfalx.argus.api.*;
 import net.microfalx.argus.core.AbstractService;
+import net.microfalx.argus.diagnostics.Diagnostics;
+import net.microfalx.argus.diagnostics.DiagnosticsService;
 import net.microfalx.lang.*;
 import net.microfalx.lang.annotation.Provider;
 import net.microfalx.lang.annotation.SizeOf;
@@ -24,6 +26,7 @@ import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.Duration;
@@ -75,6 +78,8 @@ public class ReportService extends AbstractService implements Initializable {
     private volatile Map<String, Issue> dailyReportedIssues = new ConcurrentHashMap<>();
 
     private static final ThreadLocal<Boolean> DAILY_REPORT = ThreadLocal.withInitial(() -> Boolean.FALSE);
+
+    private static final String DIAGNOSTICS_DIRECTORY = "diagnostics/";
 
     public static ReportService getInstance() {
         return Service.lookup(ReportService.class);
@@ -209,7 +214,7 @@ public class ReportService extends AbstractService implements Initializable {
                 Resource fullReport = Resource.temporary("report_", ".html");
                 report.render(fullReport);
                 fullReportRef.set(fullReport);
-                encryptedFullReportRef.set(encryptReport(fullReport));
+                encryptedFullReportRef.set(encryptReport(fullReport, report));
             } catch (Exception e) {
                 throw new ReportException("Failed to render the report for interval " + interval, e);
             }
@@ -458,26 +463,77 @@ public class ReportService extends AbstractService implements Initializable {
         return systemName;
     }
 
-    private Resource encryptReport(Resource report) throws IOException {
-        if (StringUtils.isEmpty(settings.getPassword())) return report;
+    private Resource encryptReport(Resource fullReport, Report report) throws IOException {
+        if (StringUtils.isEmpty(settings.getPassword())) return fullReport;
         String systemName = StringUtils.toIdentifier(settings.getSystemName());
         String reportPrefix = "support_report_" + systemName;
         File reportZip = new File(JvmUtils.getTemporaryDirectory(), getFileName(reportPrefix, "zip"));
         try (ZipOutputStream outputZipStream = new ZipOutputStream(getBufferedOutputStream(reportZip),
                 settings.getPassword().toCharArray())) {
-            //init the zip parameters
-            ZipParameters zipParams = new ZipParameters();
-            zipParams.setCompressionMethod(DEFLATE);
-            zipParams.setCompressionLevel(MAXIMUM);
-            zipParams.setEncryptFiles(true);
-            zipParams.setEncryptionMethod(ZIP_STANDARD);
-            zipParams.setFileNameInZip(getFileName(reportPrefix, "html"));
-            //create zip entry
-            outputZipStream.putNextEntry(zipParams);
-            IOUtils.appendStream(outputZipStream, report.getInputStream(), false);
-            outputZipStream.closeEntry();
+            appendZipEntry(outputZipStream, getFileName(reportPrefix, "html"), fullReport);
+            appendDiagnostics(outputZipStream, report);
         }
         return Resource.file(reportZip);
+    }
+
+    /**
+     * Appends (to the report archive) all diagnostics collected during the report interval.
+     * <p>
+     * Diagnostics which are still running, failed or have no data available anymore are skipped. A failure
+     * to add a diagnostics does not prevent the archive from being created.
+     *
+     * @param outputZipStream the archive
+     * @param report          the report, which provides the time interval
+     */
+    private void appendDiagnostics(ZipOutputStream outputZipStream, Report report) {
+        Collection<Diagnostics> diagnosticsList;
+        try {
+            diagnosticsList = DiagnosticsService.getInstance().getDiagnostics(report.getStartTime().toLocalDateTime(),
+                    report.getEndTime().toLocalDateTime());
+        } catch (Exception e) {
+            LOGGER.atWarn().setCause(e).log("Failed to extract diagnostics for report '{}'", report.getName());
+            return;
+        }
+        Set<String> fileNames = new HashSet<>();
+        for (Diagnostics diagnostics : diagnosticsList) {
+            if (diagnostics.getFailure() != null || diagnostics.getEndTime() == null) continue;
+            if (diagnostics.getData() == null && diagnostics.getUri() == null) continue;
+            String fileName = getDiagnosticsFileName(diagnostics);
+            if (!fileNames.add(fileName)) fileName = diagnostics.getId() + "_" + fileName;
+            try {
+                Resource resource = diagnostics.getResource();
+                if (!resource.exists()) {
+                    LOGGER.debug("Diagnostics '{}' is not available anymore, skip it", diagnostics.getName());
+                    continue;
+                }
+                appendZipEntry(outputZipStream, DIAGNOSTICS_DIRECTORY + fileName, resource);
+            } catch (Exception e) {
+                LOGGER.atWarn().setCause(e).log("Failed to add diagnostics '{}' to report archive", diagnostics.getName());
+            }
+        }
+    }
+
+    private static String getDiagnosticsFileName(Diagnostics diagnostics) {
+        if (diagnostics.getUri() != null && diagnostics.getUri().getPath() != null) {
+            String path = diagnostics.getUri().getPath();
+            String fileName = path.substring(path.lastIndexOf('/') + 1);
+            if (isNotEmpty(fileName)) return fileName;
+        }
+        return diagnostics.getId() + ".dat";
+    }
+
+    private static void appendZipEntry(ZipOutputStream outputZipStream, String fileName, Resource resource) throws IOException {
+        ZipParameters zipParams = new ZipParameters();
+        zipParams.setCompressionMethod(DEFLATE);
+        zipParams.setCompressionLevel(MAXIMUM);
+        zipParams.setEncryptFiles(true);
+        zipParams.setEncryptionMethod(ZIP_STANDARD);
+        zipParams.setFileNameInZip(fileName);
+        outputZipStream.putNextEntry(zipParams);
+        try (InputStream inputStream = resource.getInputStream()) {
+            IOUtils.appendStream(outputZipStream, inputStream, false);
+        }
+        outputZipStream.closeEntry();
     }
 
     private void extractAndSendIssues(Issue.Severity severity) {
