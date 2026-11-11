@@ -98,6 +98,19 @@ public abstract class Diagnostics extends NamedIdentityAware<String> {
     }
 
     /**
+     * Changes the description of the diagnostics, usually the reason why the diagnostics was collected
+     * (like the health issue which triggered it).
+     * <p>
+     * The description is stored in the field inherited from {@link NamedIdentityAware}, which is
+     * serialized together with the rest of the state.
+     *
+     * @param description the description, can be null
+     */
+    void updateDescription(String description) {
+        setDescription(description);
+    }
+
+    /**
      * Returns the duration of the diagnostics. This is the time between the start and end time of the diagnostics.
      *
      * @return the duration, null if it was not started or completed

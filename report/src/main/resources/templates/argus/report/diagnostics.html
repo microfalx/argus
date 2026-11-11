@@ -6,11 +6,12 @@
     <table class="table table-hover">
         <thead class="table-light">
         <tr>
-            <th scope="col" style="width:30%">Name</th>
+            <th scope="col" style="width:25%">Name</th>
             <th scope="col">Started</th>
             <th scope="col">Duration</th>
             <th scope="col" class="text-end">Size</th>
             <th scope="col">Status</th>
+            <th scope="col">Description</th>
         </tr>
         </thead>
         <tbody>
@@ -24,9 +25,10 @@
                 <td class="text-nowrap"><span th:text="${diagnostics.duration != null ? helper.formatDuration(diagnostics.duration) : '-'}"></span></td>
                 <td class="text-nowrap text-end"><span th:text="${diagnosticsHelper.getSize(diagnostics)}"></span></td>
                 <td class="text-nowrap"><span th:text="${diagnosticsHelper.getStatus(diagnostics)}" th:classappend="${diagnosticsHelper.getStatusCls(diagnostics)}"></span></td>
+                <td><span th:text="${diagnostics.description != null ? diagnostics.description : '-'}"></span></td>
             </tr>
             <tr>
-                <td colspan="5" class="p-0" style="border-bottom-width: 0">
+                <td colspan="6" class="p-0" style="border-bottom-width: 0">
                     <div class="collapse" th:id="${contentId}">
                         <div class="card card-body font-monospace" style="white-space: pre; overflow-x: auto; max-height: 600px; font-size: smaller"
                              th:text="${diagnosticsHelper.getContent(diagnostics)}"></div>
@@ -42,12 +44,13 @@
     <table class="table table-hover">
         <thead class="table-light">
         <tr>
-            <th scope="col" style="width:30%">Name</th>
+            <th scope="col" style="width:25%">Name</th>
             <th scope="col">Type</th>
             <th scope="col">Started</th>
             <th scope="col">Duration</th>
             <th scope="col" class="text-end">Size</th>
             <th scope="col">Status</th>
+            <th scope="col">Description</th>
         </tr>
         </thead>
         <tbody>
@@ -58,6 +61,7 @@
             <td class="text-nowrap"><span th:text="${diagnostics.duration != null ? helper.formatDuration(diagnostics.duration) : '-'}"></span></td>
             <td class="text-nowrap text-end"><span th:text="${diagnosticsHelper.getSize(diagnostics)}"></span></td>
             <td class="text-nowrap"><span th:text="${diagnosticsHelper.getStatus(diagnostics)}" th:classappend="${diagnosticsHelper.getStatusCls(diagnostics)}"></span></td>
+            <td><span th:text="${diagnostics.description != null ? diagnostics.description : '-'}"></span></td>
         </tr>
         </tbody>
     </table>

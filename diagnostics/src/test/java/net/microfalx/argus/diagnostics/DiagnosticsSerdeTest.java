@@ -45,6 +45,7 @@ class DiagnosticsSerdeTest {
         Path file = directory.resolve("thread_dump.txt");
         Files.writeString(file, "Full thread dump\nline 2\n", StandardCharsets.UTF_8);
         TestDiagnostics diagnostics = new TestDiagnostics(file);
+        diagnostics.updateDescription("JVM memory entered the red zone");
         diagnostics.diagnosticsService = diagnosticsService;
         when(diagnosticsService.getResources(Diagnostics.Type.THREAD_DUMP)).thenReturn(Resource.directory(directory.toFile()));
         diagnostics.collect();
@@ -118,6 +119,7 @@ class DiagnosticsSerdeTest {
         assertSame(expected.getClass(), actual.getClass());
         assertEquals(expected.getId(), actual.getId());
         assertEquals(expected.getName(), actual.getName());
+        assertEquals(expected.getDescription(), actual.getDescription());
         assertEquals(expected.getType(), actual.getType());
         assertNotNull(actual.getOptions());
         assertSame(expected.getOptions().getClass(), actual.getOptions().getClass());

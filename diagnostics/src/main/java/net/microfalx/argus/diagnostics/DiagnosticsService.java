@@ -7,6 +7,7 @@ import net.microfalx.argus.api.HealthService;
 import net.microfalx.argus.api.Thresholds;
 import net.microfalx.argus.core.AbstractService;
 import net.microfalx.lang.JvmUtils;
+import net.microfalx.lang.RichText;
 import net.microfalx.lang.annotation.Provider;
 import net.microfalx.resource.Resource;
 import net.microfalx.service.api.Service;
@@ -119,7 +120,22 @@ public class DiagnosticsService extends AbstractService implements HealthListene
      * @return a non-null instance
      */
     public Diagnostics start(Diagnostics.Type type, String name, Diagnostics.Options options) {
+        return start(type, name, null, options);
+    }
+
+    /**
+     * Starts a new diagnostics of the specified type and adds it to the store.
+     *
+     * @param type        the diagnostics type
+     * @param name        the name of the diagnostics
+     * @param description the description of the diagnostics (usually the reason why it was collected), can be null
+     * @param options     the options specific to the diagnostics type (like {@link HeapDump.Options}),
+     *                    null to use the default options
+     * @return a non-null instance
+     */
+    public Diagnostics start(Diagnostics.Type type, String name, String description, Diagnostics.Options options) {
         Diagnostics diagnostics = create(type, name, options);
+        diagnostics.updateDescription(description);
         diagnostics.diagnosticsService = this;
         getStore().add(diagnostics);
         return diagnostics;
@@ -143,13 +159,15 @@ public class DiagnosticsService extends AbstractService implements HealthListene
             case SERVICE -> {
                 List<Health.Item> items = getCriticalItems(health, MEMORY_THRESHOLDS_PREFIX);
                 if (!items.isEmpty()) {
-                    collect(Diagnostics.Type.HISTOGRAM, getName("Memory", resource, items), histogramInProgress);
+                    collect(Diagnostics.Type.HISTOGRAM, getName("Memory", resource, items),
+                            getDescription("JVM memory", resource, health, items), histogramInProgress);
                 }
             }
             case SERVER -> {
                 List<Health.Item> items = getCriticalItems(health, CPU_THRESHOLDS_PREFIX);
                 if (!items.isEmpty()) {
-                    collect(Diagnostics.Type.PROFILE, getName("CPU", resource, items), profileInProgress);
+                    collect(Diagnostics.Type.PROFILE, getName("CPU", resource, items),
+                            getDescription("Server CPU", resource, health, items), profileInProgress);
                 }
             }
             default -> {
@@ -184,10 +202,11 @@ public class DiagnosticsService extends AbstractService implements HealthListene
      * Collects (asynchronously) a diagnostics, if one of the same kind is not already in progress.
      *
      * @param type       the diagnostics type
-     * @param name       the name of the diagnostics
-     * @param inProgress the flag which guards against concurrent collections of the same kind
+     * @param name        the name of the diagnostics
+     * @param description the reason why the diagnostics is collected
+     * @param inProgress  the flag which guards against concurrent collections of the same kind
      */
-    private void collect(Diagnostics.Type type, String name, AtomicBoolean inProgress) {
+    private void collect(Diagnostics.Type type, String name, String description, AtomicBoolean inProgress) {
         if (!inProgress.compareAndSet(false, true)) {
             LOGGER.info("Skip diagnostics '{}', a {} is already in progress", name, type);
             return;
@@ -196,7 +215,7 @@ public class DiagnosticsService extends AbstractService implements HealthListene
         try {
             getThreadPool().execute(() -> {
                 try {
-                    Diagnostics diagnostics = start(type, name);
+                    Diagnostics diagnostics = start(type, name, description, null);
                     diagnostics.collect();
                     update(diagnostics);
                     if (diagnostics.getFailure() != null) {
@@ -229,6 +248,26 @@ public class DiagnosticsService extends AbstractService implements HealthListene
     private static String getName(String cause, net.microfalx.argus.api.Resource resource, List<Health.Item> items) {
         String itemNames = items.stream().map(Health.Item::getName).collect(Collectors.joining(", "));
         return cause + " (" + itemNames + ") on " + resource.getName();
+    }
+
+    /**
+     * Returns the reason why a diagnostics was triggered, based on the health of the resource.
+     * <p>
+     * The description looks like {@code JVM memory entered the red zone on <resource> (health score 25):
+     * Heap: 12 (95% [3.8GB of 4GB]); Tenured: 10 (97% [2.9GB of 3GB])}.
+     *
+     * @param cause    the cause (resource kind) which triggered the diagnostics
+     * @param resource the unhealthy resource
+     * @param health   the health of the resource
+     * @param items    the health items in the red zone
+     * @return a non-null instance
+     */
+    private static String getDescription(String cause, net.microfalx.argus.api.Resource resource, Health health,
+                                         List<Health.Item> items) {
+        String itemsReport = items.stream().map(item -> item.toRichText().render(RichText.Format.TEXT))
+                .collect(Collectors.joining("; "));
+        return cause + " entered the red zone on " + resource.getName() + " (health score "
+                + Health.scoreToRichText(health.getScore()).render(RichText.Format.TEXT) + "): " + itemsReport;
     }
 
     private Store<Diagnostics, String> getStore() {

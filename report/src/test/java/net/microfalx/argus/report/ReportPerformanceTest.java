@@ -49,6 +49,16 @@ public class ReportPerformanceTest {
             Diagnostics.Type.FLIGHT_RECORDING, Diagnostics.Type.PROFILE
     };
 
+    private static final String[] DIAGNOSTICS_DESCRIPTIONS = {
+            "JVM memory entered the red zone on Argus (health score 18): Heap: 18 (94% [3.7GB of 4GB])",
+            "JVM memory entered the red zone on Argus (health score 12): Tenured: 12 (97% [2.9GB of 3GB]); Heap: 21 (92% [3.6GB of 4GB])",
+            "Server CPU entered the red zone on localhost (health score 15): CPU: 15 (96%)",
+            "Server CPU entered the red zone on localhost (health score 22): CPU: 22 (91%); Load: 25 (8.4)",
+            "Requested manually to investigate slow requests",
+            "Captured periodically for troubleshooting",
+            null
+    };
+
     private final Random random = ThreadLocalRandom.current();
     private final AtomicBoolean diagnosticsInProgress = new AtomicBoolean();
     private final AtomicInteger diagnosticsCounter = new AtomicInteger();
@@ -101,11 +111,12 @@ public class ReportPerformanceTest {
             default -> null;
         };
         String name = toLabel(type) + " #" + diagnosticsCounter.incrementAndGet();
+        String description = DIAGNOSTICS_DESCRIPTIONS[random.nextInt(DIAGNOSTICS_DESCRIPTIONS.length)];
         diagnosticsInProgress.set(true);
         diagnosticsExecutor.execute(() -> {
             try {
                 LOGGER.info("Capture diagnostics '{}'", name);
-                Diagnostics diagnostics = DiagnosticsService.getInstance().start(type, name, options);
+                Diagnostics diagnostics = DiagnosticsService.getInstance().start(type, name, description, options);
                 diagnostics.collect();
                 LOGGER.info("Diagnostics '{}' captured in {}, failure: {}", name, diagnostics.getDuration(),
                         diagnostics.getFailure());
