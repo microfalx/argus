@@ -7,6 +7,7 @@ import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 import net.microfalx.lang.ExceptionUtils;
+import net.microfalx.resource.MimeType;
 import net.microfalx.resource.Resource;
 
 import java.io.File;
@@ -68,7 +69,7 @@ public class Histogram extends Diagnostics {
         String histogram = extract(getOptions().isLive());
         File file = getFile(directory, EXTENSION);
         Files.writeString(file.toPath(), histogram, StandardCharsets.UTF_8);
-        updateResource(Resource.file(file));
+        updateResource(Resource.file(file).withMimeType(MimeType.TEXT_PLAIN));
     }
 
     private String extract(boolean live) {

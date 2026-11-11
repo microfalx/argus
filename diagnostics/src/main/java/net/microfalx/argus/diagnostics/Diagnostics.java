@@ -6,9 +6,9 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import net.microfalx.argus.api.Failure;
-import net.microfalx.lang.EnumUtils;
 import net.microfalx.lang.IdGenerator;
 import net.microfalx.lang.NamedIdentityAware;
+import net.microfalx.resource.MimeType;
 import net.microfalx.resource.Resource;
 import net.microfalx.resource.ResourceUtils;
 
@@ -59,6 +59,15 @@ public abstract class Diagnostics extends NamedIdentityAware<String> {
      * (the diagnostics was not collected, or it failed).
      */
     private long size = -1;
+
+    /**
+     * The MIME type of the resource associated with this diagnostics, which tells consumers how to handle the
+     * data (text, HTML, JSON, binary, etc).
+     * <p>
+     * A null value means the type is not known (the diagnostics was not collected, or it failed).
+     */
+    @Getter(AccessLevel.NONE)
+    private MimeType mimeType;
 
     /**
      * The failure associated with this diagnostics. This is used to store the diagnostics failure in case of an error.
@@ -125,20 +134,41 @@ public abstract class Diagnostics extends NamedIdentityAware<String> {
     }
 
     /**
+     * Returns the MIME type of the resource associated with this diagnostics.
+     *
+     * @return a non-null instance, {@link MimeType#APPLICATION_OCTET_STREAM} if the type is not known
+     */
+    public MimeType getMimeType() {
+        return mimeType != null ? mimeType : MimeType.APPLICATION_OCTET_STREAM;
+    }
+
+    /**
+     * Returns whether the resource associated with this diagnostics is text (plain text, HTML, JSON, etc).
+     *
+     * @return {@code true} if text, {@code false} if binary or the type is not known
+     */
+    public boolean isText() {
+        return mimeType != null && mimeType.isText();
+    }
+
+    /**
      * Returns the resource associated with this diagnostics.
+     * <p>
+     * The resource carries the MIME type of the diagnostics.
      *
      * @return a non-null instance
      */
     public Resource getResource() {
-        if (data != null) return Resource.bytes(data);
-        if (uri != null) return Resource.uri(uri);
+        if (data != null) return Resource.bytes(data).withMimeType(getMimeType());
+        if (uri != null) return Resource.uri(uri).withMimeType(getMimeType());
         throw new DiagnosticsNotFoundException("Diagnostics resource is not available for " + getName());
     }
 
     /**
      * Returns the first N lines of the resource associated with this diagnostics, if the resource is text.
      * <p>
-     * If the resource contains binary content, {@link #BINARY_CONTENT} is returned instead.
+     * If the resource contains binary content (based on the MIME type, or on the content itself when the MIME type
+     * is not known), {@link #BINARY_CONTENT} is returned instead.
      *
      * @param lineCount the maximum number of lines to return
      * @return a non-null instance
@@ -146,6 +176,7 @@ public abstract class Diagnostics extends NamedIdentityAware<String> {
      */
     public String getHead(int lineCount) throws IOException {
         if (lineCount <= 0) return EMPTY_STRING;
+        if (mimeType != null && mimeType.isBinary()) return BINARY_CONTENT;
         try (BufferedReader reader = new BufferedReader(getResource().getReader(), BINARY_DETECTION_SAMPLE_SIZE)) {
             reader.mark(BINARY_DETECTION_SAMPLE_SIZE);
             char[] buffer = new char[BINARY_DETECTION_SAMPLE_SIZE];
@@ -232,12 +263,16 @@ public abstract class Diagnostics extends NamedIdentityAware<String> {
 
     /**
      * Updates the resource associated with this diagnostics.
+     * <p>
+     * The MIME type is taken from the resource: the one attached with {@link Resource#withMimeType(MimeType)},
+     * or the detected one when none is attached.
      *
      * @param resource the resource
      * @throws IOException if an I/O error occurs
      */
     protected void updateResource(Resource resource) throws IOException {
         requireNonNull(resource);
+        this.mimeType = MimeType.get(resource.getMimeType());
         this.uri = resource.toURI();
         this.size = resource.length();
         if (size <= MAX_STORED_DIAGNOSTICS_SIZE) {

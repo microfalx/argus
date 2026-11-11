@@ -1,5 +1,6 @@
 package net.microfalx.argus.diagnostics;
 
+import net.microfalx.resource.MimeType;
 import net.microfalx.resource.Resource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -106,6 +107,7 @@ class HeapDumpTest {
         HeapDump heapDump = collect(HeapDump.Options.builder().compressionLevel(compressionLevel).build());
         assertDump(heapDump, compressionLevel == 0 ? ".hprof" : ".hprof.gz");
         assertEquals(Diagnostics.BINARY_CONTENT, heapDump.getHead(10));
+        assertEquals(MimeType.APPLICATION_OCTET_STREAM, heapDump.getMimeType());
     }
 
     private HeapDump collect(HeapDump.Options options) {

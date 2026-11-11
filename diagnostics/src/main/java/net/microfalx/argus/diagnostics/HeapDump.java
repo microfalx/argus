@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import net.microfalx.lang.IOUtils;
+import net.microfalx.resource.MimeType;
 import net.microfalx.resource.Resource;
 
 import java.io.*;
@@ -68,7 +69,7 @@ public class HeapDump extends Diagnostics {
             }
             file = compressedFile;
         }
-        updateResource(Resource.file(file));
+        updateResource(Resource.file(file).withMimeType(MimeType.APPLICATION_OCTET_STREAM));
     }
 
     private void dump(File file, boolean live) throws IOException {

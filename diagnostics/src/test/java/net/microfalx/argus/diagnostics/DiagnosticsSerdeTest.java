@@ -1,6 +1,7 @@
 package net.microfalx.argus.diagnostics;
 
 import net.microfalx.lang.Serde;
+import net.microfalx.resource.MimeType;
 import net.microfalx.resource.Resource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +35,7 @@ class DiagnosticsSerdeTest {
         assertEquals(-1, copy.getSize());
         assertNull(copy.getUri());
         assertNull(copy.getData());
+        assertEquals(MimeType.APPLICATION_OCTET_STREAM, copy.getMimeType());
         assertNull(copy.getStartTime());
         assertNull(copy.getEndTime());
         assertNull(copy.getFailure());
@@ -56,6 +58,8 @@ class DiagnosticsSerdeTest {
         assertEquals(diagnostics.getUri(), copy.getUri());
         assertEquals(diagnostics.getSize(), copy.getSize());
         assertArrayEquals(diagnostics.getData(), copy.getData());
+        assertEquals(MimeType.TEXT_PLAIN, copy.getMimeType());
+        assertTrue(copy.isText());
         assertEquals(diagnostics.getStartTime(), copy.getStartTime());
         assertEquals(diagnostics.getEndTime(), copy.getEndTime());
         assertEquals(diagnostics.getDuration(), copy.getDuration());

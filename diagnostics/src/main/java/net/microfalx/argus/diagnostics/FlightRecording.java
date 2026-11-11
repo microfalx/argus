@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
+import net.microfalx.resource.MimeType;
 import net.microfalx.resource.Resource;
 
 import java.io.File;
@@ -74,7 +75,7 @@ public class FlightRecording extends Diagnostics {
         if (!file.isFile() || file.length() == 0) {
             throw new DiagnosticsException("Flight recorder did not produce any output for '" + getName() + "' in " + file);
         }
-        updateResource(Resource.file(file));
+        updateResource(Resource.file(file).withMimeType(MimeType.APPLICATION_OCTET_STREAM));
     }
 
     private void record(File file, Options options) throws IOException {

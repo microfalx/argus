@@ -7,6 +7,7 @@ import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 import net.microfalx.lang.JvmUtils;
+import net.microfalx.resource.MimeType;
 import net.microfalx.resource.Resource;
 
 import java.io.File;
@@ -81,7 +82,7 @@ public class Profile extends Diagnostics {
             throw new DiagnosticsException("Profiler did not produce any output for '" + getName() + "' in " + file
                     + ", output:\n" + output);
         }
-        updateResource(Resource.file(file));
+        updateResource(Resource.file(file).withMimeType(options.getFormat().getMimeType()));
     }
 
     /**
@@ -239,34 +240,36 @@ public class Profile extends Diagnostics {
         /**
          * An interactive (HTML) flame graph.
          */
-        FLAMEGRAPH("flamegraph", "html"),
+        FLAMEGRAPH("flamegraph", "html", MimeType.TEXT_HTML),
 
         /**
          * Collapsed stacks (one stack per line, with the sample count), the input of most flame graph tools.
          */
-        COLLAPSED("collapsed", "txt"),
+        COLLAPSED("collapsed", "txt", MimeType.TEXT_PLAIN),
 
         /**
          * The hottest methods (text).
          */
-        FLAT("flat", "txt"),
+        FLAT("flat", "txt", MimeType.TEXT_PLAIN),
 
         /**
          * The hottest stack traces (text).
          */
-        TRACES("traces", "txt"),
+        TRACES("traces", "txt", MimeType.TEXT_PLAIN),
 
         /**
          * A Java Flight Recorder file, which can be opened with JMC (or converted with {@code jfrconv}).
          */
-        JFR("jfr", "jfr");
+        JFR("jfr", "jfr", MimeType.APPLICATION_OCTET_STREAM);
 
         private final String value;
         private final String extension;
+        private final MimeType mimeType;
 
-        Format(String value, String extension) {
+        Format(String value, String extension, MimeType mimeType) {
             this.value = value;
             this.extension = extension;
+            this.mimeType = mimeType;
         }
     }
 }

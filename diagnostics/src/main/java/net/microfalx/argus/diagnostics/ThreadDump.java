@@ -8,6 +8,7 @@ import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 import net.microfalx.lang.ExceptionUtils;
+import net.microfalx.resource.MimeType;
 import net.microfalx.resource.Resource;
 
 import java.io.File;
@@ -81,7 +82,7 @@ public class ThreadDump extends Diagnostics {
         } else {
             dumpThreads(file, options.getFormat());
         }
-        updateResource(Resource.file(file));
+        updateResource(Resource.file(file).withMimeType(options.getFormat().getMimeType()));
     }
 
     private String extract(boolean lockedSynchronizers) {
@@ -288,23 +289,25 @@ public class ThreadDump extends Diagnostics {
          * The format produced by {@code jstack} / {@code jcmd Thread.print}, with lock information and deadlock
          * detection; virtual threads are not included.
          */
-        JSTACK("txt", false),
+        JSTACK("txt", MimeType.TEXT_PLAIN, false),
 
         /**
          * Plain text, includes virtual threads, without lock information.
          */
-        TEXT("txt", true),
+        TEXT("txt", MimeType.TEXT_PLAIN, true),
 
         /**
          * JSON, includes virtual threads (grouped by their executor / container), without lock information.
          */
-        JSON("json", true);
+        JSON("json", MimeType.APPLICATION_JSON, true);
 
         private final String extension;
+        private final MimeType mimeType;
         private final boolean virtualThreads;
 
-        Format(String extension, boolean virtualThreads) {
+        Format(String extension, MimeType mimeType, boolean virtualThreads) {
             this.extension = extension;
+            this.mimeType = mimeType;
             this.virtualThreads = virtualThreads;
         }
     }
