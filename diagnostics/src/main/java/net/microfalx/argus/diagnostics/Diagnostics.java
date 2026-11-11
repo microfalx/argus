@@ -52,6 +52,14 @@ public abstract class Diagnostics extends NamedIdentityAware<String> {
     private byte[] data;
 
     /**
+     * The size (in bytes) of the resource associated with this diagnostics, captured when the resource was stored.
+     * <p>
+     * The size is kept even if the resource is not available anymore. A negative value means the size is not known
+     * (the diagnostics was not collected, or it failed).
+     */
+    private long size = -1;
+
+    /**
      * The failure associated with this diagnostics. This is used to store the diagnostics failure in case of an error.
      */
     private Failure failure;
@@ -210,7 +218,8 @@ public abstract class Diagnostics extends NamedIdentityAware<String> {
     protected void updateResource(Resource resource) throws IOException {
         requireNonNull(resource);
         this.uri = resource.toURI();
-        if (resource.length() <= MAX_STORED_DIAGNOSTICS_SIZE) {
+        this.size = resource.length();
+        if (size <= MAX_STORED_DIAGNOSTICS_SIZE) {
             data = resource.loadAsBytes();
         }
     }

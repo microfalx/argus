@@ -7,7 +7,9 @@ import net.microfalx.argus.api.HealthService;
 import net.microfalx.argus.api.Thresholds;
 import net.microfalx.argus.core.AbstractService;
 import net.microfalx.lang.JvmUtils;
+import net.microfalx.lang.annotation.Provider;
 import net.microfalx.resource.Resource;
+import net.microfalx.service.api.Service;
 import net.microfalx.store.api.Query;
 import net.microfalx.store.api.Store;
 import net.microfalx.store.api.StoreService;
@@ -34,6 +36,7 @@ import static net.microfalx.lang.StringUtils.isNotEmpty;
  * </ul>
  */
 @Slf4j
+@Provider
 public class DiagnosticsService extends AbstractService implements HealthListener {
 
     private static final String MEMORY_THRESHOLDS_PREFIX = "jvm.memory.";
@@ -44,6 +47,10 @@ public class DiagnosticsService extends AbstractService implements HealthListene
 
     private final AtomicBoolean histogramInProgress = new AtomicBoolean();
     private final AtomicBoolean profileInProgress = new AtomicBoolean();
+
+    public static DiagnosticsService getInstance() {
+        return Service.lookup(DiagnosticsService.class);
+    }
 
     /**
      * Returns the resource where diagnostics are stored.

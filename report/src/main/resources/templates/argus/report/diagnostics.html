@@ -1,0 +1,89 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="render-diagnostics(group)">
+    <table class="table table-hover">
+        <thead class="table-light">
+        <tr>
+            <th scope="col" style="width:30%">Name</th>
+            <th scope="col">Started</th>
+            <th scope="col">Duration</th>
+            <th scope="col" class="text-end">Size</th>
+            <th scope="col">Status</th>
+        </tr>
+        </thead>
+        <tbody>
+        <th:block th:each="diagnostics : ${group.diagnostics}" th:with="contentId='diagnostics-content-' + ${diagnostics.id}">
+            <tr>
+                <td class="text-nowrap">
+                    <i class="fa-solid fa-caret-right text-primary me-2" style="cursor: pointer"
+                       data-bs-toggle="collapse" th:data-bs-target="'#' + ${contentId}"></i><span th:text="${diagnostics.name}"></span>
+                </td>
+                <td class="text-nowrap"><span th:text="${helper.formatDateTime(diagnostics.startTime)}"></span></td>
+                <td class="text-nowrap"><span th:text="${diagnostics.duration != null ? helper.formatDuration(diagnostics.duration) : '-'}"></span></td>
+                <td class="text-nowrap text-end"><span th:text="${diagnosticsHelper.getSize(diagnostics)}"></span></td>
+                <td class="text-nowrap"><span th:text="${diagnosticsHelper.getStatus(diagnostics)}" th:classappend="${diagnosticsHelper.getStatusCls(diagnostics)}"></span></td>
+            </tr>
+            <tr>
+                <td colspan="5" class="p-0" style="border-bottom-width: 0">
+                    <div class="collapse" th:id="${contentId}">
+                        <div class="card card-body font-monospace" style="white-space: pre; overflow-x: auto; max-height: 600px; font-size: smaller"
+                             th:text="${diagnosticsHelper.getContent(diagnostics)}"></div>
+                    </div>
+                </td>
+            </tr>
+        </th:block>
+        </tbody>
+    </table>
+</div>
+
+<div th:fragment="render-diagnostics-list(items)">
+    <table class="table table-hover">
+        <thead class="table-light">
+        <tr>
+            <th scope="col" style="width:30%">Name</th>
+            <th scope="col">Type</th>
+            <th scope="col">Started</th>
+            <th scope="col">Duration</th>
+            <th scope="col" class="text-end">Size</th>
+            <th scope="col">Status</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="item : ${items}" th:with="diagnostics=${item.diagnostics}">
+            <td><span th:text="${diagnostics.name}"></span></td>
+            <td class="text-nowrap"><span th:text="${item.type}"></span></td>
+            <td class="text-nowrap"><span th:text="${helper.formatDateTime(diagnostics.startTime)}"></span></td>
+            <td class="text-nowrap"><span th:text="${diagnostics.duration != null ? helper.formatDuration(diagnostics.duration) : '-'}"></span></td>
+            <td class="text-nowrap text-end"><span th:text="${diagnosticsHelper.getSize(diagnostics)}"></span></td>
+            <td class="text-nowrap"><span th:text="${diagnosticsHelper.getStatus(diagnostics)}" th:classappend="${diagnosticsHelper.getStatusCls(diagnostics)}"></span></td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<div th:fragment="summary">
+    <h3 th:replace="~{fragments/utils :: h3_count('Diagnostics', ${diagnosticsCount})}"></h3>
+    <div th:replace="~{diagnostics :: render-diagnostics-list(${diagnosticsList})}"></div>
+</div>
+
+<div th:fragment="tables">
+    <th:block th:if="${diagnosticsGroups.isEmpty()}">
+        <div th:replace="~{fragments/utils :: alert_info('No diagnostics were collected during the report interval', 'Diagnostics')}"></div>
+    </th:block>
+    <th:block th:each="group : ${diagnosticsGroups}">
+        <h3 th:replace="~{fragments/utils :: h3_count(${group.name}, ${group.diagnostics.size()})}"></h3>
+        <div th:replace="~{diagnostics :: render-diagnostics(${group})}"></div>
+    </th:block>
+</div>
+
+<div th:fragment="content" class="container-fluid">
+    <div th:replace="~{diagnostics :: tables}"></div>
+</div>
+
+<div th:fragment="code" th:remove="tag">
+</div>
+
+</body>
+</html>

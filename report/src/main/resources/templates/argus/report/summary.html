@@ -164,6 +164,9 @@
     <th:block th:if="${failuresCount > 0}">
         <div th:replace="~{failure :: summary}"></div>
     </th:block>
+    <th:block th:if="${diagnosticsCount > 0}">
+        <div th:replace="~{diagnostics :: summary}"></div>
+    </th:block>
     <h3 th:replace="~{fragments/utils :: h3_count('Services', ${services.size()})}"></h3>
     <div th:replace="~{fragments/service :: list(false)}"></div>
     <div th:replace="~{summary :: render-environment}" ></div>
