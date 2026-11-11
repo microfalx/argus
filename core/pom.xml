@@ -66,6 +66,11 @@
             <artifactId>registry-core</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>net.microfalx.store</groupId>
+            <artifactId>store-core</artifactId>
+        </dependency>
+
     </dependencies>
 
 </project>

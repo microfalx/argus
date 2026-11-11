@@ -34,6 +34,26 @@
     <description>The SPI</description>
 
     <dependencies>
+
+        <dependency>
+            <groupId>net.microfalx</groupId>
+            <artifactId>lang</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>net.microfalx</groupId>
+            <artifactId>threadpool</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>net.microfalx</groupId>
+            <artifactId>jvm</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>net.microfalx</groupId>
+            <artifactId>configuration</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

@@ -61,11 +61,11 @@
         <module>api</module>
         <module>spi</module>
         <module>core</module>
-        <module>inspector</module>
+        <module>diagnostics</module>
         <module>cache</module>
         <module>database</module>
         <module>broker</module>
-        <module>monitor</module>
+        <!--module>monitor</module-->
         <module>logger</module>
         <module>report</module>
         <module>web</module>
