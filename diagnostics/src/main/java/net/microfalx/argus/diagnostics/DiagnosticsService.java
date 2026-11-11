@@ -40,7 +40,7 @@ import static net.microfalx.lang.StringUtils.isNotEmpty;
  */
 @Slf4j
 @Provider
-public class DiagnosticsService extends AbstractService implements HealthListener {
+public class DiagnosticsService extends AbstractService {
 
     private static final String MEMORY_THRESHOLDS_PREFIX = "jvm.memory.";
     private static final String CPU_THRESHOLDS_PREFIX = "server.cpu.";
@@ -51,6 +51,7 @@ public class DiagnosticsService extends AbstractService implements HealthListene
     private final AtomicBoolean histogramInProgress = new AtomicBoolean();
     private final AtomicBoolean profileInProgress = new AtomicBoolean();
     private final AtomicBoolean vmReportInProgress = new AtomicBoolean();
+    private final HealthListener healthListener = new HealthListenerImpl();
 
     public static DiagnosticsService getInstance() {
         return Service.lookup(DiagnosticsService.class);
@@ -171,36 +172,6 @@ public class DiagnosticsService extends AbstractService implements HealthListene
         collectStartupSnapshot();
     }
 
-    @Override
-    public void onUnhealthy(net.microfalx.argus.api.Resource resource) {
-        Health health = resource.getHealth();
-        if (health == null) return;
-        switch (resource.getType()) {
-            case SERVICE -> {
-                List<Health.Item> items = getCriticalItems(health, MEMORY_THRESHOLDS_PREFIX);
-                if (!items.isEmpty()) {
-                    collect(Diagnostics.Type.HISTOGRAM, getName("Memory", resource, items),
-                            getDescription("JVM memory", resource, health, items), histogramInProgress);
-                }
-            }
-            case SERVER -> {
-                List<Health.Item> items = getCriticalItems(health, CPU_THRESHOLDS_PREFIX);
-                if (!items.isEmpty()) {
-                    collect(Diagnostics.Type.PROFILE, getName("CPU", resource, items),
-                            getDescription("Server CPU", resource, health, items), profileInProgress);
-                }
-            }
-            default -> {
-                // no diagnostics for other resources
-            }
-        }
-    }
-
-    @Override
-    public void onHealthy(net.microfalx.argus.api.Resource resource) {
-        LOGGER.debug("Resource '{}' is back to normal", resource.getName());
-    }
-
     void update(Diagnostics diagnostics) {
         try {
             getStore().add(diagnostics);
@@ -221,7 +192,7 @@ public class DiagnosticsService extends AbstractService implements HealthListene
 
     private void registerHealthListener() {
         try {
-            HealthService.getInstance().register(this);
+            HealthService.getInstance().register(healthListener);
         } catch (Exception e) {
             LOGGER.atWarn().setCause(e).log("Failed to register diagnostics as health listener, " +
                     "diagnostics will not be collected automatically");
@@ -338,5 +309,41 @@ public class DiagnosticsService extends AbstractService implements HealthListene
                     + optionsClass.getName() + ", received " + options.getClass().getName());
         }
         return optionsClass.cast(options);
+    }
+
+    /**
+     * Listens for health changes and collects diagnostics when a resource enters the red zone.
+     */
+    private class HealthListenerImpl implements HealthListener {
+
+        @Override
+        public void onUnhealthy(net.microfalx.argus.api.Resource resource) {
+            Health health = resource.getHealth();
+            if (health == null) return;
+            switch (resource.getType()) {
+                case SERVICE -> {
+                    List<Health.Item> items = getCriticalItems(health, MEMORY_THRESHOLDS_PREFIX);
+                    if (!items.isEmpty()) {
+                        collect(Diagnostics.Type.HISTOGRAM, getName("Memory", resource, items),
+                                getDescription("JVM memory", resource, health, items), histogramInProgress);
+                    }
+                }
+                case SERVER -> {
+                    List<Health.Item> items = getCriticalItems(health, CPU_THRESHOLDS_PREFIX);
+                    if (!items.isEmpty()) {
+                        collect(Diagnostics.Type.PROFILE, getName("CPU", resource, items),
+                                getDescription("Server CPU", resource, health, items), profileInProgress);
+                    }
+                }
+                default -> {
+                    // no diagnostics for other resources
+                }
+            }
+        }
+
+        @Override
+        public void onHealthy(net.microfalx.argus.api.Resource resource) {
+            LOGGER.debug("Resource '{}' is back to normal", resource.getName());
+        }
     }
 }
