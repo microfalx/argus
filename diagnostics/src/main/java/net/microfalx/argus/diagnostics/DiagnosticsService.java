@@ -1,6 +1,10 @@
 package net.microfalx.argus.diagnostics;
 
 import lombok.extern.slf4j.Slf4j;
+import net.microfalx.argus.api.Health;
+import net.microfalx.argus.api.HealthListener;
+import net.microfalx.argus.api.HealthService;
+import net.microfalx.argus.api.Thresholds;
 import net.microfalx.argus.core.AbstractService;
 import net.microfalx.lang.JvmUtils;
 import net.microfalx.resource.Resource;
@@ -10,18 +14,36 @@ import net.microfalx.store.api.StoreService;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
+import static java.lang.Integer.MAX_VALUE;
 import static net.microfalx.lang.ArgumentUtils.requireNonNull;
+import static net.microfalx.lang.StringUtils.isNotEmpty;
 
 /**
  * Collects diagnostics information about the system and the application.
+ * <p>
+ * The service also listens for health changes and collects diagnostics automatically when a resource
+ * enters the red zone:
+ * <ul>
+ *     <li>a {@link Histogram heap histogram} when the JVM memory is the cause</li>
+ *     <li>a (CPU) {@link Profile profile} when the server CPU is the cause</li>
+ * </ul>
  */
 @Slf4j
-public class DiagnosticsService extends AbstractService {
+public class DiagnosticsService extends AbstractService implements HealthListener {
+
+    private static final String MEMORY_THRESHOLDS_PREFIX = "jvm.memory.";
+    private static final String CPU_THRESHOLDS_PREFIX = "server.cpu.";
 
     private volatile Store<Diagnostics, String> store;
     private Resource diagnostics;
+
+    private final AtomicBoolean histogramInProgress = new AtomicBoolean();
+    private final AtomicBoolean profileInProgress = new AtomicBoolean();
 
     /**
      * Returns the resource where diagnostics are stored.
@@ -43,7 +65,7 @@ public class DiagnosticsService extends AbstractService {
      */
     public Resource getResources(Diagnostics.Type type) {
         requireNonNull(type);
-        return diagnostics.resolve(type.name().toLowerCase(), Resource.Type.DIRECTORY);
+        return getResources().resolve(type.name().toLowerCase(), Resource.Type.DIRECTORY);
     }
 
     /**
@@ -91,7 +113,8 @@ public class DiagnosticsService extends AbstractService {
      */
     public Diagnostics start(Diagnostics.Type type, String name, Diagnostics.Options options) {
         Diagnostics diagnostics = create(type, name, options);
-        store.add(diagnostics);
+        diagnostics.diagnosticsService = this;
+        getStore().add(diagnostics);
         return diagnostics;
     }
 
@@ -102,11 +125,99 @@ public class DiagnosticsService extends AbstractService {
 
     @Override
     public void start() {
+        registerHealthListener();
+    }
 
+    @Override
+    public void onUnhealthy(net.microfalx.argus.api.Resource resource) {
+        Health health = resource.getHealth();
+        if (health == null) return;
+        switch (resource.getType()) {
+            case SERVICE -> {
+                List<Health.Item> items = getCriticalItems(health, MEMORY_THRESHOLDS_PREFIX);
+                if (!items.isEmpty()) {
+                    collect(Diagnostics.Type.HISTOGRAM, getName("Memory", resource, items), histogramInProgress);
+                }
+            }
+            case SERVER -> {
+                List<Health.Item> items = getCriticalItems(health, CPU_THRESHOLDS_PREFIX);
+                if (!items.isEmpty()) {
+                    collect(Diagnostics.Type.PROFILE, getName("CPU", resource, items), profileInProgress);
+                }
+            }
+            default -> {
+                // no diagnostics for other resources
+            }
+        }
+    }
+
+    @Override
+    public void onHealthy(net.microfalx.argus.api.Resource resource) {
+        LOGGER.debug("Resource '{}' is back to normal", resource.getName());
     }
 
     void update(Diagnostics diagnostics) {
         getStore().add(diagnostics);
+    }
+
+    private void registerHealthListener() {
+        try {
+            HealthService.getInstance().register(this);
+        } catch (Exception e) {
+            LOGGER.atWarn().setCause(e).log("Failed to register diagnostics as health listener, " +
+                    "diagnostics will not be collected automatically");
+        }
+    }
+
+    /**
+     * Collects (asynchronously) a diagnostics, if one of the same kind is not already in progress.
+     *
+     * @param type       the diagnostics type
+     * @param name       the name of the diagnostics
+     * @param inProgress the flag which guards against concurrent collections of the same kind
+     */
+    private void collect(Diagnostics.Type type, String name, AtomicBoolean inProgress) {
+        if (!inProgress.compareAndSet(false, true)) {
+            LOGGER.info("Skip diagnostics '{}', a {} is already in progress", name, type);
+            return;
+        }
+        LOGGER.info("Collect diagnostics '{}' ({})", name, type);
+        try {
+            getThreadPool().execute(() -> {
+                try {
+                    Diagnostics diagnostics = start(type, name);
+                    diagnostics.collect();
+                    update(diagnostics);
+                    if (diagnostics.getFailure() != null) {
+                        LOGGER.warn("Diagnostics '{}' failed: {}", name, diagnostics.getFailure());
+                    } else {
+                        LOGGER.info("Diagnostics '{}' collected in {}", name, diagnostics.getDuration());
+                    }
+                } catch (Exception e) {
+                    LOGGER.atError().setCause(e).log("Failed to collect diagnostics '{}'", name);
+                } finally {
+                    inProgress.set(false);
+                }
+            });
+        } catch (Exception e) {
+            inProgress.set(false);
+            LOGGER.atError().setCause(e).log("Failed to schedule diagnostics '{}'", name);
+        }
+    }
+
+    private static List<Health.Item> getCriticalItems(Health health, String thresholdsPrefix) {
+        return health.getWorstItems(MAX_VALUE).stream()
+                .filter(item -> item.getScore() < Health.ERROR)
+                .filter(item -> {
+                    Thresholds thresholds = item.getThresholds();
+                    return thresholds != null && isNotEmpty(thresholds.getId())
+                            && thresholds.getId().startsWith(thresholdsPrefix);
+                }).toList();
+    }
+
+    private static String getName(String cause, net.microfalx.argus.api.Resource resource, List<Health.Item> items) {
+        String itemNames = items.stream().map(Health.Item::getName).collect(Collectors.joining(", "));
+        return cause + " (" + itemNames + ") on " + resource.getName();
     }
 
     private Store<Diagnostics, String> getStore() {

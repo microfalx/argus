@@ -136,6 +136,30 @@ public interface HealthService extends net.microfalx.service.api.Service, Health
     void unregister(HealthContributor contributor);
 
     /**
+     * Returns registered health listeners.
+     * <p>
+     * The complete list is based on listeners discovered from class path and those registered
+     * with {@link #register(HealthListener)}.
+     *
+     * @return a non-null collection
+     */
+    Collection<HealthListener> getListeners();
+
+    /**
+     * Registers a new listener.
+     *
+     * @param listener the listener
+     */
+    void register(HealthListener listener);
+
+    /**
+     * Unregisters a listener.
+     *
+     * @param listener the listener
+     */
+    void unregister(HealthListener listener);
+
+    /**
      * Updates the health status of all resources.
      */
     void update();

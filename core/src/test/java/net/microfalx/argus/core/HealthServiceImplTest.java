@@ -139,6 +139,45 @@ class HealthServiceImplTest {
         assertEquals(Resource.Type.SERVER, resource.getType());
     }
 
+    @Test
+    void notifyListenersOnRedZoneTransitions() {
+        ScoreContributor contributor = new ScoreContributor();
+        RecordingListener listener = new RecordingListener();
+        healthService.register(contributor);
+        healthService.register(listener);
+        assertTrue(healthService.getListeners().contains(listener));
+
+        // enters the red zone, reported once
+        contributor.score = 2f;
+        updateAndNotify();
+        updateAndNotify();
+        assertEquals(1, listener.unhealthy.size());
+        assertEquals(Resource.Type.SERVICE, listener.unhealthy.get(0).getType());
+        assertEquals(0, listener.healthy.size());
+
+        // between thresholds, still in the red zone
+        contributor.score = 5f;
+        updateAndNotify();
+        assertEquals(1, listener.unhealthy.size());
+        assertEquals(0, listener.healthy.size());
+
+        // back to normal, reported once
+        contributor.score = 9f;
+        updateAndNotify();
+        updateAndNotify();
+        assertEquals(1, listener.unhealthy.size());
+        assertEquals(1, listener.healthy.size());
+        assertEquals(Resource.Type.SERVICE, listener.healthy.get(0).getType());
+
+        healthService.unregister(listener);
+        assertFalse(healthService.getListeners().contains(listener));
+    }
+
+    private void updateAndNotify() {
+        healthService.updateHealth();
+        healthService.notifyListeners();
+    }
+
     private void update() {
         for (int i = 0; i < 5; i++) {
             scrape();
@@ -149,6 +188,47 @@ class HealthServiceImplTest {
     private void scrape() {
         VirtualMachineMetrics.get().scrape();
         ServerMetrics.get().scrape();
+    }
+
+    private static final class ScoreContributor implements HealthContributor {
+
+        private volatile float score = Health.MAX;
+
+        @Override
+        public String getName() {
+            return "Score";
+        }
+
+        @Override
+        public boolean supports(Resource.Type type) {
+            return type == Resource.Type.SERVICE;
+        }
+
+        @Override
+        public void update(Health health) {
+            health.update("Score Group", "Score Item", score);
+        }
+
+        @Override
+        public Collection<Thresholds> getThresholds() {
+            return List.of();
+        }
+    }
+
+    private static final class RecordingListener implements HealthListener {
+
+        private final List<Resource> unhealthy = new java.util.concurrent.CopyOnWriteArrayList<>();
+        private final List<Resource> healthy = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        @Override
+        public void onUnhealthy(Resource resource) {
+            unhealthy.add(resource);
+        }
+
+        @Override
+        public void onHealthy(Resource resource) {
+            healthy.add(resource);
+        }
     }
 
     private static final class RecordingContributor implements HealthContributor {

@@ -47,6 +47,11 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
     private final Collection<HealthContributor> registeredContributors = new CopyOnWriteArraySet<>();
     private final Collection<HealthContributor> classPathContributors = new CopyOnWriteArraySet<>();
 
+    private volatile Collection<HealthListener> listeners = Collections.emptyList();
+    private final Collection<HealthListener> registeredListeners = new CopyOnWriteArraySet<>();
+    private final Collection<HealthListener> classPathListeners = new CopyOnWriteArraySet<>();
+    private final Set<Resource.Type> unhealthyResources = ConcurrentHashMap.newKeySet();
+
     private final Map<String, Thresholds> thresholds = new ConcurrentHashMap<>();
     private final HealthConfiguration configuration = new HealthConfiguration();
     private volatile boolean memory = true;
@@ -203,10 +208,33 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
     }
 
     @Override
+    public Collection<HealthListener> getListeners() {
+        return immutableCollection(listeners);
+    }
+
+    @Override
+    public void register(HealthListener listener) {
+        requireNonNull(listener);
+        initializeListener(listener);
+        registeredListeners.add(listener);
+        LOGGER.debug("Register health listener - {}", ClassUtils.getName(listener));
+        updateListeners();
+    }
+
+    @Override
+    public void unregister(HealthListener listener) {
+        requireNonNull(listener);
+        registeredListeners.remove(listener);
+        LOGGER.debug("Unregister health listener - {}", ClassUtils.getName(listener));
+        updateListeners();
+    }
+
+    @Override
     public void update() {
         METRICS.time("Update Health", t -> updateHealth());
         METRICS.time("Update Metrics", t -> updateMetrics());
         METRICS.time("Store Resources", t -> storeResources());
+        METRICS.time("Notify Listeners", t -> notifyListeners());
         report(Metric.SUCCESS);
     }
 
@@ -214,6 +242,8 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
     public void initialize(Object... context) {
         discoverHealthContributors();
         updateContributors();
+        discoverListeners();
+        updateListeners();
         initializeStore();
         initializeMetrics();
     }
@@ -242,6 +272,76 @@ public class HealthServiceImpl extends AbstractService implements Service.Lifecy
         Collection<HealthContributor> updatedContributors = new ArrayList<>(classPathContributors);
         updatedContributors.addAll(registeredContributors);
         this.contributors = updatedContributors;
+    }
+
+    private void discoverListeners() {
+        LOGGER.info("Discover health listeners");
+        for (HealthListener listener : resolveProviderInstances(HealthListener.class)) {
+            LOGGER.debug(" - {}", ClassUtils.getName(listener));
+            initializeListener(listener);
+            classPathListeners.add(listener);
+        }
+        LOGGER.info("Discovered {} health listeners", classPathListeners.size());
+    }
+
+    private void updateListeners() {
+        Collection<HealthListener> updatedListeners = new ArrayList<>(classPathListeners);
+        updatedListeners.addAll(registeredListeners);
+        this.listeners = updatedListeners;
+    }
+
+    private void initializeListener(HealthListener listener) {
+        if (listener instanceof Initializable) {
+            ((Initializable) listener).initialize();
+        }
+    }
+
+    /**
+     * Detects resources which entered or left the red zone since the last update and notifies the listeners.
+     * <p>
+     * A resource enters the red zone when the score drops below {@link Health#ERROR} and leaves it when the
+     * score recovers to {@link Health#WARNING} or above.
+     */
+    void notifyListeners() {
+        for (Map.Entry<Resource.Type, Health> entry : resourceHealths.entrySet()) {
+            Resource.Type type = entry.getKey();
+            float score = entry.getValue().getScore();
+            if (score == Health.NA) continue;
+            if (score < Health.ERROR) {
+                if (unhealthyResources.add(type)) notifyListeners(type, false);
+            } else if (score >= Health.WARNING) {
+                if (unhealthyResources.remove(type)) notifyListeners(type, true);
+            }
+        }
+    }
+
+    private void notifyListeners(Resource.Type type, boolean healthy) {
+        Resource resource = createResource(type);
+        if (resource == null) return;
+        float score = resource.getHealth().getScore();
+        if (healthy) {
+            LOGGER.info("Resource '{}' is back to normal, score {}", resource.getName(), score);
+        } else {
+            LOGGER.warn("Resource '{}' entered the red zone, score {}", resource.getName(), score);
+        }
+        for (HealthListener listener : listeners) {
+            try {
+                if (healthy) {
+                    listener.onHealthy(resource);
+                } else {
+                    listener.onUnhealthy(resource);
+                }
+            } catch (Exception e) {
+                LOGGER.atError().setCause(e).log("Failed to notify health listener - {}", ClassUtils.getName(listener));
+            }
+        }
+    }
+
+    private Resource createResource(Resource.Type type) {
+        return switch (type) {
+            case SERVICE, SERVER, DATABASE, CACHE, BROKER -> getResource(type);
+            default -> null;
+        };
     }
 
     private void registerTasks() {
