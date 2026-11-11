@@ -1,6 +1,8 @@
 package net.microfalx.argus.diagnostics;
 
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +42,12 @@ public class Profile extends Diagnostics {
      * Extra time given to the tool, on top of the profiling duration, to attach and write the output.
      */
     private static final Duration TOOL_TIMEOUT_MARGIN = Duration.ofMinutes(2);
+
+    /**
+     * Used by serialization (Kryo) only.
+     */
+    private Profile() {
+    }
 
     public Profile(String name) {
         this(name, Options.create());
@@ -124,6 +132,7 @@ public class Profile extends Diagnostics {
     @Getter
     @ToString(callSuper = true)
     @SuperBuilder
+    @NoArgsConstructor(access = AccessLevel.PRIVATE, force = true)
     public static class Options extends Diagnostics.Options {
 
         /**

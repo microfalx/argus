@@ -1,7 +1,9 @@
 package net.microfalx.argus.diagnostics;
 
 import com.sun.management.HotSpotDiagnosticMXBean;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +45,12 @@ public class ThreadDump extends Diagnostics {
     private static final String LOCKED_SYNCHRONIZERS_ARGUMENT = "-l";
 
     private static final DateTimeFormatter HEADER_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    /**
+     * Used by serialization (Kryo) only.
+     */
+    private ThreadDump() {
+    }
 
     public ThreadDump(String name) {
         this(name, Options.create());
@@ -238,6 +246,7 @@ public class ThreadDump extends Diagnostics {
     @Getter
     @ToString(callSuper = true)
     @SuperBuilder
+    @NoArgsConstructor(access = AccessLevel.PRIVATE, force = true)
     public static class Options extends Diagnostics.Options {
 
         /**

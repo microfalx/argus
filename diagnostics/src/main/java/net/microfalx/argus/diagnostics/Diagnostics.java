@@ -2,6 +2,7 @@ package net.microfalx.argus.diagnostics;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import net.microfalx.argus.api.Failure;
@@ -81,6 +82,13 @@ public abstract class Diagnostics extends NamedIdentityAware<String> {
 
     @Getter(AccessLevel.NONE)
     transient DiagnosticsService diagnosticsService;
+
+    /**
+     * Used by serialization (Kryo) only; the state is restored from the serialized data.
+     */
+    protected Diagnostics() {
+        this.options = null;
+    }
 
     public Diagnostics(String name, Options options) {
         requireNonNull(options);
@@ -232,6 +240,7 @@ public abstract class Diagnostics extends NamedIdentityAware<String> {
     @Getter
     @ToString
     @SuperBuilder
+    @NoArgsConstructor(access = AccessLevel.PROTECTED)
     public static class Options {
 
         /**

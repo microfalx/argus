@@ -1,5 +1,10 @@
 package net.microfalx.argus.api;
 
+import com.esotericsoftware.kryo.DefaultSerializer;
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.With;
@@ -30,6 +35,8 @@ import javax.security.auth.login.CredentialExpiredException;
 import javax.security.auth.login.CredentialNotFoundException;
 import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -37,6 +44,8 @@ import java.io.InterruptedIOException;
 import java.io.InvalidClassException;
 import java.io.InvalidObjectException;
 import java.io.NotSerializableException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OptionalDataException;
 import java.io.StreamCorruptedException;
 import java.io.UTFDataFormatException;
@@ -121,6 +130,7 @@ import static net.microfalx.lang.CollectionUtils.immutableMap;
 @Slf4j
 @Getter
 @ToString
+@DefaultSerializer(Failure.KryoSerializer.class)
 public final class Failure {
 
     private static final Map<Class<? extends Throwable>, Type> exceptionTypes = new ConcurrentHashMap<>();
@@ -944,6 +954,81 @@ public final class Failure {
             if (ObjectUtils.contains(message, COMMUNICATION_MESSAGES)) return Type.NETWORK;
             if (ObjectUtils.contains(message, RESET_MESSAGES)) return Type.RESET;
             return null;
+        }
+    }
+
+    /**
+     * A Kryo serializer for failures.
+     * <p>
+     * Kryo cannot serialize a {@link Throwable} field by field (the JDK does not open its internals), so the
+     * throwable is written with Java serialization. If the throwable (or one of its causes) is not serializable,
+     * it is replaced with a {@link RuntimeException} which keeps the class name, the message and the stack trace.
+     */
+    public static class KryoSerializer extends Serializer<Failure> {
+
+        public KryoSerializer() {
+            setImmutable(true);
+        }
+
+        @Override
+        public void write(Kryo kryo, Output output, Failure failure) {
+            output.writeString(failure.type.name());
+            output.writeString(failure.severity != null ? failure.severity.name() : null);
+            byte[] throwable = serializeThrowable(failure.throwable);
+            output.writeVarInt(throwable != null ? throwable.length : -1, false);
+            if (throwable != null) output.writeBytes(throwable);
+        }
+
+        @Override
+        public Failure read(Kryo kryo, Input input, Class<? extends Failure> type) {
+            Type failureType = valueOf(Type.class, input.readString(), INTERNAL_ERROR);
+            Severity severity = valueOf(Severity.class, input.readString(), null);
+            int length = input.readVarInt(false);
+            Throwable throwable = length >= 0 ? deserializeThrowable(input.readBytes(length)) : null;
+            return new Failure(failureType, throwable, severity);
+        }
+
+        private static byte[] serializeThrowable(Throwable throwable) {
+            if (throwable == null) return null;
+            try {
+                return javaSerialize(throwable);
+            } catch (IOException e) {
+                RuntimeException replacement = new RuntimeException(ClassUtils.getName(throwable) + ": "
+                        + throwable.getMessage());
+                replacement.setStackTrace(throwable.getStackTrace());
+                try {
+                    return javaSerialize(replacement);
+                } catch (IOException ex) {
+                    LOGGER.warn("Failed to serialize throwable {}", ClassUtils.getName(throwable), ex);
+                    return null;
+                }
+            }
+        }
+
+        private static byte[] javaSerialize(Throwable throwable) throws IOException {
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            try (ObjectOutputStream output = new ObjectOutputStream(buffer)) {
+                output.writeObject(throwable);
+            }
+            return buffer.toByteArray();
+        }
+
+        private static Throwable deserializeThrowable(byte[] data) {
+            try (ObjectInputStream input = new ObjectInputStream(new ByteArrayInputStream(data))) {
+                return (Throwable) input.readObject();
+            } catch (IOException | ClassNotFoundException | ClassCastException e) {
+                LOGGER.warn("Failed to deserialize throwable", e);
+                return null;
+            }
+        }
+
+        private static <E extends Enum<E>> E valueOf(Class<E> enumClass, String name, E defaultValue) {
+            if (name == null) return defaultValue;
+            try {
+                return Enum.valueOf(enumClass, name);
+            } catch (IllegalArgumentException e) {
+                return defaultValue;
+            }
         }
     }
 

@@ -2,7 +2,9 @@ package net.microfalx.argus.diagnostics;
 
 import com.sun.management.HotSpotDiagnosticMXBean;
 import com.sun.management.VMOption;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +47,12 @@ public class VmReport extends Diagnostics {
     private static final String NATIVE_MEMORY_TRACKING_OFF = "off";
 
     private static final String SECTION_SEPARATOR = "=".repeat(80);
+
+    /**
+     * Used by serialization (Kryo) only.
+     */
+    private VmReport() {
+    }
 
     public VmReport(String name) {
         this(name, Options.create());
@@ -148,6 +156,7 @@ public class VmReport extends Diagnostics {
     @Getter
     @ToString(callSuper = true)
     @SuperBuilder
+    @NoArgsConstructor(access = AccessLevel.PRIVATE, force = true)
     public static class Options extends Diagnostics.Options {
 
         /**

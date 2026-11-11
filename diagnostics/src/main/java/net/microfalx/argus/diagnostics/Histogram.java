@@ -1,6 +1,8 @@
 package net.microfalx.argus.diagnostics;
 
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +38,12 @@ public class Histogram extends Diagnostics {
     private static final String JATTACH = "jattach";
     private static final String JATTACH_INSPECT_HEAP = "inspectheap";
     private static final String JATTACH_RESPONSE_CODE = "JVM response code";
+
+    /**
+     * Used by serialization (Kryo) only.
+     */
+    private Histogram() {
+    }
 
     public Histogram(String name) {
         this(name, Options.create());
@@ -129,6 +137,7 @@ public class Histogram extends Diagnostics {
     @Getter
     @ToString(callSuper = true)
     @SuperBuilder
+    @NoArgsConstructor(access = AccessLevel.PRIVATE, force = true)
     public static class Options extends Diagnostics.Options {
 
         /**

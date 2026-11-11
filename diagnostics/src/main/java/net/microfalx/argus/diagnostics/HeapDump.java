@@ -1,7 +1,9 @@
 package net.microfalx.argus.diagnostics;
 
 import com.sun.management.HotSpotDiagnosticMXBean;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import net.microfalx.lang.IOUtils;
@@ -26,6 +28,12 @@ import java.util.zip.GZIPOutputStream;
 public class HeapDump extends Diagnostics {
 
     private static final String EXTENSION = "hprof";
+
+    /**
+     * Used by serialization (Kryo) only.
+     */
+    private HeapDump() {
+    }
 
     public HeapDump(String name) {
         this(name, Options.create());
@@ -97,6 +105,7 @@ public class HeapDump extends Diagnostics {
     @Getter
     @ToString(callSuper = true)
     @SuperBuilder
+    @NoArgsConstructor(access = AccessLevel.PRIVATE, force = true)
     public static class Options extends Diagnostics.Options {
 
         /**

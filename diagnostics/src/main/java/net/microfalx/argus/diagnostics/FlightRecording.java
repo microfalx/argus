@@ -2,7 +2,9 @@ package net.microfalx.argus.diagnostics;
 
 import jdk.jfr.Configuration;
 import jdk.jfr.Recording;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +37,12 @@ import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 public class FlightRecording extends Diagnostics {
 
     private static final String EXTENSION = "jfr";
+
+    /**
+     * Used by serialization (Kryo) only.
+     */
+    private FlightRecording() {
+    }
 
     public FlightRecording(String name) {
         this(name, Options.create());
@@ -101,6 +109,7 @@ public class FlightRecording extends Diagnostics {
     @Getter
     @ToString(callSuper = true)
     @SuperBuilder
+    @NoArgsConstructor(access = AccessLevel.PRIVATE, force = true)
     public static class Options extends Diagnostics.Options {
 
         /**
