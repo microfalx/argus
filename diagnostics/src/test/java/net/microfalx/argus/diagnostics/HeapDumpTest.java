@@ -100,6 +100,14 @@ class HeapDumpTest {
         assertTrue(resource.length() > 0);
     }
 
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1})
+    void head(int compressionLevel) throws IOException {
+        HeapDump heapDump = collect(HeapDump.Options.builder().compressionLevel(compressionLevel).build());
+        assertDump(heapDump, compressionLevel == 0 ? ".hprof" : ".hprof.gz");
+        assertEquals(Diagnostics.BINARY_CONTENT, heapDump.getHead(10));
+    }
+
     private HeapDump collect(HeapDump.Options options) {
         when(diagnosticsService.getResources(Diagnostics.Type.HEAP_DUMP)).thenReturn(Resource.directory(directory.toFile()));
         HeapDump heapDump = new HeapDump("Test", options);

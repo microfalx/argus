@@ -11,6 +11,7 @@ import net.microfalx.lang.NamedIdentityAware;
 import net.microfalx.resource.Resource;
 import net.microfalx.resource.ResourceUtils;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -20,6 +21,8 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 import static net.microfalx.lang.ArgumentUtils.requireNonNull;
+import static net.microfalx.lang.StringUtils.EMPTY_STRING;
+import static net.microfalx.lang.TextUtils.isBinaryContent;
 
 /**
  * Base class for all diagnostics.
@@ -28,7 +31,13 @@ import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 @ToString(callSuper = true)
 public abstract class Diagnostics extends NamedIdentityAware<String> {
 
+    /**
+     * The text returned by {@link #getHead(int)} when the resource contains binary content.
+     */
+    public static final String BINARY_CONTENT = "[Binary content]";
+
     private static final long MAX_STORED_DIAGNOSTICS_SIZE = 1024 * 1024;
+    private static final int BINARY_DETECTION_SAMPLE_SIZE = 8192;
     private static final DateTimeFormatter FILE_NAME_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 
     /**
@@ -95,6 +104,36 @@ public abstract class Diagnostics extends NamedIdentityAware<String> {
         if (data != null) return Resource.bytes(data);
         if (uri != null) return Resource.uri(uri);
         throw new DiagnosticsNotFoundException("Diagnostics resource is not available for " + getName());
+    }
+
+    /**
+     * Returns the first N lines of the resource associated with this diagnostics, if the resource is text.
+     * <p>
+     * If the resource contains binary content, {@link #BINARY_CONTENT} is returned instead.
+     *
+     * @param lineCount the maximum number of lines to return
+     * @return a non-null instance
+     * @throws IOException if an I/O error occurs
+     */
+    public String getHead(int lineCount) throws IOException {
+        if (lineCount <= 0) return EMPTY_STRING;
+        try (BufferedReader reader = new BufferedReader(getResource().getReader(), BINARY_DETECTION_SAMPLE_SIZE)) {
+            reader.mark(BINARY_DETECTION_SAMPLE_SIZE);
+            char[] buffer = new char[BINARY_DETECTION_SAMPLE_SIZE];
+            int count = reader.read(buffer, 0, buffer.length);
+            if (count <= 0) return EMPTY_STRING;
+            if (isBinaryContent(new String(buffer, 0, count))) return BINARY_CONTENT;
+            reader.reset();
+            StringBuilder builder = new StringBuilder();
+            String line;
+            int lines = 0;
+            while (lines < lineCount && (line = reader.readLine()) != null) {
+                if (lines > 0) builder.append('\n');
+                builder.append(line);
+                lines++;
+            }
+            return builder.toString();
+        }
     }
 
     /**

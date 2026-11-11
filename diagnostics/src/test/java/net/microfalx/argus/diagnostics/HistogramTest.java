@@ -73,6 +73,17 @@ class HistogramTest {
     }
 
     @Test
+    void head() throws IOException {
+        Histogram histogram = collect(Histogram.Options.create());
+        assertHistogram(histogram);
+        String head = histogram.getHead(5);
+        assertNotEquals(Diagnostics.BINARY_CONTENT, head);
+        assertTrue(head.contains(HISTOGRAM_HEADER), head);
+        assertTrue(head.split("\n").length <= 5, head);
+        assertEquals("", histogram.getHead(0));
+    }
+
+    @Test
     void mbean() {
         String histogram = new Histogram("Test").extractWithMBean(true);
         assertTrue(histogram.contains(HISTOGRAM_HEADER), histogram);
