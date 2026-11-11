@@ -35,6 +35,8 @@ import static net.microfalx.lang.StringUtils.isNotEmpty;
  *     <li>a {@link Histogram heap histogram} when the JVM memory is the cause</li>
  *     <li>a (CPU) {@link Profile profile} when the server CPU is the cause</li>
  * </ul>
+ * When the application is ready, a {@link Histogram heap histogram} and a {@link VmReport VM report} are
+ * collected as a startup snapshot (baseline).
  */
 @Slf4j
 @Provider
@@ -48,6 +50,7 @@ public class DiagnosticsService extends AbstractService implements HealthListene
 
     private final AtomicBoolean histogramInProgress = new AtomicBoolean();
     private final AtomicBoolean profileInProgress = new AtomicBoolean();
+    private final AtomicBoolean vmReportInProgress = new AtomicBoolean();
 
     public static DiagnosticsService getInstance() {
         return Service.lookup(DiagnosticsService.class);
@@ -163,6 +166,12 @@ public class DiagnosticsService extends AbstractService implements HealthListene
     }
 
     @Override
+    public void ready() {
+        super.ready();
+        collectStartupSnapshot();
+    }
+
+    @Override
     public void onUnhealthy(net.microfalx.argus.api.Resource resource) {
         Health health = resource.getHealth();
         if (health == null) return;
@@ -198,6 +207,16 @@ public class DiagnosticsService extends AbstractService implements HealthListene
         } catch (Exception e) {
             LOGGER.atError().setCause(e).log("Failed to update diagnostics '{}'", diagnostics.getName());
         }
+    }
+
+    /**
+     * Collects a snapshot of the JVM (memory histogram and VM report) once the application is ready,
+     * to have a baseline to compare with diagnostics collected later.
+     */
+    private void collectStartupSnapshot() {
+        String description = "Snapshot collected after application startup (baseline)";
+        collect(Diagnostics.Type.HISTOGRAM, "Startup Memory", description, histogramInProgress);
+        collect(Diagnostics.Type.VM_REPORT, "Startup VM", description, vmReportInProgress);
     }
 
     private void registerHealthListener() {
