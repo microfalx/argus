@@ -128,6 +128,12 @@ public class DiagnosticsService extends AbstractService {
                     Histogram.Options::create));
             case HEAP_DUMP -> new HeapDump(name, getOptions(type, options, HeapDump.Options.class,
                     HeapDump.Options::create));
+            case THREAD_DUMP -> new ThreadDump(name, getOptions(type, options, ThreadDump.Options.class,
+                    ThreadDump.Options::create));
+            case VM_REPORT -> new VmReport(name, getOptions(type, options, VmReport.Options.class,
+                    VmReport.Options::create));
+            case FLIGHT_RECORDING -> new FlightRecording(name, getOptions(type, options, FlightRecording.Options.class,
+                    FlightRecording.Options::create));
             case PROFILE -> new Profile(name, getOptions(type, options, Profile.Options.class,
                     Profile.Options::create));
         };

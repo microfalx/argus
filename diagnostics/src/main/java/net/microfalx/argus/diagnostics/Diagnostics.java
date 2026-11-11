@@ -237,6 +237,9 @@ public abstract class Diagnostics extends NamedIdentityAware<String> {
     public enum Type {
         PROFILE,
         HEAP_DUMP,
-        HISTOGRAM
+        HISTOGRAM,
+        THREAD_DUMP,
+        VM_REPORT,
+        FLIGHT_RECORDING
     }
 }

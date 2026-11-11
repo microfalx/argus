@@ -7,12 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.microfalx.lang.ExceptionUtils;
 import net.microfalx.resource.Resource;
 
-import javax.management.JMException;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
 import java.io.File;
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
@@ -34,7 +30,6 @@ public class Histogram extends Diagnostics {
 
     private static final String EXTENSION = "txt";
 
-    private static final String DIAGNOSTIC_COMMAND_MBEAN = "com.sun.management:type=DiagnosticCommand";
     private static final String CLASS_HISTOGRAM_OPERATION = "gcClassHistogram";
     private static final String ALL_OBJECTS_ARGUMENT = "-all";
 
@@ -90,21 +85,8 @@ public class Histogram extends Diagnostics {
      * @return the histogram
      */
     String extractWithMBean(boolean live) {
-        MBeanServer server = ManagementFactory.getPlatformMBeanServer();
         String[] arguments = live ? new String[0] : new String[]{ALL_OBJECTS_ARGUMENT};
-        Object result;
-        try {
-            ObjectName name = new ObjectName(DIAGNOSTIC_COMMAND_MBEAN);
-            result = server.invoke(name, CLASS_HISTOGRAM_OPERATION, new Object[]{arguments},
-                    new String[]{String[].class.getName()});
-        } catch (JMException e) {
-            throw new DiagnosticsException("Failed to extract histogram '" + getName() + "' with " + DIAGNOSTIC_COMMAND_MBEAN, e);
-        }
-        String histogram = result != null ? result.toString() : null;
-        if (isEmpty(histogram)) {
-            throw new DiagnosticsException("Diagnostic command MBean returned an empty histogram for '" + getName() + "'");
-        }
-        return histogram;
+        return DiagnosticCommands.execute(CLASS_HISTOGRAM_OPERATION, arguments);
     }
 
     /**
