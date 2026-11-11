@@ -8,7 +8,11 @@ import net.microfalx.resource.Resource;
 public class Histogram extends Diagnostics {
 
     public Histogram(String name) {
-        super(name);
+        this(name, Options.create());
+    }
+
+    public Histogram(String name, Options options) {
+        super(name, options);
     }
 
     @Override

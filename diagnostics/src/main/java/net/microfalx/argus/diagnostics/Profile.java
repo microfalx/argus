@@ -5,7 +5,11 @@ import net.microfalx.resource.Resource;
 public class Profile extends Diagnostics {
 
     public Profile(String name) {
-        super(name);
+        this(name, Options.create());
+    }
+
+    public Profile(String name, Options options) {
+        super(name, options);
     }
 
     @Override

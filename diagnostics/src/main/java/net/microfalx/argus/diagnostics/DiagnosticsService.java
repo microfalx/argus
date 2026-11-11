@@ -10,6 +10,7 @@ import net.microfalx.store.api.StoreService;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.function.Supplier;
 
 import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 
@@ -69,13 +70,27 @@ public class DiagnosticsService extends AbstractService {
     }
 
     /**
-     * Starts a new diagnostics of the specified type and adds it to the store.
+     * Starts a new diagnostics of the specified type, with default options, and adds it to the store.
      *
      * @param type the diagnostics type
+     * @param name the name of the diagnostics
      * @return a non-null instance
      */
     public Diagnostics start(Diagnostics.Type type, String name) {
-        Diagnostics diagnostics = create(type, name);
+        return start(type, name, null);
+    }
+
+    /**
+     * Starts a new diagnostics of the specified type and adds it to the store.
+     *
+     * @param type    the diagnostics type
+     * @param name    the name of the diagnostics
+     * @param options the options specific to the diagnostics type (like {@link HeapDump.Options}),
+     *                null to use the default options
+     * @return a non-null instance
+     */
+    public Diagnostics start(Diagnostics.Type type, String name, Diagnostics.Options options) {
+        Diagnostics diagnostics = create(type, name, options);
         store.add(diagnostics);
         return diagnostics;
     }
@@ -102,11 +117,25 @@ public class DiagnosticsService extends AbstractService {
         }
     }
 
-    private Diagnostics create(Diagnostics.Type type, String name) {
+    private Diagnostics create(Diagnostics.Type type, String name, Diagnostics.Options options) {
+        requireNonNull(type);
         return switch (type) {
-            case HISTOGRAM -> new Histogram(name);
-            case HEAP_DUMP -> new HeapDump(name);
-            case PROFILE -> new Profile(name);
+            case HISTOGRAM -> new Histogram(name, getOptions(type, options, Diagnostics.Options.class,
+                    Diagnostics.Options::create));
+            case HEAP_DUMP -> new HeapDump(name, getOptions(type, options, HeapDump.Options.class,
+                    HeapDump.Options::create));
+            case PROFILE -> new Profile(name, getOptions(type, options, Diagnostics.Options.class,
+                    Diagnostics.Options::create));
         };
+    }
+
+    private static <O extends Diagnostics.Options> O getOptions(Diagnostics.Type type, Diagnostics.Options options,
+                                                                Class<O> optionsClass, Supplier<O> defaults) {
+        if (options == null) return defaults.get();
+        if (!optionsClass.isInstance(options)) {
+            throw new DiagnosticsException("Diagnostics of type " + type + " requires options of type "
+                    + optionsClass.getName() + ", received " + options.getClass().getName());
+        }
+        return optionsClass.cast(options);
     }
 }
