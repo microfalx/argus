@@ -1,5 +1,7 @@
 package net.microfalx.argus.diagnostics;
 
+import net.microfalx.resource.Resource;
+
 public class Profile extends Diagnostics {
 
     public Profile(String name) {
@@ -12,7 +14,7 @@ public class Profile extends Diagnostics {
     }
 
     @Override
-    protected void collect() {
+    protected void collect(Resource resource) {
 
     }
 }

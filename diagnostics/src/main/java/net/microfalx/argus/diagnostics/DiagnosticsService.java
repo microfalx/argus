@@ -11,6 +11,8 @@ import net.microfalx.store.api.StoreService;
 import java.time.LocalDateTime;
 import java.util.Collection;
 
+import static net.microfalx.lang.ArgumentUtils.requireNonNull;
+
 /**
  * Collects diagnostics information about the system and the application.
  */
@@ -19,6 +21,29 @@ public class DiagnosticsService extends AbstractService {
 
     private volatile Store<Diagnostics, String> store;
     private Resource diagnostics;
+
+    /**
+     * Returns the resource where diagnostics are stored.
+     *
+     * @return a non-null instance
+     */
+    public Resource getResources() {
+        if (diagnostics == null) {
+            diagnostics = Resource.file(JvmUtils.getVariableDirectory("diagnostics"));
+        }
+        return diagnostics;
+    }
+
+    /**
+     * Returns the resource where diagnostics of a given type are stored.
+     *
+     * @param type the diagnostics type
+     * @return a non-null instance
+     */
+    public Resource getResources(Diagnostics.Type type) {
+        requireNonNull(type);
+        return diagnostics.resolve(type.name().toLowerCase(), Resource.Type.DIRECTORY);
+    }
 
     /**
      * Returns all diagnostics collected by the service.
@@ -43,6 +68,18 @@ public class DiagnosticsService extends AbstractService {
                 .toList();
     }
 
+    /**
+     * Starts a new diagnostics of the specified type and adds it to the store.
+     *
+     * @param type the diagnostics type
+     * @return a non-null instance
+     */
+    public Diagnostics start(Diagnostics.Type type) {
+        Diagnostics diagnostics = create(type);
+        store.add(diagnostics);
+        return diagnostics;
+    }
+
     @Override
     public void initialize(Object... context) {
 
@@ -51,13 +88,6 @@ public class DiagnosticsService extends AbstractService {
     @Override
     public void start() {
 
-    }
-
-    private Resource getResource(Diagnostics.Type type) {
-        if (diagnostics == null) {
-            diagnostics = Resource.file(JvmUtils.getVariableDirectory("diagnostics"));
-        }
-        return diagnostics.resolve(type.name().toLowerCase(), Resource.Type.DIRECTORY);
     }
 
     private Store<Diagnostics, String> getStore() {
@@ -70,5 +100,14 @@ public class DiagnosticsService extends AbstractService {
             }
             return store;
         }
+    }
+
+    private Diagnostics create(Diagnostics.Type type) {
+        return switch (type) {
+            case HISTOGRAM -> new Histogram(type.name());
+            case HEAP_DUMP -> new HeapDump(type.name());
+            case PROFILE -> new Profile(type.name());
+            default -> throw new IllegalArgumentException("Unsupported diagnostics type: " + type);
+        };
     }
 }
