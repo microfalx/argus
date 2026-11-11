@@ -4,6 +4,7 @@ import com.sun.management.HotSpotDiagnosticMXBean;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
+import net.microfalx.lang.IOUtils;
 import net.microfalx.resource.Resource;
 
 import java.io.*;
@@ -25,7 +26,6 @@ import java.util.zip.GZIPOutputStream;
 public class HeapDump extends Diagnostics {
 
     private static final String EXTENSION = "hprof";
-    private static final int BUFFER_SIZE = 64 * 1024;
 
     public HeapDump(String name) {
         this(name, Options.create());
@@ -74,7 +74,7 @@ public class HeapDump extends Diagnostics {
     }
 
     private void compress(File source, File target, int level) throws IOException {
-        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(source), BUFFER_SIZE);
+        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(source), IOUtils.BUFFER_SIZE);
              OutputStream outputStream = new LeveledGZIPOutputStream(new FileOutputStream(target), level)) {
             inputStream.transferTo(outputStream);
         } catch (IOException e) {
@@ -143,7 +143,7 @@ public class HeapDump extends Diagnostics {
     private static class LeveledGZIPOutputStream extends GZIPOutputStream {
 
         private LeveledGZIPOutputStream(OutputStream out, int level) throws IOException {
-            super(out, BUFFER_SIZE);
+            super(out, IOUtils.BUFFER_SIZE);
             def.setLevel(level);
         }
     }

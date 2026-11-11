@@ -52,7 +52,7 @@ public class DiagnosticsService extends AbstractService {
      * @return a non-null instance
      */
     public Collection<Diagnostics> getDiagnostics() {
-        return store.list(Query.<Diagnostics>builder().build());
+        return getStore().list(Query.<Diagnostics>builder().build());
     }
 
     /**
@@ -64,7 +64,7 @@ public class DiagnosticsService extends AbstractService {
      * @return a non-null instance
      */
     public Collection<Diagnostics> getDiagnostics(Diagnostics.Type type, LocalDateTime start, LocalDateTime end) {
-        return store.list(Query.<Diagnostics>builder().start(start).end(end).build()).stream()
+        return getStore().list(Query.<Diagnostics>builder().start(start).end(end).build()).stream()
                 .filter(diagnostics -> diagnostics.getType() == type)
                 .toList();
     }
@@ -105,6 +105,10 @@ public class DiagnosticsService extends AbstractService {
 
     }
 
+    void update(Diagnostics diagnostics) {
+        getStore().add(diagnostics);
+    }
+
     private Store<Diagnostics, String> getStore() {
         if (store != null) return store;
         synchronized (this) {
@@ -124,8 +128,8 @@ public class DiagnosticsService extends AbstractService {
                     Histogram.Options::create));
             case HEAP_DUMP -> new HeapDump(name, getOptions(type, options, HeapDump.Options.class,
                     HeapDump.Options::create));
-            case PROFILE -> new Profile(name, getOptions(type, options, Diagnostics.Options.class,
-                    Diagnostics.Options::create));
+            case PROFILE -> new Profile(name, getOptions(type, options, Profile.Options.class,
+                    Profile.Options::create));
         };
     }
 
