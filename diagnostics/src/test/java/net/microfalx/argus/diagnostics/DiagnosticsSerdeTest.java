@@ -63,6 +63,8 @@ class DiagnosticsSerdeTest {
         assertEquals(diagnostics.getEndTime(), copy.getEndTime());
         assertEquals(diagnostics.getDuration(), copy.getDuration());
         assertEquals("Full thread dump", copy.getHead(1));
+        assertTrue(copy.hasSummary());
+        assertEquals("Summary of Test", copy.getSummary());
     }
 
     @Test
@@ -159,6 +161,7 @@ class DiagnosticsSerdeTest {
             Path target = getFile(diagnostics, "txt").toPath();
             Files.copy(source, target);
             updateResource(Resource.file(target.toFile()));
+            updateSummary("Summary of " + getName());
         }
     }
 }

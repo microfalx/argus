@@ -90,8 +90,9 @@ public class DiagnosticsProvider extends AbstractFragmentProvider {
     /**
      * Returns the content (as text) of a diagnostics.
      * <p>
-     * If the diagnostics failed, the failure is returned instead. Only the first {@link #MAX_CONTENT_LINES} lines
-     * are returned.
+     * If the diagnostics failed, the failure is returned instead. If the diagnostics has a summary (usually for
+     * binary diagnostics, like heap dumps), the summary is returned. Otherwise, only the first
+     * {@link #MAX_CONTENT_LINES} lines are returned.
      *
      * @param diagnostics the diagnostics
      * @return a non-null instance
@@ -100,6 +101,7 @@ public class DiagnosticsProvider extends AbstractFragmentProvider {
         if (diagnostics.getFailure() != null) {
             return diagnostics.getFailure().getRootCauseDescription();
         }
+        if (diagnostics.hasSummary()) return diagnostics.getSummary();
         if (!diagnostics.exists()) return NO_CONTENT;
         try {
             String content = diagnostics.getHead(MAX_CONTENT_LINES);

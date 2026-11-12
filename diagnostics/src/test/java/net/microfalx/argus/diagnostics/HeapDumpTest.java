@@ -17,6 +17,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -49,6 +50,49 @@ class HeapDumpTest {
         assertSame(options, heapDump.getOptions());
         assertFalse(heapDump.getOptions().isLive());
         assertFalse(heapDump.getOptions().isCompressed());
+    }
+
+    @Test
+    void summaryOptions() {
+        HeapDump heapDump = new HeapDump("Test");
+        assertTrue(heapDump.getOptions().isSummary());
+        assertEquals(20, heapDump.getOptions().getSummaryTop());
+        assertFalse(heapDump.hasSummary());
+        assertNull(heapDump.getSummary());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {-1, 0})
+    void invalidSummaryTop(int top) {
+        HeapDump.Options options = HeapDump.Options.builder().summaryTop(top).build();
+        assertThrows(IllegalArgumentException.class, () -> new HeapDump("Test", options));
+    }
+
+    @Test
+    void summaryArguments() {
+        File file = new File(directory.toFile(), "heap_dump.hprof");
+        HeapDump.Options options = HeapDump.Options.builder().summaryTop(5).build();
+        assertEquals(List.of("--top", "5", file.getAbsolutePath()), new HeapDump("Test", options).getSummaryArguments(file));
+    }
+
+    @Test
+    void dumpWithoutSummary() throws IOException {
+        HeapDump heapDump = collect(HeapDump.Options.builder().compressionLevel(0).summary(false).build());
+        assertDump(heapDump, ".hprof");
+        assertFalse(heapDump.hasSummary());
+    }
+
+    @Test
+    void summaryAfterDump() throws IOException {
+        HeapDump heapDump = collect(HeapDump.Options.builder().compressionLevel(1).build());
+        assertDump(heapDump, ".hprof.gz");
+        // the summary is optional: it depends on the tool being installed
+        if (new DiagnosticsTool("hprof").isAvailable()) {
+            assertTrue(heapDump.hasSummary());
+            assertTrue(heapDump.getSummary().contains("raw shallow heap"), heapDump.getSummary());
+        } else {
+            assertFalse(heapDump.hasSummary());
+        }
     }
 
     @ParameterizedTest

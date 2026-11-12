@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
+import lombok.extern.slf4j.Slf4j;
 import net.microfalx.lang.IOUtils;
 import net.microfalx.resource.MimeType;
 import net.microfalx.resource.Resource;
@@ -13,8 +14,14 @@ import net.microfalx.resource.Resource;
 import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.Deflater;
 import java.util.zip.GZIPOutputStream;
+
+import static net.microfalx.lang.ArgumentUtils.requireNonNull;
+import static net.microfalx.lang.ExceptionUtils.getRootCauseDescription;
 
 /**
  * A memory dump of a JVM.
@@ -24,11 +31,24 @@ import java.util.zip.GZIPOutputStream;
  * <p>
  * The {@code GC.heap_dump} diagnostic command (used by {@code jcmd}) has more options (like parallel dumps
  * and native compression), but it is not exported over JMX, so it cannot be invoked from within the JVM.
+ * <p>
+ * Since the dump is binary, a text summary (heap content, top classes by shallow size, largest instances) is
+ * extracted with {@code hprof} (resolved against the bin directory, see {@link DiagnosticsTool}), if installed:
+ * <pre>
+ * hprof --top 20 heap_dump.hprof
+ * </pre>
  */
+@Slf4j
 @ToString(callSuper = true)
 public class HeapDump extends Diagnostics {
 
     private static final String EXTENSION = "hprof";
+    private static final String HPROF = "hprof";
+
+    /**
+     * The maximum time given to {@code hprof} to parse the dump (large dumps can take minutes).
+     */
+    private static final Duration SUMMARY_TIMEOUT = Duration.ofMinutes(15);
 
     /**
      * Used by serialization (Kryo) only.
@@ -60,6 +80,8 @@ public class HeapDump extends Diagnostics {
         Options options = getOptions();
         File file = getFile(directory, EXTENSION);
         dump(file, options.isLive());
+        // the summary tool cannot read compressed dumps, so the summary is extracted before compression
+        if (options.isSummary()) summarize(file);
         if (options.isCompressed()) {
             File compressedFile = new File(file.getParentFile(), file.getName() + ".gz");
             try {
@@ -80,6 +102,43 @@ public class HeapDump extends Diagnostics {
         } catch (IOException | RuntimeException e) {
             throw new DiagnosticsException("Failed to create heap dump '" + getName() + "' in " + file, e);
         }
+    }
+
+    /**
+     * Extracts a summary of the heap dump with {@code hprof} and attaches it to this diagnostics.
+     * <p>
+     * The summary is optional: if the tool is not installed or it fails, the heap dump is still available
+     * (without a summary).
+     *
+     * @param file the (uncompressed) heap dump
+     */
+    private void summarize(File file) {
+        DiagnosticsTool tool = new DiagnosticsTool(HPROF).setTimeout(SUMMARY_TIMEOUT);
+        if (!tool.isAvailable()) {
+            LOGGER.debug("Heap dump summary tool is not available at {}, skip summary for '{}'", tool.getExecutable(), getName());
+            return;
+        }
+        try {
+            updateSummary(tool.execute(getSummaryArguments(file).toArray(String[]::new)));
+        } catch (Exception e) {
+            LOGGER.warn("Failed to extract summary for heap dump '{}' from {}, root cause: {}", getName(), file,
+                    getRootCauseDescription(e));
+        }
+    }
+
+    /**
+     * Returns the arguments passed to {@code hprof} to extract the summary.
+     *
+     * @param file the (uncompressed) heap dump
+     * @return a non-null instance
+     */
+    List<String> getSummaryArguments(File file) {
+        requireNonNull(file);
+        List<String> arguments = new ArrayList<>();
+        arguments.add("--top");
+        arguments.add(Integer.toString(getOptions().getSummaryTop()));
+        arguments.add(file.getAbsolutePath());
+        return arguments;
     }
 
     private void compress(File source, File target, int level) throws IOException {
@@ -126,6 +185,19 @@ public class HeapDump extends Diagnostics {
         private final int compressionLevel = 1;
 
         /**
+         * Indicates whether a summary (heap content, top classes by shallow size, largest instances) is extracted
+         * from the heap dump with {@code hprof}, if the tool is installed.
+         */
+        @lombok.Builder.Default
+        private final boolean summary = true;
+
+        /**
+         * The number of entries (classes, instances) reported in each section of the summary.
+         */
+        @lombok.Builder.Default
+        private final int summaryTop = 200;
+
+        /**
          * Returns the default options.
          *
          * @return a non-null instance
@@ -146,6 +218,9 @@ public class HeapDump extends Diagnostics {
         void validate() {
             if (compressionLevel < Deflater.NO_COMPRESSION || compressionLevel > Deflater.BEST_COMPRESSION) {
                 throw new IllegalArgumentException("Compression level must be between 0 and 9, received " + compressionLevel);
+            }
+            if (summaryTop <= 0) {
+                throw new IllegalArgumentException("Summary top must be positive, received " + summaryTop);
             }
         }
     }

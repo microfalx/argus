@@ -23,6 +23,7 @@ import java.time.format.DateTimeFormatter;
 
 import static net.microfalx.lang.ArgumentUtils.requireNonNull;
 import static net.microfalx.lang.StringUtils.EMPTY_STRING;
+import static net.microfalx.lang.StringUtils.isNotEmpty;
 import static net.microfalx.lang.TextUtils.isBinaryContent;
 
 /**
@@ -69,6 +70,17 @@ public abstract class Diagnostics extends NamedIdentityAware<String> {
      */
     @Getter(AccessLevel.NONE)
     private MimeType mimeType;
+
+    /**
+     * A (text) summary of the diagnostics data.
+     * <p>
+     * Some diagnostics collect binary data (like heap dumps) which cannot be displayed as is; for those, a summary
+     * extracted from the data (usually by an external tool) can be presented instead.
+     * <p>
+     * A null value means there is no summary (not supported by the diagnostics, the tool is not available, or it
+     * failed).
+     */
+    private String summary;
 
     /**
      * The failure associated with this diagnostics. This is used to store the diagnostics failure in case of an error.
@@ -168,6 +180,16 @@ public abstract class Diagnostics extends NamedIdentityAware<String> {
      */
     public boolean isHtml() {
         return mimeType != null && mimeType.equals(MimeType.TEXT_HTML);
+    }
+
+    /**
+     * Returns whether a summary is available for this diagnostics.
+     *
+     * @return {@code true} if a summary is available, {@code false} otherwise
+     * @see #getSummary()
+     */
+    public boolean hasSummary() {
+        return isNotEmpty(summary);
     }
 
     /**
@@ -306,6 +328,16 @@ public abstract class Diagnostics extends NamedIdentityAware<String> {
         if (size <= MAX_STORED_DIAGNOSTICS_SIZE) {
             data = resource.loadAsBytes();
         }
+    }
+
+    /**
+     * Updates the summary of this diagnostics.
+     *
+     * @param summary the summary, can be null
+     * @see #getSummary()
+     */
+    protected void updateSummary(String summary) {
+        this.summary = isNotEmpty(summary) ? summary : null;
     }
 
     /**
