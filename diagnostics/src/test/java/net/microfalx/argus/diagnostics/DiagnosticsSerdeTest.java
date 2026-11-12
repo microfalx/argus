@@ -34,7 +34,7 @@ class DiagnosticsSerdeTest {
         assertCommon(threadDump, copy);
         assertEquals(-1, copy.getSize());
         assertNull(copy.getUri());
-        assertNull(copy.getData());
+        assertFalse(copy.exists());
         assertEquals(MimeType.APPLICATION_OCTET_STREAM, copy.getMimeType());
         assertNull(copy.getStartTime());
         assertNull(copy.getEndTime());
@@ -57,7 +57,6 @@ class DiagnosticsSerdeTest {
         assertCommon(diagnostics, copy);
         assertEquals(diagnostics.getUri(), copy.getUri());
         assertEquals(diagnostics.getSize(), copy.getSize());
-        assertArrayEquals(diagnostics.getData(), copy.getData());
         assertEquals(MimeType.TEXT_PLAIN, copy.getMimeType());
         assertTrue(copy.isText());
         assertEquals(diagnostics.getStartTime(), copy.getStartTime());

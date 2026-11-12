@@ -50,6 +50,7 @@ public abstract class Diagnostics extends NamedIdentityAware<String> {
      * The data of the resource associated with this diagnostics. This is used to store the diagnostics data in memory
      * if the size of the resource is less than {@link #MAX_STORED_DIAGNOSTICS_SIZE}.
      */
+    @Getter(AccessLevel.NONE)
     private byte[] data;
 
     /**
@@ -134,6 +135,15 @@ public abstract class Diagnostics extends NamedIdentityAware<String> {
     }
 
     /**
+     * Returns whether the diagnostics is running.
+     *
+     * @return {@code true} if the diagnostics is running, {@code false} otherwise
+     */
+    public boolean isRunning() {
+        return startTime != null && endTime == null;
+    }
+
+    /**
      * Returns the MIME type of the resource associated with this diagnostics.
      *
      * @return a non-null instance, {@link MimeType#APPLICATION_OCTET_STREAM} if the type is not known
@@ -149,6 +159,24 @@ public abstract class Diagnostics extends NamedIdentityAware<String> {
      */
     public boolean isText() {
         return mimeType != null && mimeType.isText();
+    }
+
+    /**
+     * Returns whether the resource associated with this diagnostics is HTML.
+     *
+     * @return {@code true} if HTML, {@code false} if not or the type is not known
+     */
+    public boolean isHtml() {
+        return mimeType != null && mimeType.equals(MimeType.TEXT_HTML);
+    }
+
+    /**
+     * Returns whether the resource associated with this diagnostics is binary (image, audio, video, etc).
+     *
+     * @return {@code true} if exists (has data collected), {@code false} otherwise
+     */
+    public boolean exists() {
+        return data != null || uri != null;
     }
 
     /**

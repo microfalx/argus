@@ -84,8 +84,6 @@ public class DiagnosticsProvider extends AbstractFragmentProvider {
      */
     public String getSize(Diagnostics diagnostics) {
         if (diagnostics.getSize() >= 0) return formatBytes(diagnostics.getSize());
-        // diagnostics stored before the size was captured
-        if (diagnostics.getData() != null) return formatBytes(diagnostics.getData().length);
         return "-";
     }
 
@@ -102,7 +100,7 @@ public class DiagnosticsProvider extends AbstractFragmentProvider {
         if (diagnostics.getFailure() != null) {
             return diagnostics.getFailure().getRootCauseDescription();
         }
-        if (diagnostics.getData() == null && diagnostics.getUri() == null) return NO_CONTENT;
+        if (!diagnostics.exists()) return NO_CONTENT;
         try {
             String content = diagnostics.getHead(MAX_CONTENT_LINES);
             return isEmpty(content) ? NO_CONTENT : content;

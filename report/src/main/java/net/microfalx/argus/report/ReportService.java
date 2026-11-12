@@ -496,8 +496,7 @@ public class ReportService extends AbstractService implements Initializable {
         }
         Set<String> fileNames = new HashSet<>();
         for (Diagnostics diagnostics : diagnosticsList) {
-            if (diagnostics.getFailure() != null || diagnostics.getEndTime() == null) continue;
-            if (diagnostics.getData() == null && diagnostics.getUri() == null) continue;
+            if (!diagnostics.exists() || diagnostics.isRunning()) continue;
             String fileName = getDiagnosticsFileName(diagnostics);
             if (!fileNames.add(fileName)) fileName = diagnostics.getId() + "_" + fileName;
             try {

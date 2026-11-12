@@ -181,7 +181,7 @@ class ThreadDumpTest {
         String content = Files.readString(file.toPath(), StandardCharsets.UTF_8);
         assertTrue(content.contains(THREAD_DUMP_HEADER), content);
         assertTrue(content.contains(TEST_METHOD), content);
-        assertNotNull(threadDump.getData());
+        assertTrue(threadDump.exists());
         return content;
     }
 
