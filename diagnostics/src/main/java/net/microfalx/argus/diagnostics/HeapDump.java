@@ -195,7 +195,7 @@ public class HeapDump extends Diagnostics {
          * The number of entries (classes, instances) reported in each section of the summary.
          */
         @lombok.Builder.Default
-        private final int summaryTop = 200;
+        private final int summaryTop = 500;
 
         /**
          * Returns the default options.

@@ -18,6 +18,7 @@ import java.text.ParseException;
 import java.time.Duration;
 
 import static net.microfalx.lang.ArgumentUtils.requireNonNull;
+import static net.microfalx.lang.ExceptionUtils.getRootCauseDescription;
 
 /**
  * A Java Flight Recorder (JFR) recording of a JVM.
@@ -29,6 +30,9 @@ import static net.microfalx.lang.ArgumentUtils.requireNonNull;
  * <p>
  * The recording is written in JFR format and can be opened with JDK Mission Control (JMC), IntelliJ or
  * analyzed with the {@code jfr} tool ({@code jfr summary}, {@code jfr print}, {@code jfr view}).
+ * <p>
+ * Since the recording is binary, a text summary (CPU load, hot methods, allocations, GC pauses, lock contention,
+ * exceptions) is extracted in-process after the recording completes, see {@link FlightRecordingSummary}.
  * <p>
  * The call blocks the current thread for the duration of the recording. If the thread is interrupted, the
  * recording is stopped early and the data recorded so far is kept.
@@ -75,7 +79,24 @@ public class FlightRecording extends Diagnostics {
         if (!file.isFile() || file.length() == 0) {
             throw new DiagnosticsException("Flight recorder did not produce any output for '" + getName() + "' in " + file);
         }
+        if (options.isSummary()) summarize(file);
         updateResource(Resource.file(file).withMimeType(MimeType.APPLICATION_OCTET_STREAM));
+    }
+
+    /**
+     * Extracts a summary of the recording (see {@link FlightRecordingSummary}) and attaches it to this diagnostics.
+     * <p>
+     * The summary is optional: if it fails, the recording is still available (without a summary).
+     *
+     * @param file the recording
+     */
+    private void summarize(File file) {
+        try {
+            updateSummary(new FlightRecordingSummary(getOptions().getSummaryTop()).summarize(file.toPath()));
+        } catch (Exception e) {
+            LOGGER.warn("Failed to extract summary for flight recording '{}' from {}, root cause: {}", getName(), file,
+                    getRootCauseDescription(e));
+        }
     }
 
     private void record(File file, Options options) throws IOException {
@@ -126,6 +147,19 @@ public class FlightRecording extends Diagnostics {
         private final Settings settings = Settings.PROFILE;
 
         /**
+         * Indicates whether a summary (CPU load, hot methods, allocations, GC pauses, lock contention, exceptions)
+         * is extracted from the recording.
+         */
+        @lombok.Builder.Default
+        private final boolean summary = true;
+
+        /**
+         * The number of entries (methods, classes, etc) reported in each section of the summary.
+         */
+        @lombok.Builder.Default
+        private final int summaryTop = 500;
+
+        /**
          * Returns the default options.
          *
          * @return a non-null instance
@@ -139,6 +173,9 @@ public class FlightRecording extends Diagnostics {
             requireNonNull(settings);
             if (duration.toSeconds() < 1) {
                 throw new IllegalArgumentException("Flight recording duration must be at least one second, received " + duration);
+            }
+            if (summaryTop <= 0) {
+                throw new IllegalArgumentException("Summary top must be positive, received " + summaryTop);
             }
         }
     }

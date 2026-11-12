@@ -13,7 +13,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
@@ -76,10 +78,77 @@ class FlightRecordingTest {
         assertEquals(Diagnostics.BINARY_CONTENT, recording.getHead(5));
     }
 
+    @Test
+    void summaryOptions() {
+        FlightRecording recording = new FlightRecording("Test");
+        assertTrue(recording.getOptions().isSummary());
+        assertTrue(recording.getOptions().getSummaryTop() > 0);
+        assertFalse(recording.hasSummary());
+        assertThrows(IllegalArgumentException.class, () -> new FlightRecording("Test",
+                FlightRecording.Options.builder().summaryTop(0).build()));
+    }
+
+    @Test
+    void withoutSummary() throws IOException {
+        FlightRecording recording = collect(FlightRecording.Options.builder().duration(Duration.ofSeconds(1))
+                .summary(false).build());
+        assertRecording(recording);
+        assertFalse(recording.hasSummary());
+    }
+
+    @Test
+    void summary() throws Exception {
+        AtomicBoolean running = new AtomicBoolean(true);
+        Thread worker = new Thread(() -> work(running), "flight-recording-worker");
+        worker.setDaemon(true);
+        worker.start();
+        FlightRecording recording;
+        try {
+            recording = collect(FlightRecording.Options.builder().duration(Duration.ofSeconds(2)).summaryTop(5).build());
+        } finally {
+            running.set(false);
+            worker.join();
+        }
+        assertRecording(recording);
+        assertTrue(recording.hasSummary());
+        String summary = recording.getSummary();
+        System.out.println(summary);
+        assertTrue(summary.startsWith("Recording from "), summary);
+        assertTrue(summary.contains("CPU load (JVM)"), summary);
+        assertTrue(summary.contains("Hot methods (top"), summary);
+        assertTrue(summary.contains("Allocations (top"), summary);
+        assertTrue(summary.contains("Throwables created during the recording"), summary);
+    }
+
+    @Test
+    void className() {
+        assertEquals("java.lang.String", FlightRecordingSummary.getClassName("java.lang.String"));
+        assertEquals("byte[]", FlightRecordingSummary.getClassName("[B"));
+        assertEquals("long[][]", FlightRecordingSummary.getClassName("[[J"));
+        assertEquals("java.lang.Object[]", FlightRecordingSummary.getClassName("[Ljava.lang.Object;"));
+    }
+
+    private static void work(AtomicBoolean running) {
+        List<byte[]> retained = new ArrayList<>();
+        long value = 0;
+        while (running.get()) {
+            for (int i = 0; i < 10_000; i++) value += Long.toString(value + i).hashCode();
+            retained.add(new byte[64 * 1024]);
+            if (retained.size() > 100) retained.clear();
+            try {
+                throw new IllegalStateException("Test " + value);
+            } catch (IllegalStateException e) {
+                // only creates throwables
+            }
+        }
+    }
+
     private FlightRecording collect(FlightRecording.Settings settings) {
+        return collect(FlightRecording.Options.builder().duration(Duration.ofSeconds(1)).settings(settings).build());
+    }
+
+    private FlightRecording collect(FlightRecording.Options options) {
         when(diagnosticsService.getResources(Diagnostics.Type.FLIGHT_RECORDING)).thenReturn(Resource.directory(directory.toFile()));
-        FlightRecording.Options options = FlightRecording.Options.builder().duration(Duration.ofSeconds(1))
-                .settings(settings).build();
         FlightRecording recording = new FlightRecording("Test", options);
         recording.diagnosticsService = diagnosticsService;
         recording.collect();

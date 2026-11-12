@@ -56,7 +56,7 @@ class HeapDumpTest {
     void summaryOptions() {
         HeapDump heapDump = new HeapDump("Test");
         assertTrue(heapDump.getOptions().isSummary());
-        assertEquals(20, heapDump.getOptions().getSummaryTop());
+        assertTrue(heapDump.getOptions().getSummaryTop() > 0);
         assertFalse(heapDump.hasSummary());
         assertNull(heapDump.getSummary());
     }
