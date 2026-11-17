@@ -20,7 +20,9 @@ on an external system being reachable.
 This makes Argus useful in three situations that external monitoring struggles with:
 
 * **Self-diagnostics** — a service can inspect its own health (and act on it: log, refuse traffic, restart)
-  without a round-trip to an external system.
+  without a round-trip to an external system. When CPU or memory runs hot, it also records *why*, collecting
+  a Java Flight Recorder recording on its own while the problem is still happening (see
+  [Self-diagnostics](#self-diagnostics)).
 * **Self-healing** — beyond notifying administrators that a service is struggling, a service in a genuinely
   unrecoverable state (score below a configurable floor, `1.2` by default — just above `Health.MIN`) can
   self-terminate rather than keep serving traffic in a broken state, relying on the surrounding orchestration
@@ -95,6 +97,9 @@ without Spring Boot) and covers:
   dependencies such as databases or caches) and attaching health to each of them.
 * Capturing **issues** (self-reported problems) and **alerts** (aggregated from logging events) so both
   voluntary and observed problems feed into diagnostics and reporting.
+* Collecting **diagnostics** (flight recordings, heap histograms and dumps, thread dumps, VM reports, CPU
+  profiles), on demand or automatically when process CPU or memory is critical, and keeping them with the
+  report.
 * Rendering a **self-contained HTML report** (metrics, health, services, logs, tasks, environment, ...) that
   can be viewed offline and sent by email/notification on a schedule or when things go wrong.
 * Integrating with **Spring Boot Actuator** (a `HealthIndicator` and a `resource` endpoint) and
@@ -148,6 +153,10 @@ shared `Health` instance when asked (`update(Health)`), and optionally reports i
 
 * `VirtualMachineHealthContributor` — JVM memory pools, GC pause times, thread and file-descriptor counts,
   file system usage.
+* `ProcessHealthContributor` — process CPU and resident memory (RSS), measured against the limits actually
+  available to the process: the container (cgroup v1/v2) CPU quota, CPU set and memory limit when present,
+  otherwise the server's cores and physical memory. 4 busy cores in a 4-core container is 100% CPU, however
+  many cores the host has.
 * `ServerHealthContributor` / `ServiceHealthContributor` — host- and service-level health.
 * `AlertHealthContributor` / `IssueHealthContributor` — turn active alerts/issues into health items, so a
   spike in errors or a self-reported issue is reflected in the score, not just in a side channel.
@@ -199,13 +208,88 @@ through `AlertHealthContributor`/`IssueHealthContributor`, feed back into the ov
 unhandled exception or a self-reported capacity problem is visible in the same score as a JVM memory
 threshold breach.
 
+## Self-diagnostics
+
+A health score tells you *that* a service is in trouble. It rarely tells you *why*. When an instance pins its
+CPU or its memory creeps toward the container limit, the evidence that explains it (which methods were hot,
+what was allocating, which locks were contended) only exists while the problem is happening. By the time
+someone gets paged, logs in and attaches a profiler, the spike is over, or the orchestrator has already
+killed the pod for running out of memory, and the evidence is gone with it.
+
+The `argus-diagnostics` module closes that gap. Argus already watches its own process continuously, so it
+can also collect diagnostics itself, at the moment the health score says something is wrong. The question
+moves from "can someone reproduce this?" to "here is a recording of what the JVM was doing when it happened."
+
+### Available diagnostics
+
+[`DiagnosticsService`](diagnostics/src/main/java/net/microfalx/argus/diagnostics/DiagnosticsService.java)
+can collect any of the following, on demand (`DiagnosticsService.getInstance().start(type, name, options)`)
+or automatically:
+
+| Type               | What it captures                                                                                  | How it is collected                                                                                   |
+|--------------------|----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| `FLIGHT_RECORDING` | A Java Flight Recorder recording: CPU samples, allocations, lock contention, GC, safepoints, I/O, exceptions, ... (60s with the `profile` settings by default). | In-process, through the JFR API. No external tool or agent needed. A text summary (hot methods, allocations, GC pauses, contention, exceptions) is extracted once the recording ends. |
+| `HISTOGRAM`        | A heap histogram: instance count and shallow size per class, the same output as `jmap -histo`.     | The `GC.class_histogram` diagnostic command over JMX, with [jattach](https://github.com/jattach/jattach) as a fallback. |
+| `HEAP_DUMP`        | A full heap dump in HPROF format, compressed.                                                      | The HotSpot diagnostic MBean. A text summary (top classes, largest instances) is extracted with `hprof` if it is installed. |
+| `THREAD_DUMP`      | A thread dump in `jstack` format (with locks and deadlock detection), or text/JSON including virtual threads. | The `Thread.print` diagnostic command or the HotSpot diagnostic MBean.                                  |
+| `VM_REPORT`        | The JVM's internals: `VM.info` (flags, GC and heap layout, metaspace, code cache, OS, CPU, memory) and native memory usage by area. | Diagnostic commands over JMX. Native memory needs `-XX:NativeMemoryTracking=summary` (or `detail`).       |
+| `PROFILE`          | A sampling CPU (or allocation, lock, wall-clock) profile, rendered as a flame graph.               | [async-profiler](https://github.com/async-profiler/async-profiler) (`asprof`), if it is installed.          |
+
+Each diagnostics is stored under the application's variable directory (`diagnostics/<type>/`), together with
+its metadata: when it started, how long it took, its size, its status and a description of why it was
+collected.
+
+### Collected automatically
+
+Argus collects two kinds of diagnostics without being asked:
+
+* **A startup baseline.** Once the application is ready, Argus takes a heap histogram and a VM report. A later
+  diagnostics then has something to be compared with: "the heap has 3 million more `byte[]` than at startup"
+  says much more than a histogram on its own.
+* **A flight recording when the process is in the red.** `DiagnosticsService` listens to the health of the
+  `SERVICE` resource. When a `ProcessHealthContributor` item falls below `Health.BAD`, it starts a flight
+  recording. The trigger is either process CPU (`process.cpu.*`) or resident memory (`process.memory.*`),
+  both measured against the container or server limits. The recording is named after the cause (for example
+  `CPU (Total) on <service>`). Its description gives the health score and the items that triggered it, so
+  whoever opens it later knows why it exists.
+
+A flight recording is the default for automatic collection because it is safe to take on a struggling
+production JVM. It runs in-process, adds only a few percent of overhead, doesn't stop the world the way a heap
+dump does, and doesn't depend on a native tool being installed. One recording covers both cases: CPU samples
+show where the time went, and allocation events show where the memory went.
+
+Automatic collection is deliberately conservative:
+
+* Only one automatic flight recording runs at a time. A health check that fails again while it is recording
+  doesn't start a second one.
+* Nothing is collected during the first 5 minutes after startup, so warm-up (class loading, JIT compilation,
+  caches filling up) doesn't trigger recordings.
+* Collection runs on a background thread, so the health check that triggered it is never blocked.
+
+Heap dumps, thread dumps and async-profiler profiles are heavier or depend on external tools, so they are
+only collected on demand.
+
+### Diagnostics in the report
+
+Diagnostics collected during the reporting interval appear in the HTML report (see
+[HTML report](#html-report)). The report lists them in a **Diagnostics** fragment, grouped by type. Each row
+shows the name, start time, duration, size, status and reason. A row expands to show the content, or its text
+summary for binary formats such as flight recordings and heap dumps. The **Summary** fragment also lists the
+diagnostics, so an operator sees at a glance that Argus caught something.
+
+When the report is sent as an encrypted archive, the diagnostics files themselves (`.jfr`, `.hprof`,
+histograms, ...) are added to it under `diagnostics/`. Support gets the evidence together with the verdict
+and can open it in JDK Mission Control, IntelliJ or any HPROF analyzer without access to the running
+service.
+
 ## Architecture
 
 | Module                | Artifact                 | Purpose                                                                 |
 |------------------------|---------------------------|--------------------------------------------------------------------------|
 | `api`                  | `argus-api`               | Public API: `Health`, `Resource`, `Thresholds`, `Issue`, `Alert`, and the `HealthService`/`IssueService`/`LoggerService`/`NotificationService` contracts. No implementation dependencies. |
 | `spi`                  | `argus-spi`               | Extension points for pluggable implementations (currently minimal).      |
-| `core`                 | `argus-core`               | Default implementations of the API services, plus the built-in health contributors (JVM, server, service, alerts, issues). |
+| `core`                 | `argus-core`               | Default implementations of the API services, plus the built-in health contributors (JVM, process, server, service, alerts, issues). |
+| `diagnostics`          | `argus-diagnostics`        | Collects diagnostics (flight recordings, heap histograms and dumps, thread dumps, VM reports, CPU profiles) on demand or automatically when process CPU or memory is critical; see [Self-diagnostics](#self-diagnostics). |
 | `logger`               | `argus-logger`             | Captures logging events (Logback-based) and turns them into `LoggerEvent`s/alerts, independent of the logging framework the host application uses. |
 | `report`               | `argus-report`             | Builds the self-contained HTML report (Thymeleaf-based) out of pluggable fragments; also schedules and sends the report by email/notification. |
 | `spring/core`          | `argus-spring-core`        | Spring Boot bootstrapping glue: indexes Spring-managed services, and registers Spring/Hibernate/JPA/Security-aware object-size estimators so JVM memory diagnostics correctly account for framework object overhead. |
@@ -231,7 +315,7 @@ encrypted into a zip before being sent.
 > each fragment renders, and every score, metric and log entry shown is randomly generated rather than
 > pulled from a real, running system.
 
-![Argus HTML report overview](docs/images/report-overview.png "Full HTML report open in a browser: left-hand fragment navigation (Summary, Health, Services, Meters, Performance, Tasks, Logger, Environment) with the Summary fragment selected")
+![Argus HTML report overview](docs/images/report-overview.png "Full HTML report open in a browser: left-hand fragment navigation (Summary, Health, Services, Meters, Performance, Tasks, Diagnostics, Logger, Environment) with the Summary fragment selected")
 
 Current sections, in display order:
 
@@ -259,11 +343,18 @@ Current sections, in display order:
 
    ![Report – Tasks fragment](docs/images/report-section-tasks.png "The report's Tasks fragment: scheduled/background task status")
 
-7. **Logger** — captured log events and alerts.
+7. **Diagnostics** — diagnostics collected during the interval (flight recordings, histograms, dumps, VM
+   reports, ...), grouped by type, each with its status, the reason it was collected, and its content or text
+   summary. See [Self-diagnostics](#self-diagnostics).
+
+   <!-- TODO: add screenshot docs/images/report-section-diagnostics.png -->
+   ![Report – Diagnostics fragment](docs/images/report-section-diagnostics.png "The report's Diagnostics fragment: diagnostics collected during the reporting interval, grouped by type, with status, reason and an expandable summary")
+
+8. **Logger** — captured log events and alerts.
 
    ![Report – Logger fragment](docs/images/report-section-logger.png "The report's Logger fragment: captured log events and alerts (with severity and occurrence count)")
 
-8. **Environment** — environment/system information.
+9. **Environment** — environment/system information.
 
    ![Report – Environment fragment](docs/images/report-section-environment.png "The report's Environment fragment: environment/system information (JVM, OS, application build info)")
 
@@ -361,7 +452,7 @@ acknowledged state) the log events were aggregated into.
 
 > These screenshots are only examples, cropped from a much larger report. The tab embeds the complete HTML
 > report described in [HTML report](#html-report), so every fragment is available there: Summary, Health,
-> Services, Meters, Performance, Tasks, Logger and Environment. You can move between them with the icon bar on
+> Services, Meters, Performance, Tasks, Diagnostics, Logger and Environment. You can move between them with the icon bar on
 > the left. The resource cards depend on what the instance registers, so an application with a cache, broker
 > or other dependency gets a card for each one, next to the `Service`, `Server` and `Database` cards shown
 > here. Like the report screenshots above, these were taken from Heimdall in demo mode, so the scores and
