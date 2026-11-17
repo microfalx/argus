@@ -325,9 +325,19 @@ public class DiagnosticsService extends AbstractService {
             // a single flight recording captures both CPU samples and allocations, CPU takes precedence in the name
             if (!cpuItems.isEmpty()) {
                 collectFlightRecording("CPU", "Process CPU", resource, health, cpuItems);
+                collectJvmState(health, "CPU", "Process CPU", resource, cpuItems);
             } else if (!memoryItems.isEmpty()) {
                 collectFlightRecording("Memory", "Process memory", resource, health, memoryItems);
+                collectJvmState(health, "Memory", "Process memory", resource, cpuItems);
             }
+        }
+
+        private void collectJvmState(Health health, String cause, String description, net.microfalx.argus.api.Resource resource,
+                                     List<Health.Item> items) {
+            collect(Diagnostics.Type.VM_REPORT, getName(cause, resource, items),
+                    getDescription(description, resource, health, items), flightRecordingInProgress);
+            collect(Diagnostics.Type.HISTOGRAM, getName(cause, resource, items),
+                    getDescription(description, resource, health, items), flightRecordingInProgress);
         }
 
         private void collectFlightRecording(String cause, String description, net.microfalx.argus.api.Resource resource,
