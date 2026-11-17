@@ -8,6 +8,7 @@ import net.microfalx.argus.api.Thresholds;
 import net.microfalx.argus.core.AbstractService;
 import net.microfalx.lang.JvmUtils;
 import net.microfalx.lang.RichText;
+import net.microfalx.lang.TimeUtils;
 import net.microfalx.lang.annotation.Provider;
 import net.microfalx.resource.Resource;
 import net.microfalx.service.api.Service;
@@ -28,12 +29,10 @@ import static net.microfalx.lang.StringUtils.isNotEmpty;
 /**
  * Collects diagnostics information about the system and the application.
  * <p>
- * The service also listens for health changes and collects diagnostics automatically when a resource
- * enters the red zone:
- * <ul>
- *     <li>a {@link Histogram heap histogram} when the JVM memory is the cause</li>
- *     <li>a (CPU) {@link Profile profile} when the server CPU is the cause</li>
- * </ul>
+ * The service also listens for health changes and collects a {@link FlightRecording flight recording}
+ * automatically when the service enters the red zone because of the process CPU or memory (relative to the
+ * container / server limits). A flight recording is light enough for automatic collection and captures both
+ * CPU samples and memory allocations.
  * When the application is ready, a {@link Histogram heap histogram} and a {@link VmReport VM report} are
  * collected as a startup snapshot (baseline).
  */
@@ -41,14 +40,15 @@ import static net.microfalx.lang.StringUtils.isNotEmpty;
 @Provider
 public class DiagnosticsService extends AbstractService {
 
-    private static final String MEMORY_THRESHOLDS_PREFIX = "jvm.memory.";
-    private static final String CPU_THRESHOLDS_PREFIX = "server.cpu.";
+    private static final String PROCESS_MEMORY_THRESHOLDS_PREFIX = "process.memory.";
+    private static final String PROCESS_CPU_THRESHOLDS_PREFIX = "process.cpu.";
+    private static final long UNHEALTHY_QUIET_TIME = TimeUtils.FIVE_MINUTE;
 
     private volatile Store<Diagnostics, String> store;
     private Resource diagnostics;
 
     private final AtomicBoolean histogramInProgress = new AtomicBoolean();
-    private final AtomicBoolean profileInProgress = new AtomicBoolean();
+    private final AtomicBoolean flightRecordingInProgress = new AtomicBoolean();
     private final AtomicBoolean vmReportInProgress = new AtomicBoolean();
     private final HealthListener healthListener = new HealthListenerImpl();
 
@@ -201,7 +201,7 @@ public class DiagnosticsService extends AbstractService {
     /**
      * Collects (asynchronously) a diagnostics, if one of the same kind is not already in progress.
      *
-     * @param type       the diagnostics type
+     * @param type        the diagnostics type
      * @param name        the name of the diagnostics
      * @param description the reason why the diagnostics is collected
      * @param inProgress  the flag which guards against concurrent collections of the same kind
@@ -318,26 +318,22 @@ public class DiagnosticsService extends AbstractService {
         @Override
         public void onUnhealthy(net.microfalx.argus.api.Resource resource) {
             Health health = resource.getHealth();
-            if (health == null) return;
-            switch (resource.getType()) {
-                case SERVICE -> {
-                    List<Health.Item> items = getCriticalItems(health, MEMORY_THRESHOLDS_PREFIX);
-                    if (!items.isEmpty()) {
-                        collect(Diagnostics.Type.HISTOGRAM, getName("Memory", resource, items),
-                                getDescription("JVM memory", resource, health, items), histogramInProgress);
-                    }
-                }
-                case SERVER -> {
-                    List<Health.Item> items = getCriticalItems(health, CPU_THRESHOLDS_PREFIX);
-                    if (!items.isEmpty()) {
-                        collect(Diagnostics.Type.PROFILE, getName("CPU", resource, items),
-                                getDescription("Server CPU", resource, health, items), profileInProgress);
-                    }
-                }
-                default -> {
-                    // no diagnostics for other resources
-                }
+            if (health == null || JvmUtils.getUptime().toMillis() < UNHEALTHY_QUIET_TIME) return;
+            if (resource.getType() != net.microfalx.argus.api.Resource.Type.SERVICE) return;
+            List<Health.Item> cpuItems = getCriticalItems(health, PROCESS_CPU_THRESHOLDS_PREFIX);
+            List<Health.Item> memoryItems = getCriticalItems(health, PROCESS_MEMORY_THRESHOLDS_PREFIX);
+            // a single flight recording captures both CPU samples and allocations, CPU takes precedence in the name
+            if (!cpuItems.isEmpty()) {
+                collectFlightRecording("CPU", "Process CPU", resource, health, cpuItems);
+            } else if (!memoryItems.isEmpty()) {
+                collectFlightRecording("Memory", "Process memory", resource, health, memoryItems);
             }
+        }
+
+        private void collectFlightRecording(String cause, String description, net.microfalx.argus.api.Resource resource,
+                                            Health health, List<Health.Item> items) {
+            collect(Diagnostics.Type.FLIGHT_RECORDING, getName(cause, resource, items),
+                    getDescription(description, resource, health, items), flightRecordingInProgress);
         }
 
         @Override
