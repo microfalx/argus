@@ -14,6 +14,9 @@ import net.microfalx.lang.annotation.Provider;
 import net.microfalx.lang.annotation.SizeOf;
 import net.microfalx.resource.Resource;
 import net.microfalx.service.api.Service;
+import net.microfalx.store.api.Query;
+import net.microfalx.store.api.Store;
+import net.microfalx.store.api.StoreService;
 import net.microfalx.threadpool.CronTrigger;
 import net.microfalx.threadpool.IdentifiableTask;
 import net.microfalx.threadpool.ThreadPool;
@@ -76,6 +79,10 @@ public class ReportService extends AbstractService implements Initializable {
     private volatile Collection<Issue> cachedDailyIssues;
     private volatile Map<String, Issue> reportedIssues = new ConcurrentHashMap<>();
     private volatile Map<String, Issue> dailyReportedIssues = new ConcurrentHashMap<>();
+    private volatile Store<Report.Content, String> contentStore;
+    private volatile Store<Report.Archive, String> archiveStore;
+
+    private static final Duration STORE_RETENTION = Duration.ofDays(30);
 
     private static final ThreadLocal<Boolean> DAILY_REPORT = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
@@ -188,6 +195,52 @@ public class ReportService extends AbstractService implements Initializable {
     }
 
     /**
+     * Returns all reports sent by the service (still available in the store).
+     *
+     * @return a non-null instance
+     */
+    public Collection<Report.Content> getContents() {
+        return getContentStore().list(Query.<Report.Content>builder().build());
+    }
+
+    /**
+     * Returns all reports sent by the service between the specified start and end date.
+     *
+     * @param start the start date
+     * @param end   the end date
+     * @return a non-null instance
+     */
+    public Collection<Report.Content> getContents(LocalDateTime start, LocalDateTime end) {
+        requireNonNull(start);
+        requireNonNull(end);
+        return getContentStore().list(Query.<Report.Content>builder().start(start).end(end).build());
+    }
+
+    /**
+     * Returns the content of a report sent by the service.
+     *
+     * @param id the identifier of the report content
+     * @return the content, empty if it does not exist (anymore)
+     */
+    public Optional<Report.Content> getContent(String id) {
+        requireNonNull(id);
+        return Optional.ofNullable(getContentStore().find(id));
+    }
+
+    /**
+     * Returns the archive (the encrypted zip, or the full report if no password is configured) attached
+     * to a report sent by the service.
+     *
+     * @param contentId the identifier of the report content
+     * @return the archive, empty if the report or its archive does not exist (anymore)
+     */
+    public Optional<Resource> getArchive(String contentId) {
+        return getContent(contentId).filter(Report.Content::hasArchive)
+                .map(content -> getArchiveStore().find(content.getArchiveId()))
+                .map(Report.Archive::toResource);
+    }
+
+    /**
      * Sends a report about the system, using the given duration as the report time interval.
      *
      * @param interval the reporting interval
@@ -238,6 +291,9 @@ public class ReportService extends AbstractService implements Initializable {
             } catch (Exception e) {
                 throw new ReportException("Failed to send the report for interval " + interval, e);
             }
+        });
+        METRICS.time("Store", (t) -> {
+            store(report, summaryReportRef.get(), fullReportRef.get(), encryptedFullReportRef.get());
         });
         return report;
     }
@@ -348,6 +404,77 @@ public class ReportService extends AbstractService implements Initializable {
             listener.send(destinations, report.getName(), summary, fullReport, Optional.of(encryptedFullReport));
         }
         LOGGER.info("Report '{}' sent to: {}", report.getName(), destinations);
+    }
+
+    /**
+     * Stores a report which was sent out: the content (summary &amp; full report) and the archive.
+     * <p>
+     * A failure to store the report is logged, it does not fail the report (it was already sent).
+     *
+     * @param report              the report
+     * @param summary             the summary report
+     * @param fullReport          the full report
+     * @param encryptedFullReport the archive (encrypted zip or full report)
+     * @return the stored content, null if it could not be stored
+     */
+    private Report.Content store(Report report, Resource summary, Resource fullReport, Resource encryptedFullReport) {
+        try {
+            Report.Content content = Report.Content.create(report.getName())
+                    .withSummary(summary.loadAsString())
+                    .withContent(fullReport.loadAsString());
+            if (encryptedFullReport != null && encryptedFullReport.exists()) {
+                Report.Archive archive = new Report.Archive(IdGenerator.get().nextAsString(),
+                        encryptedFullReport.getFileName(), encryptedFullReport.getMimeType(),
+                        encryptedFullReport.loadAsBytes());
+                getArchiveStore().add(archive);
+                content = content.withArchiveId(archive.getId()).withArchive(archive.toResource());
+            }
+            getContentStore().add(content);
+            report.setContent(content);
+            LOGGER.info("Report '{}' stored with identifier '{}'", report.getName(), content.getId());
+            return content;
+        } catch (Exception e) {
+            LOGGER.atError().setCause(e).log("Failed to store report '{}'", report.getName());
+            return null;
+        }
+    }
+
+    private Store<Report.Content, String> getContentStore() {
+        if (contentStore != null) return contentStore;
+        synchronized (this) {
+            if (contentStore == null) {
+                LOGGER.info("Initializing report content store");
+                contentStore = getOrRegisterStore(Store.Options.create("Report Contents").withRetention(STORE_RETENTION));
+            }
+            return contentStore;
+        }
+    }
+
+    private Store<Report.Archive, String> getArchiveStore() {
+        if (archiveStore != null) return archiveStore;
+        synchronized (this) {
+            if (archiveStore == null) {
+                LOGGER.info("Initializing report archive store");
+                archiveStore = getOrRegisterStore(Store.Options.create("Report Archives").withRetention(STORE_RETENTION));
+            }
+            return archiveStore;
+        }
+    }
+
+    /**
+     * Returns a store already registered with the store service (the store service is shared, the database
+     * cannot be opened twice), or registers a new one.
+     *
+     * @param options the store options
+     * @return a non-null instance
+     */
+    @SuppressWarnings("unchecked")
+    private static <T extends Identifiable<String>> Store<T, String> getOrRegisterStore(Store.Options options) {
+        StoreService storeService = StoreService.getInstance();
+        for (Store<?, ?> store : storeService.getStores()) {
+            if (store.getId().equals(options.getId())) return (Store<T, String>) store;
+        }
+        return storeService.register(options);
     }
 
     private void reload(boolean onStartup) {

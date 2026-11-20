@@ -2,13 +2,19 @@ package net.microfalx.argus.report;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import net.microfalx.lang.IdGenerator;
+import net.microfalx.lang.Identifiable;
 import net.microfalx.lang.Nameable;
+import net.microfalx.lang.Timestampable;
 import net.microfalx.resource.ClassPathResource;
+import net.microfalx.resource.MemoryResource;
+import net.microfalx.resource.MimeType;
 import net.microfalx.resource.Resource;
 import net.microfalx.resource.ResourceUtils;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.function.Supplier;
@@ -41,6 +47,7 @@ public class Report implements Nameable {
     private String fragment;
     private Theme theme = Theme.LIGHT;
     private Navigation navigation = new Navigation(Theme.DARK);
+    private volatile Content content;
     private final List<Fragment> fragments = new ArrayList<>();
     private final Map<String, Object> attributes = new HashMap<>();
     private final Map<String, Object> variables = new HashMap<>();
@@ -241,6 +248,29 @@ public class Report implements Nameable {
      */
     public Navigation getNavigation() {
         return navigation;
+    }
+
+    /**
+     * Returns the content of the report, available after the report was sent out (and stored).
+     * <p>
+     * The content carries the archive (encrypted zip) as a resource, as it was attached to the report.
+     *
+     * @return the content, empty if the report was not sent or it could not be stored
+     */
+    public Optional<Content> getContent() {
+        return Optional.ofNullable(content);
+    }
+
+    /**
+     * Changes the content of the report, after the report was sent out (and stored).
+     *
+     * @param content the content
+     * @return self
+     */
+    Report setContent(Content content) {
+        requireNonNull(content);
+        this.content = content;
+        return this;
     }
 
     /**
@@ -490,6 +520,146 @@ public class Report implements Nameable {
     public enum Theme {
         LIGHT,
         DARK
+    }
+
+    /**
+     * Holds the content of a report which was sent out.
+     * <p>
+     * The content is immutable; use the {@code withXXX} methods to derive a changed copy. The archive (the
+     * encrypted zip, or the full report when no password is configured) is stored separately and referenced
+     * by {@link #getArchiveId()}. The archive resource itself is not serialized; it is only attached
+     * when the content is created, or when it is looked up with {@link ReportService#getArchive(String)}.
+     */
+    @Getter
+    @With
+    @AllArgsConstructor
+    @ToString
+    public static class Content implements Identifiable<String>, Nameable, Timestampable<LocalDateTime> {
+
+        /**
+         * The (unique) identifier of the report content.
+         */
+        private final String id;
+
+        /**
+         * The name of the report (the subject used when the report was sent).
+         */
+        private final String name;
+
+        /**
+         * The time when the report was sent.
+         */
+        private final LocalDateTime createdAt;
+
+        /**
+         * The summary report (HTML), the one sent in the body of the message.
+         */
+        @ToString.Exclude
+        private final String summary;
+
+        /**
+         * The full report (HTML).
+         */
+        @ToString.Exclude
+        private final String content;
+
+        /**
+         * The identifier of the archive (the encrypted zip) attached to the report, null if no archive is available.
+         */
+        private final String archiveId;
+
+        /**
+         * The archive attached to the report, not serialized.
+         */
+        @ToString.Exclude
+        private final transient Resource archive;
+
+        /**
+         * Creates a new report content, with a new identifier and the current time as creation time.
+         *
+         * @param name the name of the report
+         * @return a non-null instance
+         */
+        public static Content create(String name) {
+            requireNonNull(name);
+            return new Content(IdGenerator.get().nextAsString(), name, LocalDateTime.now(), null, null, null, null);
+        }
+
+        /**
+         * Used by serialization (Kryo) only; the state is restored from the serialized data.
+         */
+        public Content() {
+            this(null, null, null, null, null, null, null);
+        }
+
+        /**
+         * Returns whether an archive is available for this report.
+         *
+         * @return {@code true} if an archive is available, {@code false} otherwise
+         */
+        public boolean hasArchive() {
+            return isNotEmpty(archiveId);
+        }
+
+        /**
+         * Returns the summary report as a resource.
+         *
+         * @return a non-null instance
+         */
+        public Resource getSummaryResource() {
+            return Resource.text(summary != null ? summary : "").withMimeType(MimeType.TEXT_HTML);
+        }
+
+        /**
+         * Returns the full report as a resource.
+         *
+         * @return a non-null instance
+         */
+        public Resource getContentResource() {
+            return Resource.text(content != null ? content : "").withMimeType(MimeType.TEXT_HTML);
+        }
+    }
+
+    /**
+     * Holds the archive (encrypted zip) of a report which was sent out.
+     * <p>
+     * The archive is stored separately from {@link Content}, it is only looked up by identifier.
+     */
+    @Getter
+    @ToString
+    static class Archive implements Identifiable<String> {
+
+        private final String id;
+        private final String fileName;
+        private final String mimeType;
+        @ToString.Exclude
+        private final byte[] data;
+
+        /**
+         * Used by serialization (Kryo) only; the state is restored from the serialized data.
+         */
+        Archive() {
+            this(null, null, null, null);
+        }
+
+        Archive(String id, String fileName, String mimeType, byte[] data) {
+            this.id = id;
+            this.fileName = fileName;
+            this.mimeType = mimeType;
+            this.data = data;
+        }
+
+        /**
+         * Returns the archive as a resource.
+         *
+         * @return a non-null instance
+         */
+        Resource toResource() {
+            byte[] content = data != null ? data : new byte[0];
+            Resource resource = isNotEmpty(fileName) ? MemoryResource.create(content, fileName) : Resource.bytes(content);
+            if (isNotEmpty(mimeType)) resource = resource.withMimeType(mimeType);
+            return resource;
+        }
     }
 
 }
