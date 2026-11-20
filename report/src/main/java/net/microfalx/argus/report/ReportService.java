@@ -87,6 +87,7 @@ public class ReportService extends AbstractService implements Initializable {
     private static final ThreadLocal<Boolean> DAILY_REPORT = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
     private static final String DIAGNOSTICS_DIRECTORY = "diagnostics/";
+    private static final String LOGS_DIRECTORY = "logs/";
 
     public static ReportService getInstance() {
         return Service.lookup(ReportService.class);
@@ -599,6 +600,7 @@ public class ReportService extends AbstractService implements Initializable {
                 settings.getPassword().toCharArray())) {
             appendZipEntry(outputZipStream, getFileName(reportPrefix, "html"), fullReport);
             appendDiagnostics(outputZipStream, report);
+            appendLogs(outputZipStream, report);
         }
         return Resource.file(reportZip);
     }
@@ -635,6 +637,36 @@ public class ReportService extends AbstractService implements Initializable {
                 appendZipEntry(outputZipStream, DIAGNOSTICS_DIRECTORY + fileName, resource);
             } catch (Exception e) {
                 LOGGER.atWarn().setCause(e).log("Failed to add diagnostics '{}' to report archive", diagnostics.getName());
+            }
+        }
+    }
+
+    /**
+     * Appends (to the report archive) the application logs, if a logs directory is available.
+     * <p>
+     * Log archives (zip files) are skipped. A failure to add a log file does not prevent the archive from being created.
+     *
+     * @param outputZipStream the archive
+     * @param report          the report
+     */
+    private void appendLogs(ZipOutputStream outputZipStream, Report report) {
+        File[] files;
+        try {
+            if (!JvmUtils.hasLogsDirectory()) {
+                LOGGER.debug("No logs directory available, skip logs for report '{}'", report.getName());
+                return;
+            }
+            files = JvmUtils.getLogsDirectory().listFiles(file -> file.isFile() && !file.getName().endsWith(".zip"));
+        } catch (Exception e) {
+            LOGGER.atWarn().setCause(e).log("Failed to extract logs for report '{}'", report.getName());
+            return;
+        }
+        if (files == null) return;
+        for (File file : files) {
+            try {
+                appendZipEntry(outputZipStream, LOGS_DIRECTORY + file.getName(), Resource.file(file));
+            } catch (Exception e) {
+                LOGGER.atWarn().setCause(e).log("Failed to add log '{}' to report archive", file.getName());
             }
         }
     }
